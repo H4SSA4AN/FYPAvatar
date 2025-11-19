@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Upload FAQ POC</title>
+    <script src="../backend/getCSV.js"></script>
 </head>
 <body>
     <h1>Upload FAQ CSV</h1>
@@ -11,8 +12,16 @@
     <button id="uploadButton" onclick="uploadCSV()">Upload</button>
     <p id="status"></p>
 
+    <hr>
+
+    <h2> Ask question </h2>
+    <input type="text" id="questionInput" placeholder="Ask a question">
+    <button id="queryButton" onclick="queryFAQ()">Enter</button>
+    <p id="answer"></p>
+
+    
 
 
-    <script src="backend/getCSV.js"></script>
+
 </body>
 </html>
