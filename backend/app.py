@@ -16,9 +16,23 @@ def upload_csv():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
+    topic = request.form['topic']
+
     try:
-        data = faq_service.process_csv(file.stream)
+        data = faq_service.process_csv(file.stream, topic)
         return jsonify({'message': 'Processed successfully', 'data': data}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+
+@app.route('/faqs', methods=['GET'])
+def get_faqs():
+    topic = request.args.get('topic')
+
+    try:
+        data = faq_service.get_faqs(topic)
+        return jsonify({'message': 'Fetched successfully', 'data': data}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -30,10 +44,20 @@ def query_faq():
         return jsonify({'error': 'Invalid request'}), 400
 
     try:
-        answer = faq_service.query_faq(data['query'])
+        answer = faq_service.query_faq(data['query'], data['topic'])
         return jsonify({'answer': answer}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/topics', methods=['GET'])
+def get_topics():
+    try:
+        topics = faq_service.get_topics()
+        return jsonify({'message': 'Fetched successfully', 'data': topics}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
