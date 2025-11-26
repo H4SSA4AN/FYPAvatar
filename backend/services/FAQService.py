@@ -63,7 +63,7 @@ class FAQService:
         results = self.vector_db_service.collection.query(query_texts = query_text, where={"Topic": topic})
         
         if results['metadatas'] and results['metadatas'][0]:
-            return results['metadatas'][0][0]['Answer']
+            return results['metadatas'][0][0]['answer']
         return "No suitable answer found"
 
 
