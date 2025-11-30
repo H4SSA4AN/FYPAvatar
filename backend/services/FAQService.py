@@ -1,28 +1,47 @@
 
 import pandas as pd
+import uuid
 from .vectorDB import VectorDBService
+from .database import DatabaseService
+
 
 class FAQService:
 
-    topicList = []
+    database_service = DatabaseService()
+    
+
 
     def __init__(self):
         self.vector_db_service = VectorDBService()
 
-    def process_csv(self, file_stream, topic):
+    def get_titles(self):
+        titles_rows = self.database_service.get_titles()
+        titles = [row['name'] for row in titles_rows]
+        return titles
+
+    def add_title(self, title):
+        self.database_service.add_title(title)
+
+    def get_title_id(self, title):
+        return self.database_service.get_title_id(title)
 
 
-        if topic in self.topicList:
-            raise ValueError("Topic already exists")
+    def process_csv(self, file_stream, title):
+
+        titles = self.get_titles()
+
+        if title in titles:
+            print(f"Title {title} already exists")
+            raise ValueError("Title already exists")
+
+        self.add_title(title)
 
 
         df = pd.read_csv(file_stream)
         df.columns = df.columns.str.lower()
 
-        count = self.vector_db_service.collection.count()
 
-        ids = range(count, count + len(df))
-
+        ids = [str(uuid.uuid4()) for _ in range(len(df))]
         df['id'] = ids
         
         questions = df['question'].tolist()
@@ -32,17 +51,28 @@ class FAQService:
         metadatas = df[['answer']].to_dict(orient='records')
 
         for metadata in metadatas:
-            metadata['Topic'] = topic
+            metadata['Title'] = title
 
         self.vector_db_service.add_documents(id_strings, questions, metadatas)
         print("DONE")
+
+        try:
+            title_id = self.get_title_id(title)
+            print(title_id)
+
+            for index, row in df.iterrows():
+                self.database_service.add_question_answer(row['id'], title_id, row['question'], row['answer'])
+        except Exception as e:
+            print(e)
+            raise e
+
         return df.to_dict(orient='records')
 
 
-    def get_faqs(self, topic):
+    def get_faqs(self, title):
 
         results = self.vector_db_service.collection.get(
-            where={"Topic": topic}, 
+            where={"Title": title}, 
             include = ["metadatas", "documents"]
         )
         formatted_results = []
@@ -53,29 +83,18 @@ class FAQService:
                     "id": doc_id,
                     "question": results['documents'][i],
                     "answer": results['metadatas'][i].get('answer', ''),
-                    "topic": results['metadatas'][i].get('Topic', '')
+                    "title": results['metadatas'][i].get('Title', '')
                 })
 
         return formatted_results
 
-    def query_faq(self, query_text, topic="none"):
+    def query_faq(self, query_text, title="none"):
 
-        results = self.vector_db_service.collection.query(query_texts = query_text, where={"Topic": topic})
+        results = self.vector_db_service.collection.query(query_texts = query_text, where={"Title": title})
         
         if results['metadatas'] and results['metadatas'][0]:
             return results['metadatas'][0][0]['answer']
         return "No suitable answer found"
 
-
-    def get_topics(self):
-        results = self.vector_db_service.collection.get(
-            include = ["metadatas"]
-        )
-
-        if results['metadatas']:
-            for metadata in results['metadatas']:
-                if metadata.get('Topic'):
-                    self.topicList.append(metadata.get('Topic'))
-        return list(set(self.topicList))
 
 

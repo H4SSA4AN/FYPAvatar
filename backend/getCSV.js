@@ -3,17 +3,17 @@ window.onload = async function() {
 }
 
 async function fetchTopics() {
-    const select = document.getElementById('topicSelect');
+    const select = document.getElementById('titleSelect');
     
     try {
         const response = await fetch('http://127.0.0.1:5000/topics');
         const result = await response.json();
         if (response.ok) {
-            topics = result.data;
-            topics.forEach(topic => {
+            titles = result.data;
+            titles.forEach(title => {
                 const option = document.createElement('option');
-                option.value = topic;
-                option.textContent = topic;
+                option.value = title;
+                option.textContent = title;
                 select.appendChild(option);
             });
         } else {
@@ -26,17 +26,17 @@ async function fetchTopics() {
 
 async function uploadCSV() {
     const file = document.getElementById('csvFile').files[0];
-    const topic = document.getElementById('topicName').value;
+    const title = document.getElementById('titleName').value;
     const status = document.getElementById('status');
 
-    if (!file || !topic) {
-        status.textContent = 'No file or topic selected';
+    if (!file || !title) {
+        status.textContent = 'No file or title selected';
         return;
     }
 
     const formData = new FormData();
     formData.append('file', file);
-    formData.append('topic', topic);
+    formData.append('title', title);
 
     status.textContent = 'Uploading file...';
 
@@ -61,15 +61,15 @@ async function uploadCSV() {
 
 
 async function fetchFAQ() {
-    const topic = document.getElementById('topicSelect').value;
+    const title = document.getElementById('titleSelect').value;
     const container = document.getElementById('faq-container');
 
     container.innerHTML = 'Fetching FAQ...';
 
     try {
 
-        const url = topic 
-        ? `http://127.0.0.1:5000/faqs?topic=${topic}`
+        const url = title 
+        ? `http://127.0.0.1:5000/faqs?title=${title}`
         : `http://127.0.0.1:5000/faqs`;
     
 
@@ -92,7 +92,7 @@ async function fetchFAQ() {
 async function queryFAQ() {
 
     const question = document.getElementById('questionInput').value;
-    const topic = document.getElementById('topicSelect').value;
+    const title = document.getElementById('titleSelect').value;
     const answer = document.getElementById('answer');
 
     if (!question) return;
@@ -107,7 +107,7 @@ async function queryFAQ() {
             },
             body: JSON.stringify({ 
                 query: question, 
-                topic: topic 
+                title: title 
             })
         });
         const result = await response.json();
@@ -140,7 +140,7 @@ function displayFAQ(data) {
         <th>ID</th>
         <th>Question</th>
         <th>Answer</th>
-        <th>Topic</th>
+        <th>Title</th>
     </tr>
     `;
     table.appendChild(thead);
@@ -151,7 +151,7 @@ function displayFAQ(data) {
         <td>${data[i].id}</td>
         <td>${data[i].question}</td>
         <td>${data[i].answer}</td>
-        <td>${data[i].topic}</td>
+        <td>${data[i].title}</td>
         `;
         table.appendChild(tr);
     }

@@ -5,7 +5,10 @@ class VectorDBService:
     def __init__(self, collection_name='faq'):
         self.persist_directory = 'db'
 
-        self.client = chromadb.PersistentClient(path=self.persist_directory)
+
+        # Use EphemeralClient for testing purposes
+        self.client = chromadb.EphemeralClient()
+       # self.client = chromadb.PersistentClient(path=self.persist_directory)
         self.ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name='multi-qa-mpnet-base-dot-v1')
         
         self.collection = self.client.get_or_create_collection(
@@ -20,10 +23,10 @@ class VectorDBService:
             metadatas=metadatas,
         )
 
-    def query(self, query_text, n_results=10, topic="none"):
+    def query(self, query_text, n_results=10, title="none"):
         return self.collection.query(
             query_texts=[query_text],
             n_results=n_results,
-            where={"Topic": topic}
+            where={"Title": title}
         )
     

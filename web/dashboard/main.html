@@ -12,15 +12,15 @@
         <div id="left-container">
             <h1>Upload FAQ CSV</h1>
             <input type="file" id="csvFile" accept=".csv">
-            <input type="text" id="topicName" placeholder="Enter FAQ Topic">
+            <input type="text" id="titleName" placeholder="Enter FAQ Title">
             <button id="uploadButton" onclick="uploadCSV()">Upload</button>
             <p id="status"></p>
 
             <hr>
 
             <h2> Ask question </h2>
-            <select id="topicSelect" onchange="fetchFAQ()">
-                <option value="none">Select a topic</option>   
+            <select id="titleSelect" onchange="fetchFAQ()">
+                <option value="none">Select a title</option>   
             </select>
             <input type="text" id="questionInput" placeholder="Ask a question">
             <button id="queryButton" onclick="queryFAQ()">Enter</button>

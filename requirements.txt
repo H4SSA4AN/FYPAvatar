@@ -3,3 +3,5 @@ flask-cors
 pandas
 sentence-transformers
 chromadb
+uuid
+sqlite3

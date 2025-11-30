@@ -16,22 +16,23 @@ def upload_csv():
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
-    topic = request.form['topic']
+    title = request.form['title']
 
     try:
-        data = faq_service.process_csv(file.stream, topic)
+        data = faq_service.process_csv(file.stream, title)
         return jsonify({'message': 'Processed successfully', 'data': data}), 200
     except Exception as e:
+        print(e)
         return jsonify({'error': str(e)}), 500
 
 
 
 @app.route('/faqs', methods=['GET'])
 def get_faqs():
-    topic = request.args.get('topic')
+    title = request.args.get('title')
 
     try:
-        data = faq_service.get_faqs(topic)
+        data = faq_service.get_faqs(title)
         return jsonify({'message': 'Fetched successfully', 'data': data}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -44,16 +45,16 @@ def query_faq():
         return jsonify({'error': 'Invalid request'}), 400
 
     try:
-        answer = faq_service.query_faq(data['query'], data['topic'])
+        answer = faq_service.query_faq(data['query'], data['title'])
         return jsonify({'answer': answer}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 
-@app.route('/topics', methods=['GET'])
-def get_topics():
+@app.route('/titles', methods=['GET'])
+def get_titles():
     try:
-        topics = faq_service.get_topics()
+        topics = faq_service.get_titles()
         return jsonify({'message': 'Fetched successfully', 'data': topics}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
