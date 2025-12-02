@@ -1,47 +1,255 @@
 const statusDiv = document.getElementById('statusMessage');
+let counter = 1;
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
 
-    //modal 
-    const modal = document.getElementById('avatarModal');
-    const button = document.getElementById('generateVideoBtn');
-    const span = document.getElementsByClassName('close-modal')[0];
+    initaliseModals();
+    initialiseUploads();
+    initialiseManualEntry();
 
-    button.onclick = function() {
-        modal.style.display = 'block';
-    }
+});
 
-    span.onclick = function() {
-        modal.style.display = 'none';
-    }
+function initaliseModals() {
 
-    window.onclick = function(event) {
-        if (event.target === modal) {
-            modal.style.display = 'none';
+    const avatarModal = document.getElementById('avatarModal');
+    const avatarButton = document.getElementById('generateVideoBtn');
+    setupModal(avatarModal, avatarButton);
+
+    const manualEntryModal = document.getElementById('manualEntryModal');
+    const manualEntryButton = document.getElementById('manualEntryBtn');
+    setupModal(manualEntryModal, manualEntryButton);
+
+    window.onclick = function (event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
         }
+    };
+}
+
+function setupModal(modal, button) {
+    if (!modal || !button) return;
+
+    const span = modal.querySelector('.close-modal');
+
+    button.onclick = function () {
+        modal.style.display = 'block';
+    };
+
+    if (span) {
+        span.onclick = function () {
+            modal.style.display = 'none';
+        };
     }
 
+    window.onclick = function (event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = 'none';
+        }
+    };
+}
+
+function initialiseUploads() {
     const uploadInput = document.getElementById('avatarImageUpload');
-    const previewBox = document.getElementById('imagePreviewBox');
     const previewImg = document.getElementById('avatarPreview');
     const previewText = document.getElementById('previewText');
 
-    if(uploadInput) {
-        uploadInput.addEventListener('change', function(e) {
+    if (uploadInput && previewImg) {
+        uploadInput.addEventListener('change', function (e) {
             if (this.files && this.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     previewImg.src = e.target.result;
                     previewImg.style.display = 'block';
-                    previewText.style.display = 'none';
-                }
+                    if (previewText) previewText.style.display = 'none';
+                };
                 reader.readAsDataURL(this.files[0]);
-            }
+            };
         });
+    }
+}
 
+
+function initialiseManualEntry() {
+    const addRecordBtn = document.getElementById('addRecordBtn');
+    const manualEntryList = document.getElementById('manualEntryList');
+    const saveManualEntryBtn = document.getElementById('saveManualEntryBtn');
+
+    if (addRecordBtn && manualEntryList) {
+        addRecordBtn.onclick = function () {
+            const newRow = document.createElement('div');
+            newRow.className = 'manual-entry-row';
+            counter++;
+
+            newRow.innerHTML = `
+                <div class="manual-entry-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Question ${counter}</label>
+                        <input type="text" class="manual-question" placeholder="Type question...">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Answer</label>
+                        <input type="text" class="manual-answer" placeholder="Type answer...">
+                    </div>
+                </div>
+            `;
+
+            manualEntryList.appendChild(newRow);
+            manualEntryList.scrollTop = manualEntryList.scrollHeight;
+        };
     }
 
-});
+    if (saveManualEntryBtn) {
+        saveManualEntryBtn.onclick = function () {
+            saveManualData();
+
+        };
+    }
+
+    const manualRemoveBtn = document.getElementById('manualRemoveBtn');
+    const manualEntryBtn = document.getElementById('manualEntryBtn');
+    const fileInput = document.getElementById('csvFile');
+    const csvLabel = document.getElementById('csvFileLabel');
+    
+    if (manualRemoveBtn) {
+        manualRemoveBtn.addEventListener('click', function(e) {
+            e.preventDefault(); // Stop button click if nested
+            e.stopPropagation();
+
+            // 1. Reset Manual Button
+            if (manualEntryBtn) {
+                manualEntryBtn.innerHTML = "Click here to manually enter FAQ";
+                manualEntryBtn.style.borderColor = ''; // Reset styles
+                manualEntryBtn.style.backgroundColor = '';
+            }
+
+            // 2. Hide Remove Button
+            manualRemoveBtn.style.display = 'none';
+
+            // 3. Re-enable CSV Upload
+            if (csvLabel) {
+                csvLabel.innerHTML = "Upload CSV here";
+                csvLabel.style.pointerEvents = 'auto';
+                csvLabel.style.backgroundColor = '';
+                csvLabel.style.color = '';
+                csvLabel.style.border = '';
+            }
+
+            // 4. Clear File Input (actual data)
+            if (fileInput) {
+                fileInput.value = '';
+                // Optional: dispatch change to clear status message
+                // fileInput.dispatchEvent(new Event('change'));
+            }
+            
+            // 5. Clear Status Message
+            const statusDiv = document.getElementById('statusMessage');
+            if(statusDiv) {
+                statusDiv.innerHTML = '';
+                statusDiv.className = 'status-message';
+            }
+
+            // Inside remove listeners (manual and csv)
+            const rightPanel = document.querySelector('.right-panel');
+            if (rightPanel) {
+                rightPanel.innerHTML = `
+                    <h2>Preview / Instructions</h2>
+                    <p>Select a topic or create a new one to start adding questions to your knowledge base.</p>
+                `;
+            }
+        });
+    }
+}
+
+
+function saveManualData() {
+    const questions = document.querySelectorAll('.manual-question');
+    const answers = document.querySelectorAll('.manual-answer');
+    const data = [];
+
+    for (let i = 0; i < questions.length; i++) {
+        const q = questions[i].value.trim();
+        const a = answers[i].value.trim();
+        if (q && a) {
+            data.push({ question: q, answer: a });
+        }
+    }
+
+    if (data.length > 0) {
+        // Convert to CSV Logic
+        const csvHeader = "Question,Answer\n";
+        const csvRows = data.map(row => {
+            const q = `"${row.question.replace(/"/g, '""')}"`;
+            const a = `"${row.answer.replace(/"/g, '""')}"`;
+            return `${q},${a}`;
+        }).join("\n");
+
+        const csvContent = csvHeader + csvRows;
+        previewCSV(csvContent);
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        if (data.length > 0) {
+            // ... csv generation logic ...
+            const file = new File([blob], "manual_entry.csv", { type: 'text/csv' });
+
+            // Assign to File Input
+            const dataTransfer = new DataTransfer();
+            dataTransfer.items.add(file);
+
+            const fileInput = document.getElementById('csvFile');
+            if (fileInput) {
+                fileInput.files = dataTransfer.files;
+            }
+
+            // UPDATE UI
+            // 1. Update Manual Button Text
+            const manualEntryBtn = document.getElementById('manualEntryBtn');
+            const manualRemoveBtn = document.getElementById('manualRemoveBtn');
+
+            if (manualEntryBtn) {
+                manualEntryBtn.innerHTML = `manual_entry.csv (${data.length} records)`;
+                manualEntryBtn.style.borderColor = '#2ecc71'; // Green border to indicate success
+                manualEntryBtn.style.backgroundColor = '#e8f5e9';
+            }
+
+            if (manualRemoveBtn) {
+                manualRemoveBtn.style.display = 'block'; // Show X
+            }
+
+            // 2. "Disable" CSV Upload Button (Visual only, input remains active for form)
+            const csvLabel = document.getElementById('csvFileLabel');
+            if (csvLabel) {
+                csvLabel.innerHTML = "Using Manual Entry";
+                csvLabel.style.pointerEvents = 'none';
+                csvLabel.style.backgroundColor = '#f0f0f0';
+                csvLabel.style.color = '#999';
+                csvLabel.style.border = '1px dashed #ccc';
+            }
+
+            // Remove the X button for CSV if it was there
+            const csvRemoveBtn = document.getElementById('csvFileRemoveBtn');
+            if (csvRemoveBtn) csvRemoveBtn.style.display = 'none';
+
+            document.getElementById('manualEntryModal').style.display = 'none';
+            // Reset form
+            const entryList = document.getElementById('manualEntryList');
+            if (entryList) {
+                entryList.innerHTML = `
+               <div class="manual-entry-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Question 1</label>
+                        <input type="text" class="manual-question" placeholder="Type question...">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Answer</label>
+                        <input type="text" class="manual-answer" placeholder="Type answer...">
+                    </div>
+                </div>`;
+                counter = 1;
+            }
+        } else {
+            alert("Please enter at least one valid question/answer pair.");
+        }
+    }
+}
 
 
 
@@ -52,24 +260,38 @@ function updateLabel(inputId, defaultText) {
 
     if (!input || !label) return;
 
-    input.addEventListener('change', function() {
+    input.addEventListener('change', function () {
         if (this.files && this.files.length > 0) {
             label.innerHTML = this.files[0].name;
+            const fileName = this.files[0].name;
             removeBtn.style.display = 'block';
 
             if (inputId === 'csvFile') {
                 const reader = new FileReader();
-                reader.onload = function(e) {
+                reader.onload = function (e) {
                     const text = e.target.result;
                     // Split by new line and filter out empty lines
                     const lines = text.split(/\r\n|\n/).filter(line => line.trim() !== '');
                     // Subtract 1 for header row if you assume there is one
-                    const count = lines.length > 0 ? lines.length - 1 : 0; 
-                    
-                    statusDiv.innerHTML = `Selected file has ${count} records ready to upload.`;
-                    statusDiv.className = 'status-message processing'; // Or a new 'info' class
+                    const count = lines.length > 0 ? lines.length - 1 : 0;
+
+                    label.innerHTML = `${fileName} (${count} records)`;
+                    label.style.borderColor = '#2ecc71';
+                    label.style.backgroundColor = '#e8f5e9';
+                    previewCSV(text);
+                    // NEW: Disable Manual Entry Button
+                    const manualBtn = document.getElementById('manualEntryBtn');
+                    if (manualBtn) {
+                        manualBtn.innerHTML = "CSV Upload Active";
+                        manualBtn.disabled = true; // Use disabled attribute for buttons
+                        manualBtn.style.pointerEvents = 'none'; // Ensure no clicks
+                        manualBtn.style.opacity = '0.6';
+                        manualBtn.style.border = '1px dashed #ccc';
+                        manualBtn.style.backgroundColor = '#f0f0f0';
+                        manualBtn.style.color = '#999';
+                    }
                 };
-                reader.onerror = function() {
+                reader.onerror = function () {
                     statusDiv.innerHTML = "Error reading file.";
                     statusDiv.className = 'status-message error';
                 };
@@ -97,7 +319,7 @@ function updateLabel(inputId, defaultText) {
 
 
 
-    removeBtn.addEventListener('click', function(e) {
+    removeBtn.addEventListener('click', function (e) {
         e.preventDefault();
         input.value = '';
         label.innerHTML = defaultText;
@@ -116,9 +338,36 @@ function updateLabel(inputId, defaultText) {
                     URL.revokeObjectURL(videoPreview.src);
                 }
             }
-        }   
+        }
+
+        label.style.borderColor = ''; // Reset border
+        label.style.backgroundColor = ''; // Reset background
+
+        if (inputId === 'csvFile') {
+            // NEW: Re-enable Manual Entry Button
+            const manualBtn = document.getElementById('manualEntryBtn');
+            if (manualBtn) {
+                manualBtn.innerHTML = "Click here to manually enter FAQ";
+                manualBtn.disabled = false;
+                manualBtn.style.pointerEvents = 'auto';
+                manualBtn.style.opacity = '1';
+                manualBtn.style.border = ''; // Reset to stylesheet default
+                manualBtn.style.backgroundColor = '';
+                manualBtn.style.color = '';
+            }
+
+            // Inside remove listeners (manual and csv)
+            const rightPanel = document.querySelector('.right-panel');
+            if (rightPanel) {
+                rightPanel.innerHTML = `
+                    <h2>Preview / Instructions</h2>
+                    <p>Select a topic or create a new one to start adding questions to your knowledge base.</p>
+                `;
+            }
+        }
     });
 }
+
 
 updateLabel('csvFile', 'Upload CSV here');
 updateLabel('mediaFile', 'Upload mp4 here');
@@ -143,7 +392,7 @@ async function uploadCSV() {
     formData.append('title', title);
 
     try {
-        const response = await fetch('http://127.0.0.1:5000/upload' , {
+        const response = await fetch('http://127.0.0.1:5000/upload', {
             method: 'POST',
             body: formData,
         });
@@ -171,12 +420,59 @@ async function uploadCSV() {
 
 }
 
+function previewCSV(csvText) {
+    const rightPanel = document.querySelector('.right-panel');
+    const shownRows = 20;
+    if (!rightPanel) return;
+
+    const rows = csvText.split(/\r\n|\n/).filter(line => line.trim() !== '');
+    if (rows.length === 0) return;
+
+    // Take header + next 20 rows
+    const previewRows = rows.slice(0, shownRows + 1); 
+    
+    let tableHTML = `
+        <h3>CSV Preview</h3>
+        <div style="max-height: 500px; overflow-y: auto; overflow-x: auto; border: 1px solid #ddd;">
+            <table style="width:100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead style="position: sticky; top: 0; background: #f2f2f2; z-index: 1;">
+    `;
+    
+    previewRows.forEach((row, index) => {
+        const cells = row.split(','); // Reminder: simple split
+        
+        if (index === 0) {
+            tableHTML += '<tr>';
+            cells.forEach(cell => {
+                const cellText = cell.replace(/^"|"$/g, ''); 
+                tableHTML += `<th style="border: 1px solid #ddd; padding: 8px; text-align: left;">${cellText}</th>`;
+            });
+            tableHTML += '</tr></thead><tbody>'; // Close header, start body
+        } else {
+            tableHTML += '<tr>';
+            cells.forEach(cell => {
+                const cellText = cell.replace(/^"|"$/g, ''); 
+                tableHTML += `<td style="border: 1px solid #ddd; padding: 8px;">${cellText}</td>`;
+            });
+            tableHTML += '</tr>';
+        }
+    });
+    
+    tableHTML += '</tbody></table></div>';
+    
+    if (rows.length > shownRows) {
+        tableHTML += `<p style="text-align: center; color: #666; margin-top: 10px;">Showing first ${shownRows} of ${rows.length - 1} rows.</p>`;
+    }
+
+    rightPanel.innerHTML = tableHTML;
+}
+
+
+
 
 async function createFAQ() {
     //Check if user has uploaded a csv file
     await uploadCSV();
-
-    //Check if user has typed in their questions
 
     //Reference media 
 

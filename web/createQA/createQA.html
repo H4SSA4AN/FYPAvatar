@@ -36,8 +36,11 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="manualEnterBtn">Manually enter FAQ</label>
-                    <button type="button" id="manualEnterBtn" class="upload-label">Click here to manually enter FAQ</button>   
+                    <label for="manualEntryBtn">Manually enter FAQ</label>
+                    <div class="upload-container">
+                        <button type="button" id="manualEntryBtn" class="upload-label">Click here to manually enter FAQ</button>
+                        <span class="remove-file" id="manualRemoveBtn" style="display: none;">&times;</span>
+                    </div> 
                 </div>  
 
                 <div class="form-group">
@@ -102,6 +105,35 @@
 
             <div class="modal-actions">
                 <button type="button" class="submit-btn" id="confirmAvatarBtn">Confirm & Generate Video</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="manualEntryModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Manually Enter FAQ</h2>
+            
+            <!-- Container for dynamic rows -->
+            <div id="manualEntryList" style="max-height: 400px; overflow-y: auto; margin-bottom: 10px;">
+                <!-- Initial Row -->
+                <div class="manual-entry-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Question 1</label>
+                        <input type="text" class="manual-question" placeholder="Type question...">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Answer</label>
+                        <input type="text" class="manual-answer" placeholder="Type answer...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add New Record Button -->
+            <button type="button" id="addRecordBtn" class="action-btn" style="width: 100%; margin-bottom: 20px; background-color: #95a5a6;">+ Add Another Record</button>
+
+            <div class="modal-actions">
+                <button type="button" class="submit-btn" id="saveManualEntryBtn">Save All to FAQ List</button>
             </div>
         </div>
     </div>
