@@ -50,10 +50,12 @@ body {
 
 .container {
     display: flex;
-    max-width: 1200px;
     margin: 2rem auto;
     gap: 2rem;
     padding: 0 20px;
+    justify-content: center;
+    flex-direction: row;
+    
 }
 
 .left-panel {
@@ -62,7 +64,62 @@ body {
     padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    height: auto;
+    min-height: 0;
+    max-width: 30%;
 }
+
+.middle-panel {
+    flex: 0;
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    height: auto;
+    min-height: 0;
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+
+    /* ANIMATION PROPERTIES - Start Collapsed */
+    width: 0; /* Start hidden width */
+    padding: 0;   /* Start hidden padding */
+    opacity: 0;   /* Start invisible */
+    overflow: hidden; /* Hide content while collapsed */
+    margin: 0;    /* Avoid margin pushing while closed */
+    
+    /* The magic transition */
+    transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.middle-panel.open {
+    flex: 1;
+    width: 30%; /* Target width */
+    padding: 2rem;  /* Target padding */
+    opacity: 1;     /* Target opacity */
+    /* You might need to handle margin if you use gap in container */
+}
+
+
+
+.middle-panel h2 {
+    margin-top: 0;
+    margin-bottom: 1.5rem;
+    width: 100%;
+    text-align: left;
+
+}
+
+#videoPreview {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 4px;
+    margin-top: auto;
+    margin-bottom: auto;
+}
+
 
 .right-panel {
     flex: 1;
@@ -70,6 +127,7 @@ body {
     padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    max-width: 30%;
 }
 
 h2 {
@@ -80,6 +138,7 @@ h2 {
 
 .form-group {
     margin-bottom: 1.5rem;
+    flex-shrink: 0;
 }
 
 label {
@@ -204,4 +263,103 @@ textarea:focus {
     color: #c62828;
     border: 1px solid #ffcdd2;
     display: block;
+}
+
+/* Modal Overlay */
+.modal {
+    display: none; /* Hidden by default */
+    position: fixed; 
+    z-index: 100; /* Sit on top */
+    left: 0;
+    top: 0;
+    width: 100%; 
+    height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 10% auto; /* Center the modal */
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    width: 60%; /* Slightly wider for side-by-side */
+    max-width: 800px;
+    position: relative;
+}
+
+.modal-content .close-modal {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    font-size: 2rem;
+    cursor: pointer;
+    color: #333;
+}
+
+.modal-body {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.modal-left {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-right {
+    flex: 1;
+}
+
+.image-preview-box {
+    width: 100%;
+    height: 250px; /* Fixed height for the preview box */
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    cursor: pointer;
+    background-color: #fafafa;
+    transition: all 0.3s;
+    overflow: hidden; /* Ensure image fits */
+    color: #888;
+}
+
+.image-preview-box:hover {
+    background-color: #f0f0f0;
+    border-color: #aaa;
+}
+
+#avatarPrompt {
+    width: 100%;
+    resize: none;
+    margin-bottom: 10px;
+    box-sizing: border-box; /* Ensure padding doesn't affect width */
+}
+
+.modal-actions {
+    margin-top: 20px;
+    text-align: right;
+    border-top: 1px solid #eee;
+    padding-top: 15px;
+}
+
+.action-btn {
+    background-color: #3498db; /* Match your theme blue */
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-size: 0.9rem;
+}
+
+.action-btn:hover {
+    background-color: #2980b9;
 }

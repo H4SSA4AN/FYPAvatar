@@ -50,8 +50,8 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="generateVideoBtn">Generate Video</label>
-                    <button type="button" id="generateVideoBtn" class="upload-label">Open video generation window</button>   
+                    <label for="generateVideoBtn">Generate an avatar</label>
+                    <button type="button" id="generateVideoBtn" class="upload-label">Open avatar generation window</button>   
                 </div>  
 
                 <div id="statusMessage" class="status-message"></div>
@@ -59,6 +59,14 @@
                 <button type="button" class="submit-btn" onclick="createFAQ()">Create FAQ</button>
             </form>
         </div>
+            
+            <!-- NEW VIDEO PREVIEW BOX -->
+            <div class="middle-panel" id="videoPreviewContainer">
+                <h2>Preview Avatar</h2>
+                <video id="videoPreview" width="100%" height="auto" controls>
+                    Your browser does not support the video tag.
+                </video>
+            </div>
 
         <div class="right-panel">
             <h2>Preview / Instructions</h2>
@@ -68,6 +76,35 @@
 
     </div>
 
+    <div id="avatarModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Generate Avatar Video</h2>
+            
+            <div class="modal-body">
+                <!-- Left Side: Prompt Input -->
+                <div class="modal-left">
+                    <label>Enter Prompt for Image Generation</label>
+                    <textarea id="avatarPrompt" rows="6" placeholder="Describe the avatar you want to create..."></textarea>
+                    <button type="button" class="action-btn" id="generateImageBtn">Generate Image</button>
+                </div>
+
+                <!-- Right Side: Preview / Upload Box -->
+                <div class="modal-right">
+                    <div class="image-preview-box" id="imagePreviewBox" onclick="document.getElementById('avatarImageUpload').click()">
+                        <p id="previewText">Generated image will appear here<br>OR<br>Click to upload your own</p>
+                        <img id="avatarPreview" src="" style="display:none; width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                    </div>
+                    <!-- Hidden file input -->
+                    <input type="file" id="avatarImageUpload" accept="image/*" style="display:none">
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="submit-btn" id="confirmAvatarBtn">Confirm & Generate Video</button>
+            </div>
+        </div>
+    </div>
 
 
     <script src="../../backend/pagejs/createQAjs.js"></script>

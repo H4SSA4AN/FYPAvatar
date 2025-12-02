@@ -1,5 +1,50 @@
 const statusDiv = document.getElementById('statusMessage');
 
+document.addEventListener('DOMContentLoaded', function() {
+
+    //modal 
+    const modal = document.getElementById('avatarModal');
+    const button = document.getElementById('generateVideoBtn');
+    const span = document.getElementsByClassName('close-modal')[0];
+
+    button.onclick = function() {
+        modal.style.display = 'block';
+    }
+
+    span.onclick = function() {
+        modal.style.display = 'none';
+    }
+
+    window.onclick = function(event) {
+        if (event.target === modal) {
+            modal.style.display = 'none';
+        }
+    }
+
+    const uploadInput = document.getElementById('avatarImageUpload');
+    const previewBox = document.getElementById('imagePreviewBox');
+    const previewImg = document.getElementById('avatarPreview');
+    const previewText = document.getElementById('previewText');
+
+    if(uploadInput) {
+        uploadInput.addEventListener('change', function(e) {
+            if (this.files && this.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    previewImg.style.display = 'block';
+                    previewText.style.display = 'none';
+                }
+                reader.readAsDataURL(this.files[0]);
+            }
+        });
+
+    }
+
+});
+
+
+
 function updateLabel(inputId, defaultText) {
     const input = document.getElementById(inputId);
     const label = document.querySelector(`label[for="${inputId}"].upload-label`);
@@ -30,6 +75,23 @@ function updateLabel(inputId, defaultText) {
                 };
                 reader.readAsText(this.files[0]);
             }
+
+            if (inputId === 'mediaFile') {
+                const videoContainer = document.getElementById('videoPreviewContainer');
+                const videoPreview = document.getElementById('videoPreview');
+
+                if (videoContainer && videoPreview) {
+                    const fileURL = URL.createObjectURL(this.files[0]);
+                    videoPreview.src = fileURL;
+
+                    videoContainer.style.display = 'flex';
+
+                    setTimeout(() => {
+                        videoContainer.classList.add('open');
+                    }, 10);
+                }
+            }
+
         }
     });
 
@@ -40,6 +102,21 @@ function updateLabel(inputId, defaultText) {
         input.value = '';
         label.innerHTML = defaultText;
         removeBtn.style.display = 'none';
+
+        if (inputId === 'mediaFile') {
+            const videoContainer = document.getElementById('videoPreviewContainer');
+            const videoPreview = document.getElementById('videoPreview');
+            if (videoContainer) {
+                videoContainer.classList.remove('open');
+                setTimeout(() => {
+                    videoContainer.style.display = 'none';
+                }, 600);
+                if (videoPreview) {
+                    videoPreview.src = '';
+                    URL.revokeObjectURL(videoPreview.src);
+                }
+            }
+        }   
     });
 }
 
