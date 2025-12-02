@@ -468,6 +468,42 @@ function previewCSV(csvText) {
 }
 
 
+async function generateImage() {
+    const prompt = document.getElementById('avatarPrompt').value;
+    const imageContainer = document.getElementById('imagePreviewBox');
+
+    if (!prompt) {
+        alert('Please enter a prompt');
+        return;
+    }
+
+    try {
+        imageContainer.innerHTML = 'Generating image...';
+
+        const response = await fetch('http://127.0.0.1:5000/generateImage', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ prompt: prompt })
+            });
+
+        if (!response.ok) {
+            throw new Error('Failed to generate image');
+        }
+
+        const blob = await response.blob();
+        
+        const imageUrl = URL.createObjectURL(blob);
+        imageContainer.innerHTML = `<img src="${imageUrl}" alt="Generated Image">`;
+    } catch (error) {
+        console.error('Error:', error);
+        imageContainer.innerHTML = 'Error generating image';
+        
+    }
+}
+
+
 
 
 async function createFAQ() {

@@ -316,7 +316,7 @@ textarea:focus {
 
 .image-preview-box {
     width: 100%;
-    height: 250px; /* Fixed height for the preview box */
+    height: auto; /* Fixed height for the preview box */
     border: 2px dashed #ccc;
     border-radius: 8px;
     display: flex;
@@ -362,4 +362,30 @@ textarea:focus {
 
 .action-btn:hover {
     background-color: #2980b9;
+}
+
+.avatar-generator {
+    margin-top: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+#avatar-preview {
+    width: 512px;           
+    height: 512px;          
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #f9f9f9;
+    overflow: hidden;
+}
+
+#avatar-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* CHANGE: This ensures the WHOLE image is seen */
 }
