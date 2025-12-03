@@ -7,6 +7,22 @@ document.addEventListener('DOMContentLoaded', function () {
     initialiseUploads();
     initialiseManualEntry();
 
+    document.getElementById('avatarImageUpload').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            const url = URL.createObjectURL(file);
+            const img = document.getElementById('avatarPreview');
+            const txt = document.getElementById('previewText');
+            
+            img.src = url;
+            img.style.display = 'block';
+            if(txt) txt.style.display = 'none'; // Hide the "Generated image will appear here" text
+            
+            // Enable the generate video button
+            document.getElementById('confirmAvatarBtn').disabled = false;
+        }
+    });
+
 });
 
 function initaliseModals() {
@@ -495,13 +511,104 @@ async function generateImage() {
         const blob = await response.blob();
         
         const imageUrl = URL.createObjectURL(blob);
-        imageContainer.innerHTML = `<img src="${imageUrl}" alt="Generated Image">`;
+
+        const img = document.getElementById('avatarPreview');
+        const txt = document.getElementById('previewText');
+
+        if (img) {
+            img.src = imageUrl;
+            img.style.display = 'block'; // Make sure it's visible
+            if (txt) txt.style.display = 'none'; // Hide text
+        } else {
+             // Fallback if somehow missing
+             imageContainer.innerHTML = `<img id="avatarPreview" src="${imageUrl}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">`;
+        }
+        
+        document.getElementById('confirmAvatarBtn').disabled = false;
+
     } catch (error) {
         console.error('Error:', error);
         imageContainer.innerHTML = 'Error generating image';
+        document.getElementById('confirmAvatarBtn').disabled = true;
         
     }
 }
+
+async function generateVideo() {
+    // 1. Get Elements using the correct IDs from createQA.html
+    const previewImage = document.getElementById('avatarPreview'); // The image inside the modal
+    const videoPlayer = document.getElementById('videoPreview');   // The video player in the middle panel
+    const videoContainer = document.getElementById('videoPreviewContainer'); // The middle panel div
+    const btn = document.getElementById('confirmAvatarBtn');       // The button inside the modal
+    const modal = document.getElementById('avatarModal');          // The modal itself
+
+    // 2. Validate Image
+    if (!previewImage || previewImage.src === "" || previewImage.style.display === "none") {
+        alert("Please generate or upload an image first.");
+        return;
+    }
+
+    // 3. Set UI to Loading State
+    btn.disabled = true;
+    btn.innerText = "Generating Video... (Please Wait)";
+    
+    try {
+        // 4. Convert Image Source to Blob
+        const imageResponse = await fetch(previewImage.src);
+        const imageBlob = await imageResponse.blob();
+
+        // 5. Prepare Form Data
+        const formData = new FormData();
+        formData.append('image', imageBlob, 'source_image.png');
+
+        // 6. Send Request to Backend
+        const response = await fetch('http://127.0.0.1:5000/generate-video', {
+            method: 'POST',
+            body: formData
+        });
+
+        if (!response.ok) {
+            throw new Error('Video generation failed');
+        }
+
+        // 1. Parse JSON response instead of Blob
+        const result = await response.json();
+        
+        if (!result.video_url) {
+            throw new Error('No video URL returned');
+        }
+
+        const videoUrl = result.video_url;
+        console.log("Video saved at:", videoUrl);
+
+
+
+        // 2. Update Video Player
+        videoPlayer.src = `http://127.0.0.1:5000${videoUrl}`;
+        videoContainer.style.display = 'block';
+        videoContainer.classList.add('open');
+        videoPlayer.style.display = 'block';
+        
+        // Close Modal and Reset Button
+        modal.style.display = "none";
+        btn.innerText = "Confirm & Generate Video";
+        btn.disabled = false;
+        
+        // Auto-play
+        videoPlayer.play().catch(e => {
+            console.error("Auto-play failed:", e);
+            videoPlayer.controls = true;
+        });
+
+    } catch (error) {
+        console.error('Error:', error);
+        alert("Failed to generate video. Check console for details.");
+        btn.innerText = "Confirm & Generate Video";
+        btn.disabled = false;
+    }
+}
+
+
 
 
 

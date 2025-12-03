@@ -114,6 +114,8 @@ body {
 #videoPreview {
     display: block;
     width: 100%;
+    min-height: 300px; /* Ensure it has height even if video hasn't loaded */
+    background-color: #000; /* Black background to see if element exists */
     height: auto;
     border-radius: 4px;
     margin-top: auto;
