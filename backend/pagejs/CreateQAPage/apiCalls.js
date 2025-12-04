@@ -1,0 +1,25 @@
+const API_URL = 'http://127.0.0.1:5000';
+
+async function uploadCSVRequest(formData) {
+    return await fetch(`${API_BASE_URL}/upload`, {
+        method: 'POST',
+        body: formData,
+    });
+}
+
+async function generateImageRequest(prompt) {
+    return await fetch(`${API_BASE_URL}/generateImage`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ prompt: prompt })
+    });
+}
+
+async function generateVideoRequest(formData) {
+    return await fetch(`${API_BASE_URL}/generate-video`, {
+        method: 'POST',
+        body: formData
+    });
+}
