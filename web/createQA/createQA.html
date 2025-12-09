@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create FAQ</title>
+    <link rel="stylesheet" href="createQA.css">
+</head>
+<body>
+    <nav class="navbar">
+        <ul class="nav-links">
+            <li><a href="#">Home</a></li>
+            <li><a href="#" class="active">Create FAQ</a></li>
+            <li><a href="#">Edit FAQs</a></li>
+            <li><a href="#">Test FAQs</a></li>
+        </ul>
+        <div class="logo">InteractiveAvatar</div>
+    </nav>
+
+    <div class="container">
+        <div class="left-panel">
+            <h2>Create New FAQ</h2>
+            <form id="createQAForm">
+                <div class="form-group">
+                    <label for="title">Title</label>
+                    <input type="text" id="title" placeholder="Title of the FAQ">
+                </div>
+                
+                <div class="form-group">
+                    <label>Upload FAQ CSV</label>
+                    <div class="upload-container">
+                        <label for="csvFile" class="upload-label" id="csvFileLabel">Upload CSV here</label>
+                        <span class="remove-file" id="csvFileRemoveBtn" style="display: none;">&times;</span>
+                    </div>
+                    <input type="file" id="csvFile" accept=".csv" style="display: none;">
+                </div>
+
+                <div class="form-group">
+                    <label for="manualEntryBtn">Manually enter FAQ</label>
+                    <div class="upload-container">
+                        <button type="button" id="manualEntryBtn" class="upload-label">Click here to manually enter FAQ</button>
+                        <span class="remove-file" id="manualRemoveBtn" style="display: none;">&times;</span>
+                    </div> 
+                </div>  
+
+                <div class="form-group">
+                    <label>Upload reference video</label>
+                    <div class="upload-container">
+                        <label for="mediaFile" class="upload-label" >Upload mp4 here</label>
+                        <span class="remove-file" id="mediaFileRemoveBtn" style="display: none;">&times;</span>
+                    </div>
+                    <input type="file" id="mediaFile" accept=".mp4" style="display: none;">
+                </div>
+
+                <div class="form-group">
+                    <label for="generateVideoBtn">Generate an avatar</label>
+                    <button type="button" id="generateVideoBtn" class="upload-label">Open avatar generation window</button>   
+                </div>  
+
+                <div id="statusMessage" class="status-message"></div>
+                
+                <button type="button" class="submit-btn" onclick="createFAQ()">Create FAQ</button>
+            </form>
+        </div>
+            
+            <!-- NEW VIDEO PREVIEW BOX -->
+            <div class="middle-panel" id="videoPreviewContainer">
+                <h2>Preview Avatar</h2>
+                <video id="videoPreview" width="100%" height="auto" controls>
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+
+        <div class="right-panel">
+            <h2>Preview / Instructions</h2>
+            <p>Select a topic or create a new one to start adding questions to your knowledge base.</p>
+            <!-- Content for right side goes here -->
+        </div>
+
+    </div>
+
+    <div id="avatarModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Generate Avatar Video</h2>
+            
+            <div class="modal-body">
+                <!-- Left Side: Prompt Input -->
+                <div class="modal-left">
+                    <label>Enter Prompt for Image Generation</label>
+                    <textarea id="avatarPrompt" rows="6" placeholder="Describe the avatar you want to create..."></textarea>
+                    <button type="button" class="action-btn" id="generateImageBtn" onclick="generateImage()">Generate Image</button>
+                </div>
+
+                <!-- Right Side: Preview / Upload Box -->
+                <div class="modal-right">
+                    <div class="image-preview-box" id="imagePreviewBox" onclick="document.getElementById('avatarImageUpload').click()">
+                        <p id="previewText">Generated image will appear here<br>OR<br>Click to upload your own</p>
+                        <img id="avatarPreview" src="" style="display:none; width: 100%; height: 100%; object-fit: cover; border-radius: 8px;">
+                    </div>
+                    <!-- Hidden file input -->
+                    <input type="file" id="avatarImageUpload" accept="image/*" style="display:none">
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="submit-btn" id="confirmAvatarBtn" onclick="generateVideo()" disabled>Confirm & Generate Video</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="manualEntryModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>Manually Enter FAQ</h2>
+            
+            <!-- Container for dynamic rows -->
+            <div id="manualEntryList" style="max-height: 400px; overflow-y: auto; margin-bottom: 10px;">
+                <!-- Initial Row -->
+                <div class="manual-entry-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Question 1</label>
+                        <input type="text" class="manual-question" placeholder="Type question...">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Answer</label>
+                        <input type="text" class="manual-answer" placeholder="Type answer...">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add New Record Button -->
+            <button type="button" id="addRecordBtn" class="action-btn" style="width: 100%; margin-bottom: 20px; background-color: #95a5a6;">+ Add Another Record</button>
+
+            <div class="modal-actions">
+                <button type="button" class="submit-btn" id="saveManualEntryBtn">Save All to FAQ List</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script src="../../backend/pagejs/CreateQAPage/createQAjs.js"></script>
+    <script src="../../backend/pagejs/CreateQAPage/apiCalls.js"></script>
+</body>
+</html>
