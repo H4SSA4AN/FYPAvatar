@@ -124,6 +124,48 @@ def generate_video_route():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/generate-audio-single', methods=['POST'])
+def generate_audio_single_route():
+    data = request.get_json()
+    text = data.get('text')
+    title = data.get('title')
+    filename_id = data.get('filename_id') # Get the UUID
+    
+    if not text or not title or not filename_id:
+        return jsonify({'error': 'Missing text, title, or filename_id'}), 400
+
+    try:
+        audio_url = comfy_service.generate_audio_single(text, title, filename_id)
+        if audio_url:
+             return jsonify({'audio_url': audio_url}), 200
+        else:
+             return jsonify({'error': 'Failed to generate audio'}), 500
+    except Exception as e:
+        print(f"Error generating audio: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/generate-video-single', methods=['POST'])
+def generate_video_single_route():
+    data = request.get_json()
+    audio_path = data.get('audio_path') # e.g. "static/audio/Title/uuid.mp3"
+    image_path = data.get('image_path') # e.g. "static/temp/image.png" or just a filename if already uploaded
+    title = data.get('title')
+    filename_id = data.get('filename_id')
+    
+    if not all([audio_path, image_path, title, filename_id]):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    try:
+        video_url = comfy_service.generate_video_talking_head(audio_path, image_path, title, filename_id)
+        if video_url:
+             return jsonify({'video_url': video_url}), 200
+        else:
+             return jsonify({'error': 'Failed to generate video'}), 500
+    except Exception as e:
+        print(f"Error generating video: {e}")
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

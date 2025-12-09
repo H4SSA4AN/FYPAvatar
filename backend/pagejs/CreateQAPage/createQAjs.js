@@ -457,15 +457,19 @@ async function uploadCSV() {
             statusDiv.innerHTML = `Uploaded ${count} records`;
             statusDiv.className = 'status-message success';
 
+            return result.data; 
+
         } else {
             console.error('Error:', result.error);
             statusDiv.innerHTML = `Failed to upload file: ${result.error}`;
             statusDiv.className = 'status-message error';
+            return null;
         }
     } catch (error) {
         console.error('Error:', error);
         statusDiv.innerHTML = `An error occurred : ${error.message}`;
         statusDiv.className = 'status-message error';
+        return null;
     }
 
 }
@@ -704,6 +708,103 @@ function checkMedia() {
     return false;
 }
 
+async function uploadAvatarImage(title) {
+    const statusDiv = document.getElementById('statusMessage');
+    statusDiv.innerHTML = "Uploading avatar image...";
+    statusDiv.className = 'status-message processing';
+
+    const imagePreview = document.getElementById('finalImagePreview') || document.getElementById('avatarPreview');
+    let imageBlob = null;
+
+    // Check if we have a file from input
+    const fileInput = document.getElementById('avatarImageUpload');
+    if (fileInput && fileInput.files[0]) {
+        imageBlob = fileInput.files[0];
+    } else if (imagePreview && imagePreview.src) {
+        // Fetch blob from src (blob:http://... or data:...)
+        try {
+            const res = await fetch(imagePreview.src);
+            imageBlob = await res.blob();
+        } catch(e) {
+            console.error("Failed to fetch image blob", e);
+        }
+    }
+
+    if (!imageBlob) {
+        alert("No avatar image found to upload.");
+        return null;
+    }
+
+    const formData = new FormData();
+    // Ensure filename ends with .png or .jpg based on blob type if possible, default to .png
+    const filename = 'avatar.png';
+    formData.append('image', imageBlob, filename);
+    formData.append('title', title);
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/upload-avatar', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        if (response.ok) {
+            console.log("Avatar uploaded:", result.image_path);
+            return result.image_path;
+        } else {
+            console.error("Avatar upload failed:", result.error);
+            statusDiv.innerHTML = `Error uploading avatar: ${result.error}`;
+            statusDiv.className = 'status-message error';
+            return null;
+        }
+    } catch (e) {
+        console.error(e);
+        statusDiv.innerHTML = `Error uploading avatar: ${e.message}`;
+        statusDiv.className = 'status-message error';
+        return null;
+    }
+}
+
+
+async function generateAudioForFAQ(faqData) {
+    const title = document.getElementById('title').value;
+    const statusDiv = document.getElementById('statusMessage');
+
+    for (let i = 0; i < 1; i++) {
+        const item = faqData[i];
+        const answerText = item.answer; 
+        const answerId = item.id; // Get the UUID from the response
+
+        statusDiv.innerHTML = `Generating audio for answer ${i + 1} of ${faqData.length}...`;
+        statusDiv.className = 'status-message processing';
+
+        try {
+            // Call the new single audio endpoint
+            const response = await fetch('http://127.0.0.1:5000/generate-audio-single', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    text: answerText,
+                    title: title,
+                    filename_id: answerId // Use the ID as the filename
+                })
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                console.log(`Audio generated for Q${i+1} (${answerId}):`, result.audio_url);
+            } else {
+                console.error(`Failed to generate audio for Q${i+1}:`, result.error);
+            }
+
+        } catch (e) {
+             console.error(`Error processing answer ${i+1}:`, e);
+        }
+    }
+
+    statusDiv.innerHTML = `FAQ Created Successfully! Audio generated for ${faqData.length} items.`;
+    statusDiv.className = 'status-message success';
+}
+
 
 async function createFAQ() {
     //Check if user has uploaded a csv file, and does api request to create FAQ
@@ -715,7 +816,18 @@ async function createFAQ() {
         return; 
     }
 
-    console.log("FAQ Creation Proceeding...");
+    // Get FAQ data from csv
+    const faqData = await uploadCSV();
+    
+    if (!faqData || faqData.length === 0) {
+        console.error("No FAQ data returned or upload failed.");
+        return;
+    }
+
+    // 3. Generate Audio for each Answer
+    await generateAudioForFAQ(faqData);
+    
+    console.log("FAQ Creation Complete");
 }
 
 
