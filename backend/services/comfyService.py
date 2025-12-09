@@ -5,10 +5,22 @@ import urllib.request
 import urllib.parse
 import random
 import requests
+import os
+import yaml
+
 
 class ComfyService:
-    def __init__(self, server_addr='127.0.0.1:8000'):
-        self.server_addr = server_addr
+    def __init__(self):
+
+        config_path = os.path.join(os.path.dirname(__file__), '../../config.yaml')
+        try:
+            with open(config_path, 'r') as f:
+                config = yaml.safe_load(f)
+            self.server_addr = config.get('comfy_url')
+        except Exception as e:
+            print(f"Error loading config: {e}")
+            self.server_addr = '127.0.0.1:8000'
+
         self.client_id = str(uuid.uuid4())
 
     def queue_prompt(self, prompt_workflow):

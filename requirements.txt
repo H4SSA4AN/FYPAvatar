@@ -7,3 +7,4 @@ uuid
 sqlite3
 requests
 websocket-client
+pyyaml
