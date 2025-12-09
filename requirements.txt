@@ -4,7 +4,6 @@ pandas
 sentence-transformers
 chromadb
 uuid
-sqlite3
 requests
 websocket-client
 pyyaml

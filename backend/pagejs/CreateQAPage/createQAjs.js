@@ -172,6 +172,25 @@ function initialiseManualEntry() {
                     <p>Select a topic or create a new one to start adding questions to your knowledge base.</p>
                 `;
             }
+
+
+            // Reset Manual Entry List
+            const entryList = document.getElementById('manualEntryList');
+            if (entryList) {
+                entryList.innerHTML = `
+               <div class="manual-entry-row" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>Question 1</label>
+                        <input type="text" class="manual-question" placeholder="Type question...">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>Answer</label>
+                        <input type="text" class="manual-answer" placeholder="Type answer...">
+                    </div>
+                </div>`;
+                counter = 1;
+                
+            }
         });
     }
 }
@@ -246,6 +265,7 @@ function saveManualData() {
 
             document.getElementById('manualEntryModal').style.display = 'none';
             // Reset form
+            /*
             const entryList = document.getElementById('manualEntryList');
             if (entryList) {
                 entryList.innerHTML = `
@@ -260,7 +280,9 @@ function saveManualData() {
                     </div>
                 </div>`;
                 counter = 1;
+                
             }
+            */
         } else {
             alert("Please enter at least one valid question/answer pair.");
         }
@@ -272,7 +294,16 @@ function saveManualData() {
 function updateLabel(inputId, defaultText) {
     const input = document.getElementById(inputId);
     const label = document.querySelector(`label[for="${inputId}"].upload-label`);
-    const removeBtn = document.getElementById(inputId === 'csvFile' ? 'csvFileRemoveBtn' : 'mediaFileRemoveBtn');
+    let removeBtn;
+
+    switch (inputId) {
+        case 'csvFile':
+            removeBtn = document.getElementById('csvFileRemoveBtn');
+            break;
+        case 'mediaFile':
+            removeBtn = document.getElementById('mediaFileRemoveBtn');
+            break;
+    }
 
     if (!input || !label) return;
 
@@ -381,6 +412,7 @@ function updateLabel(inputId, defaultText) {
                 `;
             }
         }
+
     });
 }
 
@@ -408,10 +440,7 @@ async function uploadCSV() {
     formData.append('title', title);
 
     try {
-        const response = await fetch('http://127.0.0.1:5000/upload', {
-            method: 'POST',
-            body: formData,
-        });
+        const response = await uploadCSVRequest(formData);
         const result = await response.json();
 
         if (response.ok) {
@@ -496,13 +525,7 @@ async function generateImage() {
     try {
         imageContainer.innerHTML = 'Generating image...';
 
-        const response = await fetch('http://127.0.0.1:5000/generateImage', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ prompt: prompt })
-            });
+        const response = await generateImageRequest(prompt);
 
         if (!response.ok) {
             throw new Error('Failed to generate image');
@@ -562,18 +585,13 @@ async function generateVideo() {
         formData.append('image', imageBlob, 'source_image.png');
 
         // 6. Send Request to Backend
-        const response = await fetch('http://127.0.0.1:5000/generate-video', {
-            method: 'POST',
-            body: formData
-        });
+        const response = await generateVideoRequest(formData);
+        const result = await response.json();
 
         if (!response.ok) {
             throw new Error('Video generation failed');
         }
 
-        // 1. Parse JSON response instead of Blob
-        const result = await response.json();
-        
         if (!result.video_url) {
             throw new Error('No video URL returned');
         }
