@@ -59,7 +59,7 @@
 
                 <div id="statusMessage" class="status-message"></div>
                 
-                <button type="button" class="submit-btn" onclick="createFAQ()">Create FAQ</button>
+                <button type="button" class="submit-btn" onclick="createFAQ()">Create FAQ and Generate</button>
             </form>
         </div>
             
@@ -69,6 +69,10 @@
                 <video id="videoPreview" width="100%" height="auto" controls>
                     Your browser does not support the video tag.
                 </video>
+                <div id="videoPromptContainer" style="width: 100%; margin-top: 15px; display: none;">
+                    <label for="videoPrompt" style="display: block; margin-bottom: 5px; font-weight: bold; color: #555;">Video Generation Prompt</label>
+                    <textarea id="videoPrompt" rows="3" placeholder="Describe how the video should look (movements, expression)..." style="width: 100%; font-family: inherit; padding: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; resize: vertical;"></textarea>
+                </div>
             </div>
 
         <div class="right-panel">

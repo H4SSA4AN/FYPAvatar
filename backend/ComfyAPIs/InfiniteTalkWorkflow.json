@@ -97,8 +97,8 @@
         "15",
         1
       ],
-      "frame_window_size": 101,
-      "motion_frame": 30,
+      "frame_window_size": 77,
+      "motion_frame": 18,
       "force_offload": false,
       "colormatch": "disabled",
       "tiled_vae": false,

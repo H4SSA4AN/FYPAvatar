@@ -23,3 +23,14 @@ async function generateVideoRequest(formData) {
         body: formData
     });
 }
+
+async function generateVideoSingleRequest(data) {
+    return await fetch(`${API_BASE_URL}/generate-video-single`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    });
+}
+

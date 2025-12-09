@@ -256,7 +256,7 @@ class ComfyService:
             response = requests.post(f"http://{self.server_addr}/upload/image", files=files)
         return response.json()
 
-    def generate_video_talking_head(self, audio_path, image_path, title, filename_id):
+    def generate_video_talking_head(self, audio_path, image_path, title, filename_id, prompt_text):
         workflow_path = "../backend/ComfyAPIs/InfiniteTalkWorkflow.json"
         
         # Output directory
@@ -299,6 +299,12 @@ class ComfyService:
         
         # Node 19: LoadAudio
         workflow["19"]["inputs"]["audio"] = audio_filename
+
+
+                # Node 17: WanVideoTextEncodeCached (Positive Prompt)
+        if prompt_text and "17" in workflow:
+            # Keep the default negative prompt or allow passing it too if needed
+            workflow["17"]["inputs"]["positive_prompt"] = prompt_text
         
         # Node 16: WanVideoSampler - Randomize Seed
         if "16" in workflow:

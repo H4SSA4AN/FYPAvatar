@@ -651,6 +651,7 @@ async function confirmImage() {
     // Display image in the middle panel instead of video
     const middlePanel = document.getElementById('videoPreviewContainer');
     const videoPreview = document.getElementById('videoPreview');
+    const promptContainer = document.getElementById('videoPromptContainer');
     
     if (middlePanel) {
         // Create an image element if it doesn't exist, or find it
@@ -670,6 +671,9 @@ async function confirmImage() {
         
         // Hide the video player since we are using an image
         if (videoPreview) videoPreview.style.display = 'none'; 
+
+        // Show the prompt container
+        if (promptContainer) promptContainer.style.display = 'block';
         
         // Show the panel
         middlePanel.style.display = 'flex';
@@ -768,13 +772,15 @@ async function uploadAvatarImage(title) {
 async function generateAudioForFAQ(faqData) {
     const title = document.getElementById('title').value;
     const statusDiv = document.getElementById('statusMessage');
+    let audioResults = [];
+    let limit = 15;
 
-    for (let i = 0; i < 1; i++) {
+    for (let i = 0; i < limit; i++) {
         const item = faqData[i];
         const answerText = item.answer; 
         const answerId = item.id; // Get the UUID from the response
 
-        statusDiv.innerHTML = `Generating audio for answer ${i + 1} of ${faqData.length}...`;
+        statusDiv.innerHTML = `Generating audio for answer ${i + 1} of ${limit}...`;
         statusDiv.className = 'status-message processing';
 
         try {
@@ -792,6 +798,11 @@ async function generateAudioForFAQ(faqData) {
             const result = await response.json();
             if (response.ok) {
                 console.log(`Audio generated for Q${i+1} (${answerId}):`, result.audio_url);
+                audioResults.push({
+                    id: answerId,
+                    audio_url: result.audio_url
+                });
+
             } else {
                 console.error(`Failed to generate audio for Q${i+1}:`, result.error);
             }
@@ -803,6 +814,54 @@ async function generateAudioForFAQ(faqData) {
 
     statusDiv.innerHTML = `FAQ Created Successfully! Audio generated for ${faqData.length} items.`;
     statusDiv.className = 'status-message success';
+
+    return audioResults;
+}
+
+async function generateVideoForFAQ(audioResults) {
+    const title = document.getElementById('title').value;
+    const statusDiv = document.getElementById('statusMessage');
+    const imagePreview = document.getElementById('finalImagePreview') || document.getElementById('avatarPreview');
+    const videoPrompt = document.getElementById('videoPrompt').value;
+
+    let uploadedImagePath = await uploadAvatarImage(title);
+    if (!uploadedImagePath) {
+        console.error("Failed to upload avatar image for video generation.");
+        return;
+    }
+
+    for (let i = 0; i < audioResults.length; i++) {
+        const item = audioResults[i];
+        const audioPath = item.audio_url; 
+        const filenameId = item.id;
+
+        statusDiv.innerHTML = `Generating video for answer ${i + 1} of ${audioResults.length}...`;
+        statusDiv.className = 'status-message processing';
+
+        try {
+            // Use the new apiCall function
+            const response = await generateVideoSingleRequest({ 
+                audio_path: audioPath,
+                image_path: uploadedImagePath,
+                title: title,
+                filename_id: filenameId,
+                prompt: videoPrompt
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                console.log(`Video generated for (${filenameId}):`, result.video_url);
+            } else {
+                console.error(`Failed to generate video for (${filenameId}):`, result.error);
+            }
+
+        } catch (e) {
+            console.error(`Error generating video for ${filenameId}:`, e);
+        }
+    }
+
+    statusDiv.innerHTML = `FAQ Creation & Video Generation Complete!`;
+    statusDiv.className = 'status-message success';
 }
 
 
@@ -811,11 +870,12 @@ async function createFAQ() {
   //  await uploadCSV();
 
     //Reference media 
+    /*
     if (!checkMedia()) {
         alert("Please upload a video or generate an avatar image/video.");
         return; 
     }
-
+    */
     // Get FAQ data from csv
     const faqData = await uploadCSV();
     
@@ -824,8 +884,17 @@ async function createFAQ() {
         return;
     }
 
+    /*
     // 3. Generate Audio for each Answer
-    await generateAudioForFAQ(faqData);
+    let audioResults = await generateAudioForFAQ(faqData);
+    if (!audioResults || audioResults.length === 0) {
+        console.error("No audio results returned or generation failed.");
+        return;
+    }
+
+    // 4. Generate Video for each Answer
+    await generateVideoForFAQ(audioResults);
+    */
     
     console.log("FAQ Creation Complete");
 }

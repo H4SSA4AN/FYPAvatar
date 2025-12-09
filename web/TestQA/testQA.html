@@ -41,11 +41,12 @@
             <div class="faq-header">
                 <h2>FAQs</h2>
                 <!-- Search Box for Topics -->
-                <div class="search-container">
-                    <input type="text" id="topicSearch" placeholder="Search topics..." list="topicsList">
-                    <datalist id="topicsList">
+                <div class="search-container" style="position: relative;">
+                    <input type="text" id="topicSearch" placeholder="Search topics..." autocomplete="off">
+                    <!-- Custom Dropdown List -->
+                    <ul id="customDropdown" class="dropdown-list" style="display: none;">
                         <!-- Options populated dynamically -->
-                    </datalist>
+                    </ul>
                 </div>
             </div>
             <div class="table-container">
@@ -80,5 +81,6 @@
     
     <!-- Script placeholder -->
     <!-- <script src="testQA.js"></script> -->
+    <script src="../../backend/pagejs/TestQAPage/testQA.js"></script>
 </body>
 </html>
