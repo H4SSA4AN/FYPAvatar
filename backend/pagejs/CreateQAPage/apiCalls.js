@@ -1,4 +1,4 @@
-const API_URL = 'http://127.0.0.1:5000';
+const API_BASE_URL = 'http://127.0.0.1:5000';
 
 async function uploadCSVRequest(formData) {
     return await fetch(`${API_BASE_URL}/upload`, {

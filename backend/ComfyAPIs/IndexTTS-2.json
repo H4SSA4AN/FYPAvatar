@@ -1,0 +1,179 @@
+{
+  "47": {
+    "inputs": {
+      "text": [
+        "82",
+        0
+      ],
+      "narrator_voice": "none",
+      "seed": 1552347959,
+      "enable_chunking": true,
+      "max_chars_per_chunk": 400,
+      "chunk_combination_method": "auto",
+      "silence_between_chunks_ms": 100,
+      "enable_audio_cache": true,
+      "batch_size": 0,
+      "TTS_engine": [
+        "123",
+        0
+      ],
+      "opt_narrator": [
+        "51",
+        0
+      ]
+    },
+    "class_type": "UnifiedTTSTextNode",
+    "_meta": {
+      "title": "🎤 TTS Text"
+    }
+  },
+  "50": {
+    "inputs": {
+      "preview": "",
+      "source": [
+        "47",
+        1
+      ]
+    },
+    "class_type": "PreviewAny",
+    "_meta": {
+      "title": "Preview as Text"
+    }
+  },
+  "51": {
+    "inputs": {
+      "voice_name": "voices_examples/higgs_audio/en_man.wav",
+      "reference_text": ""
+    },
+    "class_type": "CharacterVoicesNode",
+    "_meta": {
+      "title": "🎭 Character Voices"
+    }
+  },
+  "82": {
+    "inputs": {
+      "value": "I am a man, and I want to explain some things to you. If you try to come to me or my family, you will not live to see another day. Are we clear, or do i need to show you? I'm warning you!"
+    },
+    "class_type": "PrimitiveStringMultiline",
+    "_meta": {
+      "title": "String (Multiline)"
+    }
+  },
+  "123": {
+    "inputs": {
+      "model_path": "IndexTTS-2",
+      "device": "auto",
+      "emotion_alpha": 1.2,
+      "use_random": false,
+      "max_text_tokens_per_segment": 120,
+      "interval_silence": 200,
+      "temperature": 0.8,
+      "top_p": 0.8,
+      "top_k": 30,
+      "do_sample": true,
+      "length_penalty": 0,
+      "num_beams": 3,
+      "repetition_penalty": 9.5,
+      "max_mel_tokens": 1500,
+      "use_fp16": true,
+      "use_deepspeed": true,
+      "use_cuda_kernel": "auto",
+      "use_torch_compile": false,
+      "use_accel": false,
+      "stream_return": false,
+      "more_segment_before": 0,
+      "emotion_control": [
+        "125",
+        0
+      ]
+    },
+    "class_type": "IndexTTSEngineNode",
+    "_meta": {
+      "title": "⚙️ IndexTTS-2 Engine"
+    }
+  },
+  "124": {
+    "inputs": {
+      "qwen_model": "qwen0.6bemo4-merge",
+      "emotion_text": "Angry boss yelling: {seg}"
+    },
+    "class_type": "QwenEmotionNode",
+    "_meta": {
+      "title": "🌈 IndexTTS-2 Text Emotion"
+    }
+  },
+  "125": {
+    "inputs": {
+      "Happy": 0.65,
+      "Angry": 0.64,
+      "Sad": 0.12,
+      "Surprised": 0.31,
+      "Afraid": 0,
+      "Disgusted": 0.28,
+      "Calm": 0.74,
+      "Melancholic": 0.68,
+      "emotion_radar_canvas": ""
+    },
+    "class_type": "IndexTTSEmotionOptionsNode",
+    "_meta": {
+      "title": "🌈 IndexTTS-2 Emotion Vectors"
+    }
+  },
+  "130": {
+    "inputs": {
+      "voice_name": "voices_examples/David_Attenborough CC3.wav",
+      "reference_text": ""
+    },
+    "class_type": "CharacterVoicesNode",
+    "_meta": {
+      "title": "🎭 Character Voices"
+    }
+  },
+  "131": {
+    "inputs": {
+      "audio": "Natasha-2.mp3",
+      "audioUI": ""
+    },
+    "class_type": "LoadAudio",
+    "_meta": {
+      "title": "Load Audio"
+    }
+  },
+  "133": {
+    "inputs": {
+      "srt_content": "1\n00:00:01,000 --> 00:00:04,000\nHello! This is unified SRT TTS with character switching.\n\n2\n00:00:04,500 --> 00:00:09,500\n[Alice:crestfallen_original] Hi there! I'm Alice speaking with precise timing.\n\n3\n00:00:10,000 --> 00:00:14,000\n[Bob:crestfallen_original] And I'm Bob! The audio matches these exact SRT timings.",
+      "narrator_voice": "voices_examples/Clint_Eastwood CC3 (enhanced2).wav",
+      "seed": 2519695028,
+      "timing_mode": "smart_natural",
+      "enable_audio_cache": true,
+      "fade_for_StretchToFit": 0.01,
+      "max_stretch_ratio": 1,
+      "min_stretch_ratio": 0.5,
+      "timing_tolerance": 2,
+      "batch_size": 0,
+      "TTS_engine": [
+        "123",
+        0
+      ]
+    },
+    "class_type": "UnifiedTTSSRTNode",
+    "_meta": {
+      "title": "📺 TTS SRT"
+    }
+  },
+  "134": {
+    "inputs": {
+      "filename_prefix": "audio/ComfyUI",
+      "quality": "V0",
+      "audioUI": "",
+      "audio": [
+        "47",
+        0
+      ]
+    },
+    "class_type": "SaveAudioMP3",
+    "_meta": {
+      "title": "Save Audio (MP3)"
+    }
+  }
+}

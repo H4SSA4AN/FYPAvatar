@@ -20,7 +20,12 @@ document.addEventListener('DOMContentLoaded', function () {
             
             // Enable the generate video button
             document.getElementById('confirmAvatarBtn').disabled = false;
+
+            const confirmImageBtn = document.getElementById('confirmImageBtn');
+            if (confirmImageBtn) confirmImageBtn.disabled = false;
         }
+
+
     });
 
 });
@@ -549,6 +554,10 @@ async function generateImage() {
         
         document.getElementById('confirmAvatarBtn').disabled = false;
 
+        const confirmImageBtn = document.getElementById('confirmImageBtn');
+        if (confirmImageBtn) confirmImageBtn.disabled = false;
+
+
     } catch (error) {
         console.error('Error:', error);
         imageContainer.innerHTML = 'Error generating image';
@@ -626,17 +635,87 @@ async function generateVideo() {
     }
 }
 
+async function confirmImage() {
+    const previewImage = document.getElementById('avatarPreview');
+    const modal = document.getElementById('avatarModal');
+    
+    if (!previewImage || previewImage.src === "" || previewImage.style.display === "none") {
+        alert("Please generate or upload an image first.");
+        return;
+    }
+
+    // Display image in the middle panel instead of video
+    const middlePanel = document.getElementById('videoPreviewContainer');
+    const videoPreview = document.getElementById('videoPreview');
+    
+    if (middlePanel) {
+        // Create an image element if it doesn't exist, or find it
+        let imgPreview = document.getElementById('finalImagePreview');
+        if (!imgPreview) {
+            imgPreview = document.createElement('img');
+            imgPreview.id = 'finalImagePreview';
+            imgPreview.style.width = '100%';
+            imgPreview.style.height = 'auto';
+            imgPreview.style.borderRadius = '8px';
+            // Insert before the video player
+            middlePanel.insertBefore(imgPreview, videoPreview);
+        }
+        
+        imgPreview.src = previewImage.src;
+        imgPreview.style.display = 'block';
+        
+        // Hide the video player since we are using an image
+        if (videoPreview) videoPreview.style.display = 'none'; 
+        
+        // Show the panel
+        middlePanel.style.display = 'flex';
+        setTimeout(() => {
+             middlePanel.classList.add('open');
+        }, 10);
+    }
+
+    console.log("Image confirmed:", previewImage.src);
+    modal.style.display = "none";
+}
 
 
 
+function checkMedia() {
+    const videoPreview = document.getElementById('videoPreview');
+    const imagePreview = document.getElementById('finalImagePreview');
+    const mediaFile = document.getElementById('mediaFile').files[0];
+
+    // 1. Check if user uploaded a video directly
+    if (mediaFile) {
+        console.log("Using uploaded video file");
+        return true;
+    }
+    // 2. Check if a generated video is present
+    if (videoPreview && videoPreview.style.display !== 'none' && videoPreview.src) {
+        console.log("Using generated video");
+        return true;
+    }
+    // 3. Check if a generated/confirmed image is present
+    if (imagePreview && imagePreview.style.display !== 'none' && imagePreview.src) {
+        console.log("Using confirmed image");
+        return true;
+    }
+
+    return false;
+}
 
 
 async function createFAQ() {
-    //Check if user has uploaded a csv file
-    await uploadCSV();
+    //Check if user has uploaded a csv file, and does api request to create FAQ
+  //  await uploadCSV();
 
     //Reference media 
+    if (!checkMedia()) {
+        alert("Please upload a video or generate an avatar image/video.");
+        return; 
+    }
 
-
-
+    console.log("FAQ Creation Proceeding...");
 }
+
+
