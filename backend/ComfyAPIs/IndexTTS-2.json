@@ -105,13 +105,13 @@
   "125": {
     "inputs": {
       "Happy": 0.65,
-      "Angry": 0.64,
-      "Sad": 0.12,
-      "Surprised": 0.31,
+      "Angry": 0,
+      "Sad": 0,
+      "Surprised": 0,
       "Afraid": 0,
-      "Disgusted": 0.28,
-      "Calm": 0.74,
-      "Melancholic": 0.68,
+      "Disgusted": 0,
+      "Calm": 0.6,
+      "Melancholic": 0.3,
       "emotion_radar_canvas": ""
     },
     "class_type": "IndexTTSEmotionOptionsNode",

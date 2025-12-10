@@ -773,7 +773,7 @@ async function generateAudioForFAQ(faqData) {
     const title = document.getElementById('title').value;
     const statusDiv = document.getElementById('statusMessage');
     let audioResults = [];
-    let limit = 15;
+    let limit = 3;
 
     for (let i = 0; i < limit; i++) {
         const item = faqData[i];
@@ -870,12 +870,12 @@ async function createFAQ() {
   //  await uploadCSV();
 
     //Reference media 
-    /*
+    
     if (!checkMedia()) {
         alert("Please upload a video or generate an avatar image/video.");
         return; 
     }
-    */
+    
     // Get FAQ data from csv
     const faqData = await uploadCSV();
     
@@ -884,7 +884,7 @@ async function createFAQ() {
         return;
     }
 
-    /*
+    
     // 3. Generate Audio for each Answer
     let audioResults = await generateAudioForFAQ(faqData);
     if (!audioResults || audioResults.length === 0) {
@@ -894,7 +894,7 @@ async function createFAQ() {
 
     // 4. Generate Video for each Answer
     await generateVideoForFAQ(audioResults);
-    */
+    
     
     console.log("FAQ Creation Complete");
 }

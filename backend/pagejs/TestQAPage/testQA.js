@@ -45,6 +45,28 @@ document.addEventListener('DOMContentLoaded', () => {
                  dropdown.style.display = 'block';
              }
         });
+
+    }
+
+
+    // 5. Chat Functionality
+    const sendBtn = document.getElementById('sendBtn');
+    const userInput = document.getElementById('userInput');
+
+    if (sendBtn && userInput) {
+        // Fix: Prevent default behavior and call sendMessage explicitly
+        sendBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            sendMessage();
+        });
+
+        // Fix: Use keydown instead of keypress
+        userInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // Prevent newline in input
+                sendMessage();
+            }
+        });
     }
 });
 
@@ -141,4 +163,85 @@ function populateFAQTable(faqs) {
         `;
         tbody.appendChild(row);
     });
+}
+
+async function sendMessage() {
+    const input = document.getElementById('userInput');
+    const message = input.value.trim();
+    if (!message) return;
+
+    // 1. Display User Message
+    addMessageToLog('user', message);
+    input.value = ''; 
+
+    // 2. Get Current Title (Topic)
+    const headerTitle = document.querySelector('.faq-header h2').textContent;
+    const title = (headerTitle !== "FAQs" && headerTitle !== "Avatar Interaction") ? headerTitle : "";
+
+    // 3. Call Backend
+    try {
+        // Add loading indicator and keep reference to element
+        const loadingMsgElement = addMessageToLog('system', 'Thinking...');
+        
+        const response = await fetch(`${API_BASE_URL}/query`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: message, title: title })
+        });
+
+        const result = await response.json();
+        
+        // Remove loading indicator
+        if (loadingMsgElement) loadingMsgElement.remove();
+
+        if (response.ok) {
+            // 4. Display Answer
+            if (result.question) {
+                addMessageToLog('system', `Found related question: "${result.question}"`);
+            }
+            addMessageToLog('bot', result.answer);
+            
+            // 5. Play Video if UUID exists
+            if (result.id) {
+                console.log("Relevant FAQ UUID:", result.id);
+                
+                const avatarVideo = document.getElementById('avatarVideo');
+                // We need both the element and a valid title to find the folder
+                if (avatarVideo && title) {
+                    // Construct URL: /static/videos/<Title>/<UUID>.mp4
+                    const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(title)}/${result.id}.mp4`;
+                    
+                    console.log("Playing video:", videoUrl);
+                    avatarVideo.src = videoUrl;
+                    
+                    try {
+                        await avatarVideo.play();
+                    } catch (e) {
+                        console.warn("Auto-play failed (user might need to interact with document first):", e);
+                    }
+                }
+            } else {
+                console.log("Answer received (No UUID returned)");
+            }
+
+        } else {
+            addMessageToLog('system', `Error: ${result.error}`);
+        }
+    } catch (error) {
+        console.error('Chat error:', error);
+        addMessageToLog('system', 'Error communicating with server.');
+    }
+}
+
+function addMessageToLog(sender, text) {
+    const chatLog = document.getElementById('chatLog');
+    const msgDiv = document.createElement('div');
+    msgDiv.className = `message ${sender}`;
+    msgDiv.textContent = text;
+    
+    // Generate simple ID for removal (loading state)
+    
+    chatLog.appendChild(msgDiv);
+    chatLog.scrollTop = chatLog.scrollHeight; // Auto-scroll
+    return msgDiv;
 }

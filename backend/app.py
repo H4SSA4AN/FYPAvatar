@@ -52,8 +52,9 @@ def query_faq():
         return jsonify({'error': 'Invalid request'}), 400
 
     try:
-        answer = faq_service.query_faq(data['query'], data['title'])
-        return jsonify({'answer': answer}), 200
+        result = faq_service.query_faq(data['query'], data['title'])
+        # result is now a dict { answer, question, id }
+        return jsonify(result), 200 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -167,7 +168,7 @@ def generate_video_single_route():
     except Exception as e:
         print(f"Error generating video: {e}")
         return jsonify({'error': str(e)}), 500
-        
+
 
 @app.route('/upload-avatar', methods=['POST'])
 def upload_avatar():
