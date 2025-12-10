@@ -81,18 +81,21 @@ h2 {
 }
 
 .video-container {
-     /* Fixed dimensions for 512x512 video */
-     width: 512px;
-     height: 512px;
-     /* Remove flex-grow so it doesn't stretch */
-     flex-grow: 0; 
-     background-color: #000;
-     border-radius: 4px;
-     margin-bottom: 1.5rem;
-     display: flex;
-     align-items: center;
-     justify-content: center;
-     overflow: hidden;
+    /* Fixed dimensions for 512x512 video */
+    width: 512px;
+    height: 512px;
+    /* Remove flex-grow so it doesn't stretch */
+    flex-grow: 0; 
+    background-color: #000;
+    border-radius: 4px;
+    margin-bottom: 1.5rem;
+    display: flex; /* Kept for centering if needed, but absolute children ignore flex layout */
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    
+    /* FIX: Add relative positioning to contain absolute children */
+    position: relative;
 }
 
 .controls {

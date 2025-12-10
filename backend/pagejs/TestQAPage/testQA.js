@@ -118,6 +118,30 @@ async function loadFAQs(title) {
         headerTitle.textContent = title;
     }
 
+    const idleVideo = document.getElementById('idleVideo');
+    if (idleVideo) {
+        const idleVideoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(title)}/Idle.mp4`;
+        idleVideo.src = idleVideoUrl;
+        
+        try {
+            await idleVideo.play();
+        } catch (e) {
+            console.warn("Could not auto-play idle video:", e);
+        }
+    }
+    
+    // Ensure Top Layer is hidden initially
+    const avatarVideo = document.getElementById('avatarVideo');
+    if (avatarVideo) {
+        avatarVideo.style.opacity = '0'; // Hide top layer to show idle
+        
+        // When answer ends, fade out top layer to reveal idle
+        avatarVideo.onended = () => {
+             console.log("Answer video ended, fading to idle.");
+             avatarVideo.style.opacity = '0';
+        };
+    }
+
     const tbody = document.querySelector('#faqTable tbody');
     tbody.innerHTML = '<tr><td colspan="2">Loading...</td></tr>';
 
@@ -201,23 +225,30 @@ async function sendMessage() {
             }
             addMessageToLog('bot', result.answer);
             
-            // 5. Play Video if UUID exists
-            if (result.id) {
+               // 5. Play Video if UUID exists
+               if (result.id) {
                 console.log("Relevant FAQ UUID:", result.id);
                 
                 const avatarVideo = document.getElementById('avatarVideo');
-                // We need both the element and a valid title to find the folder
+                const idleVideo = document.getElementById('idleVideo');
+
                 if (avatarVideo && title) {
-                    // Construct URL: /static/videos/<Title>/<UUID>.mp4
                     const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(title)}/${result.id}.mp4`;
                     
                     console.log("Playing video:", videoUrl);
                     avatarVideo.src = videoUrl;
+                    avatarVideo.loop = false;
+                    avatarVideo.muted = false; 
                     
+                    // Ensure idle is playing in background for smooth transition later
+                    if(idleVideo && idleVideo.paused) idleVideo.play();
+
                     try {
                         await avatarVideo.play();
+                        // Fade in the answer video ON TOP of the idle video
+                        avatarVideo.style.opacity = '1';
                     } catch (e) {
-                        console.warn("Auto-play failed (user might need to interact with document first):", e);
+                        console.warn("Auto-play failed:", e);
                     }
                 }
             } else {

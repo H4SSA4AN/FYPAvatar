@@ -52,7 +52,7 @@
   },
   "82": {
     "inputs": {
-      "value": "I am a man, and I want to explain some things to you. If you try to come to me or my family, you will not live to see another day. Are we clear, or do i need to show you? I'm warning you!"
+      "value": "[pause:0.2s]"
     },
     "class_type": "PrimitiveStringMultiline",
     "_meta": {

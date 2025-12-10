@@ -193,7 +193,7 @@ class ComfyService:
             workflow = json.load(f)
 
         # Node 82 is PrimitiveStringMultiline (Text Input)
-        workflow["82"]["inputs"]["value"] = text
+        workflow["82"]["inputs"]["value"] += " " + text + " [pause:0.5s]"
 
         # Randomize seed (Node 47)
         if "47" in workflow:

@@ -22,11 +22,17 @@
         <div class="video-panel">
             <h2>Avatar Interaction</h2>
             <div class="video-container">
-                <!-- Placeholder for video -->
-               <video id="avatarVideo" controls style="width: 100%; height: 100%; object-fit: cover;">
-                   <source src="" type="video/mp4">
-                   Your browser does not support the video tag.
-               </video>
+               <!-- 1. Idle Video (Background Layer) -->
+               <video id="idleVideo" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;" muted loop playsinline>
+                <source src="" type="video/mp4">
+            </video>
+
+            <!-- 2. Main Avatar/Answer Video (Top Layer) -->
+            <!-- Default opacity 0 so we see idle video first -->
+            <video id="avatarVideo" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; opacity: 0; transition: opacity 0.5s ease-in-out;" controls>
+                <source src="" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
            </div>
             
             <div class="controls">

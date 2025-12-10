@@ -773,7 +773,7 @@ async function generateAudioForFAQ(faqData) {
     const title = document.getElementById('title').value;
     const statusDiv = document.getElementById('statusMessage');
     let audioResults = [];
-    let limit = 3;
+    let limit = 2;
 
     for (let i = 0; i < limit; i++) {
         const item = faqData[i];
@@ -829,6 +829,24 @@ async function generateVideoForFAQ(audioResults) {
         console.error("Failed to upload avatar image for video generation.");
         return;
     }
+
+    // Generate an idle video first
+    try {
+        const response = await generateVideoSingleRequest({
+            audio_path: '../backend/static/audio/IdleSound.mp3',
+            image_path: uploadedImagePath,
+            title: title,
+            filename_id: `Idle`,
+            prompt: "Smiling and looking at the camera, blinking idly."
+        });
+        const result = await response.json();
+        if (response.ok) {
+            console.log(`Idle video generated:`, result.video_url);
+        }
+    } catch (e) {
+        console.error(`Error generating idle video:`, e);
+    }
+    
 
     for (let i = 0; i < audioResults.length; i++) {
         const item = audioResults[i];
