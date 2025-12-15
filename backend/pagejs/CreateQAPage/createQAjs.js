@@ -20,7 +20,12 @@ document.addEventListener('DOMContentLoaded', function () {
             
             // Enable the generate video button
             document.getElementById('confirmAvatarBtn').disabled = false;
+
+            const confirmImageBtn = document.getElementById('confirmImageBtn');
+            if (confirmImageBtn) confirmImageBtn.disabled = false;
         }
+
+
     });
 
 });
@@ -452,15 +457,19 @@ async function uploadCSV() {
             statusDiv.innerHTML = `Uploaded ${count} records`;
             statusDiv.className = 'status-message success';
 
+            return result.data; 
+
         } else {
             console.error('Error:', result.error);
             statusDiv.innerHTML = `Failed to upload file: ${result.error}`;
             statusDiv.className = 'status-message error';
+            return null;
         }
     } catch (error) {
         console.error('Error:', error);
         statusDiv.innerHTML = `An error occurred : ${error.message}`;
         statusDiv.className = 'status-message error';
+        return null;
     }
 
 }
@@ -549,6 +558,10 @@ async function generateImage() {
         
         document.getElementById('confirmAvatarBtn').disabled = false;
 
+        const confirmImageBtn = document.getElementById('confirmImageBtn');
+        if (confirmImageBtn) confirmImageBtn.disabled = false;
+
+
     } catch (error) {
         console.error('Error:', error);
         imageContainer.innerHTML = 'Error generating image';
@@ -626,17 +639,282 @@ async function generateVideo() {
     }
 }
 
+async function confirmImage() {
+    const previewImage = document.getElementById('avatarPreview');
+    const modal = document.getElementById('avatarModal');
+    
+    if (!previewImage || previewImage.src === "" || previewImage.style.display === "none") {
+        alert("Please generate or upload an image first.");
+        return;
+    }
+
+    // Display image in the middle panel instead of video
+    const middlePanel = document.getElementById('videoPreviewContainer');
+    const videoPreview = document.getElementById('videoPreview');
+    const promptContainer = document.getElementById('videoPromptContainer');
+    
+    if (middlePanel) {
+        // Create an image element if it doesn't exist, or find it
+        let imgPreview = document.getElementById('finalImagePreview');
+        if (!imgPreview) {
+            imgPreview = document.createElement('img');
+            imgPreview.id = 'finalImagePreview';
+            imgPreview.style.width = '100%';
+            imgPreview.style.height = 'auto';
+            imgPreview.style.borderRadius = '8px';
+            // Insert before the video player
+            middlePanel.insertBefore(imgPreview, videoPreview);
+        }
+        
+        imgPreview.src = previewImage.src;
+        imgPreview.style.display = 'block';
+        
+        // Hide the video player since we are using an image
+        if (videoPreview) videoPreview.style.display = 'none'; 
+
+        // Show the prompt container
+        if (promptContainer) promptContainer.style.display = 'block';
+        
+        // Show the panel
+        middlePanel.style.display = 'flex';
+        setTimeout(() => {
+             middlePanel.classList.add('open');
+        }, 10);
+    }
+
+    console.log("Image confirmed:", previewImage.src);
+    modal.style.display = "none";
+}
 
 
 
+function checkMedia() {
+    const videoPreview = document.getElementById('videoPreview');
+    const imagePreview = document.getElementById('finalImagePreview');
+    const mediaFile = document.getElementById('mediaFile').files[0];
+
+    // 1. Check if user uploaded a video directly
+    if (mediaFile) {
+        console.log("Using uploaded video file");
+        return true;
+    }
+    // 2. Check if a generated video is present
+    if (videoPreview && videoPreview.style.display !== 'none' && videoPreview.src) {
+        console.log("Using generated video");
+        return true;
+    }
+    // 3. Check if a generated/confirmed image is present
+    if (imagePreview && imagePreview.style.display !== 'none' && imagePreview.src) {
+        console.log("Using confirmed image");
+        return true;
+    }
+
+    return false;
+}
+
+async function uploadAvatarImage(title) {
+    const statusDiv = document.getElementById('statusMessage');
+    statusDiv.innerHTML = "Uploading avatar image...";
+    statusDiv.className = 'status-message processing';
+
+    const imagePreview = document.getElementById('finalImagePreview') || document.getElementById('avatarPreview');
+    let imageBlob = null;
+
+    // Check if we have a file from input
+    const fileInput = document.getElementById('avatarImageUpload');
+    if (fileInput && fileInput.files[0]) {
+        imageBlob = fileInput.files[0];
+    } else if (imagePreview && imagePreview.src) {
+        // Fetch blob from src (blob:http://... or data:...)
+        try {
+            const res = await fetch(imagePreview.src);
+            imageBlob = await res.blob();
+        } catch(e) {
+            console.error("Failed to fetch image blob", e);
+        }
+    }
+
+    if (!imageBlob) {
+        alert("No avatar image found to upload.");
+        return null;
+    }
+
+    const formData = new FormData();
+    // Ensure filename ends with .png or .jpg based on blob type if possible, default to .png
+    const filename = 'avatar.png';
+    formData.append('image', imageBlob, filename);
+    formData.append('title', title);
+
+    try {
+        const response = await fetch('http://127.0.0.1:5000/upload-avatar', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+        if (response.ok) {
+            console.log("Avatar uploaded:", result.image_path);
+            return result.image_path;
+        } else {
+            console.error("Avatar upload failed:", result.error);
+            statusDiv.innerHTML = `Error uploading avatar: ${result.error}`;
+            statusDiv.className = 'status-message error';
+            return null;
+        }
+    } catch (e) {
+        console.error(e);
+        statusDiv.innerHTML = `Error uploading avatar: ${e.message}`;
+        statusDiv.className = 'status-message error';
+        return null;
+    }
+}
+
+
+async function generateAudioForFAQ(faqData) {
+    const title = document.getElementById('title').value;
+    const statusDiv = document.getElementById('statusMessage');
+    let audioResults = [];
+    let limit = 2;
+
+    for (let i = 0; i < limit; i++) {
+        const item = faqData[i];
+        const answerText = item.answer; 
+        const answerId = item.id; // Get the UUID from the response
+
+        statusDiv.innerHTML = `Generating audio for answer ${i + 1} of ${limit}...`;
+        statusDiv.className = 'status-message processing';
+
+        try {
+            // Call the new single audio endpoint
+            const response = await fetch('http://127.0.0.1:5000/generate-audio-single', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    text: answerText,
+                    title: title,
+                    filename_id: answerId // Use the ID as the filename
+                })
+            });
+            
+            const result = await response.json();
+            if (response.ok) {
+                console.log(`Audio generated for Q${i+1} (${answerId}):`, result.audio_url);
+                audioResults.push({
+                    id: answerId,
+                    audio_url: result.audio_url
+                });
+
+            } else {
+                console.error(`Failed to generate audio for Q${i+1}:`, result.error);
+            }
+
+        } catch (e) {
+             console.error(`Error processing answer ${i+1}:`, e);
+        }
+    }
+
+    statusDiv.innerHTML = `FAQ Created Successfully! Audio generated for ${faqData.length} items.`;
+    statusDiv.className = 'status-message success';
+
+    return audioResults;
+}
+
+async function generateVideoForFAQ(audioResults) {
+    const title = document.getElementById('title').value;
+    const statusDiv = document.getElementById('statusMessage');
+    const imagePreview = document.getElementById('finalImagePreview') || document.getElementById('avatarPreview');
+    const videoPrompt = document.getElementById('videoPrompt').value;
+
+    let uploadedImagePath = await uploadAvatarImage(title);
+    if (!uploadedImagePath) {
+        console.error("Failed to upload avatar image for video generation.");
+        return;
+    }
+
+    // Generate an idle video first
+    try {
+        const response = await generateVideoSingleRequest({
+            audio_path: '../backend/static/audio/IdleSound.mp3',
+            image_path: uploadedImagePath,
+            title: title,
+            filename_id: `Idle`,
+            prompt: "Smiling and looking at the camera, blinking idly."
+        });
+        const result = await response.json();
+        if (response.ok) {
+            console.log(`Idle video generated:`, result.video_url);
+        }
+    } catch (e) {
+        console.error(`Error generating idle video:`, e);
+    }
+    
+
+    for (let i = 0; i < audioResults.length; i++) {
+        const item = audioResults[i];
+        const audioPath = item.audio_url; 
+        const filenameId = item.id;
+
+        statusDiv.innerHTML = `Generating video for answer ${i + 1} of ${audioResults.length}...`;
+        statusDiv.className = 'status-message processing';
+
+        try {
+            // Use the new apiCall function
+            const response = await generateVideoSingleRequest({ 
+                audio_path: audioPath,
+                image_path: uploadedImagePath,
+                title: title,
+                filename_id: filenameId,
+                prompt: videoPrompt
+            });
+
+            const result = await response.json();
+            if (response.ok) {
+                console.log(`Video generated for (${filenameId}):`, result.video_url);
+            } else {
+                console.error(`Failed to generate video for (${filenameId}):`, result.error);
+            }
+
+        } catch (e) {
+            console.error(`Error generating video for ${filenameId}:`, e);
+        }
+    }
+
+    statusDiv.innerHTML = `FAQ Creation & Video Generation Complete!`;
+    statusDiv.className = 'status-message success';
+}
 
 
 async function createFAQ() {
-    //Check if user has uploaded a csv file
-    await uploadCSV();
+    //Check if user has uploaded a csv file, and does api request to create FAQ
+  //  await uploadCSV();
 
     //Reference media 
+    
+    if (!checkMedia()) {
+        alert("Please upload a video or generate an avatar image/video.");
+        return; 
+    }
+    
+    // Get FAQ data from csv
+    const faqData = await uploadCSV();
+    
+    if (!faqData || faqData.length === 0) {
+        console.error("No FAQ data returned or upload failed.");
+        return;
+    }
 
+    
+    // 3. Generate Audio for each Answer
+    let audioResults = await generateAudioForFAQ(faqData);
+    if (!audioResults || audioResults.length === 0) {
+        console.error("No audio results returned or generation failed.");
+        return;
+    }
 
-
+    // 4. Generate Video for each Answer
+    await generateVideoForFAQ(audioResults);
+    
+    
+    console.log("FAQ Creation Complete");
 }
+
+

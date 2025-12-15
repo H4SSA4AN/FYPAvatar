@@ -93,8 +93,17 @@ class FAQService:
         results = self.vector_db_service.collection.query(query_texts = query_text, where={"Title": title})
         
         if results['metadatas'] and results['metadatas'][0]:
-            return results['metadatas'][0][0]['answer']
-        return "No suitable answer found"
+            # Access the first result
+            metadata = results['metadatas'][0][0]
+            document_id = results['ids'][0][0] # IDs are in a parallel list
+            
+            return {
+                "answer": metadata['answer'],
+                "question": results['documents'][0][0], # The matched question
+                "id": document_id
+            }
+            
+        return {"answer": "No suitable answer found", "id": None}
 
 
 

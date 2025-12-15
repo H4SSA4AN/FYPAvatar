@@ -181,4 +181,181 @@ class ComfyService:
 
         return output_videos[0] if output_videos else None
 
+
+    def generate_audio_single(self, text, title, filename_id):
+        workflow_path = "../backend/ComfyAPIs/IndexTTS-2.json"
+        
+        # Create directory for the title
+        output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'audio', title)
+        os.makedirs(output_dir, exist_ok=True)
+
+        with open(workflow_path, 'r', encoding="utf-8") as f:
+            workflow = json.load(f)
+
+        # Node 82 is PrimitiveStringMultiline (Text Input)
+        workflow["82"]["inputs"]["value"] += " " + text + " [pause:0.5s]"
+
+        # Randomize seed (Node 47)
+        if "47" in workflow:
+                workflow["47"]["inputs"]["seed"] = random.randint(1, 10**9)
+
+        # Connect to WebSocket
+        ws = websocket.WebSocket()
+        ws.connect(f"ws://{self.server_addr}/ws?clientId={self.client_id}")
+
+        print(f"Queueing audio for text: {text[:30]}...")
+        prompt_response = self.queue_prompt(workflow)
+        prompt_id = prompt_response['prompt_id']
+
+        # Listen for completion
+        while True:
+            out = ws.recv()
+            if isinstance(out, str):
+                message = json.loads(out)
+                if message['type'] == 'executing':
+                    data = message['data']
+                    if data['node'] is None and data['prompt_id'] == prompt_id:
+                        break 
+            else:
+                continue
+        
+        # Retrieve output
+        history = self.get_history(prompt_id)[prompt_id]
+        node_outputs = history['outputs']
+        
+        # Find audio node (Node 134 is SaveAudioMP3)
+        if "134" in node_outputs:
+            outputs = node_outputs["134"]
+            if "audio" in outputs and len(outputs["audio"]) > 0:
+                audio_info = outputs["audio"][0]
+                audio_filename = audio_info.get("filename")
+                subfolder = audio_info.get("subfolder", "")
+                folder_type = audio_info.get("type", "output")
+                
+                audio_data = self.get_image(audio_filename, subfolder, folder_type)
+                
+                # Save locally with the UUID as filename
+                save_filename = f"{filename_id}.mp3"
+                save_path = os.path.join(output_dir, save_filename)
+                with open(save_path, 'wb') as audio_file:
+                    audio_file.write(audio_data)
+                
+                return f"/static/audio/{title}/{save_filename}"
+        
+        return None
+
+        
+
+    def upload_file(self, file_path, filename=None):
+        """Uploads a file to ComfyUI input directory"""
+        if filename is None:
+            filename = os.path.basename(file_path)
+            
+        with open(file_path, 'rb') as f:
+            files = {'image': (filename, f)}
+            response = requests.post(f"http://{self.server_addr}/upload/image", files=files)
+        return response.json()
+
+    def generate_video_talking_head(self, audio_path, image_path, title, filename_id, prompt_text):
+        workflow_path = "../backend/ComfyAPIs/InfiniteTalkWorkflow.json"
+        
+        # Output directory
+        output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'videos', title)
+        os.makedirs(output_dir, exist_ok=True)
+
+        # 1. Upload Audio to ComfyUI
+        # audio_path is relative to the backend root if it starts with static/
+        # e.g. "static/audio/Title/uuid.mp3"
+        local_audio_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), audio_path.lstrip('/'))
+        if not os.path.exists(local_audio_path):
+             print(f"Audio file not found: {local_audio_path}")
+             return None
+             
+        audio_filename = f"audio_{filename_id}.mp3"
+        self.upload_file(local_audio_path, audio_filename)
+
+        # 2. Upload Image to ComfyUI
+        # If image_path is a local path on server
+        if image_path.startswith("static") or image_path.startswith("/static"):
+             local_image_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), image_path.lstrip('/'))
+             if os.path.exists(local_image_path):
+                 image_filename = f"image_{filename_id}.png"
+                 self.upload_file(local_image_path, image_filename)
+             else:
+                 print(f"Image file not found: {local_image_path}")
+                 # Fallback: maybe it's just a filename already there
+                 image_filename = os.path.basename(image_path)
+        else:
+             # Assume it's a filename already in ComfyUI or uploaded differently
+             image_filename = os.path.basename(image_path)
+
+        # 3. Load Workflow
+        with open(workflow_path, 'r', encoding="utf-8") as f:
+            workflow = json.load(f)
+
+        # 4. Configure Nodes
+        # Node 12: LoadImage
+        workflow["12"]["inputs"]["image"] = image_filename
+        
+        # Node 19: LoadAudio
+        workflow["19"]["inputs"]["audio"] = audio_filename
+
+
+                # Node 17: WanVideoTextEncodeCached (Positive Prompt)
+        if prompt_text and "17" in workflow:
+            # Keep the default negative prompt or allow passing it too if needed
+            workflow["17"]["inputs"]["positive_prompt"] = prompt_text
+        
+        # Node 16: WanVideoSampler - Randomize Seed
+        if "16" in workflow:
+             workflow["16"]["inputs"]["seed"] = random.randint(1, 10**14)
+
+        # 5. Execute
+        ws = websocket.WebSocket()
+        ws.connect(f"ws://{self.server_addr}/ws?clientId={self.client_id}")
+        
+        print(f"Queueing video for {filename_id}...")
+        prompt_response = self.queue_prompt(workflow)
+        prompt_id = prompt_response['prompt_id']
+
+        # Loop
+        while True:
+            out = ws.recv()
+            if isinstance(out, str):
+                message = json.loads(out)
+                if message['type'] == 'executing':
+                    data = message['data']
+                    if data['node'] is None and data['prompt_id'] == prompt_id:
+                        break 
+            else:
+                continue
+
+        # 6. Retrieve
+        history = self.get_history(prompt_id)[prompt_id]
+        node_outputs = history['outputs']
+        
+        # Node 23 is VHS_VideoCombine
+        if "23" in node_outputs:
+             outputs = node_outputs["23"]
+             # Check for 'gifs' or 'videos' depending on VHS version
+             vid_list = outputs.get("gifs", outputs.get("videos", []))
+             
+             if len(vid_list) > 0:
+                 vid_info = vid_list[0]
+                 filename = vid_info['filename']
+                 subfolder = vid_info['subfolder']
+                 folder_type = vid_info['type']
+                 
+                 video_data = self.get_image(filename, subfolder, folder_type)
+                 
+                 save_filename = f"{filename_id}.mp4"
+                 save_path = os.path.join(output_dir, save_filename)
+                 
+                 with open(save_path, 'wb') as f:
+                     f.write(video_data)
+                     
+                 return f"/static/videos/{title}/{save_filename}"
+        
+        return None
+
     

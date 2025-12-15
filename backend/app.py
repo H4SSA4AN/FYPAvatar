@@ -52,8 +52,9 @@ def query_faq():
         return jsonify({'error': 'Invalid request'}), 400
 
     try:
-        answer = faq_service.query_faq(data['query'], data['title'])
-        return jsonify({'answer': answer}), 200
+        result = faq_service.query_faq(data['query'], data['title'])
+        # result is now a dict { answer, question, id }
+        return jsonify(result), 200 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -124,6 +125,82 @@ def generate_video_route():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/generate-audio-single', methods=['POST'])
+def generate_audio_single_route():
+    data = request.get_json()
+    text = data.get('text')
+    title = data.get('title')
+    filename_id = data.get('filename_id') # Get the UUID
+    
+    if not text or not title or not filename_id:
+        return jsonify({'error': 'Missing text, title, or filename_id'}), 400
+
+    try:
+        audio_url = comfy_service.generate_audio_single(text, title, filename_id)
+        if audio_url:
+             return jsonify({'audio_url': audio_url}), 200
+        else:
+             return jsonify({'error': 'Failed to generate audio'}), 500
+    except Exception as e:
+        print(f"Error generating audio: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/generate-video-single', methods=['POST'])
+def generate_video_single_route():
+    data = request.get_json()
+    audio_path = data.get('audio_path') # e.g. "static/audio/Title/uuid.mp3"
+    image_path = data.get('image_path') # e.g. "static/temp/image.png" or just a filename if already uploaded
+    title = data.get('title')
+    filename_id = data.get('filename_id')
+    prompt = data.get('prompt') # Get prompt
+    
+    if not all([audio_path, image_path, title, filename_id]):
+        return jsonify({'error': 'Missing required fields'}), 400
+
+    try:
+        # Pass prompt to service
+        video_url = comfy_service.generate_video_talking_head(audio_path, image_path, title, filename_id, prompt)
+        if video_url:
+             return jsonify({'video_url': video_url}), 200
+        else:
+             return jsonify({'error': 'Failed to generate video'}), 500
+    except Exception as e:
+        print(f"Error generating video: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/upload-avatar', methods=['POST'])
+def upload_avatar():
+    if 'image' not in request.files:
+        return jsonify({'error': 'No image part'}), 400
+    
+    file = request.files['image']
+    title = request.form.get('title')
+    
+    if file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    if not title:
+         return jsonify({'error': 'Title is required'}), 400
+
+    try:
+        # Create directory for the title if it doesn't exist
+        # We can save it in static/temp or static/images/Title
+        upload_dir = os.path.join(app.root_path, 'static', 'images', title)
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        filename = f"avatar_{uuid.uuid4()}.png"
+        filepath = os.path.join(upload_dir, filename)
+        file.save(filepath)
+        
+        # Return the relative path
+        image_path = f"/static/images/{title}/{filename}"
+        return jsonify({'message': 'Avatar uploaded successfully', 'image_path': image_path}), 200
+
+    except Exception as e:
+        print(f"Error uploading avatar: {e}")
+        return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

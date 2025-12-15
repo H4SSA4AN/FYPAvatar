@@ -7,8 +7,8 @@ class VectorDBService:
 
 
         # Use EphemeralClient for testing purposes
-        self.client = chromadb.EphemeralClient()
-       # self.client = chromadb.PersistentClient(path=self.persist_directory)
+       # self.client = chromadb.EphemeralClient()
+        self.client = chromadb.PersistentClient(path=self.persist_directory)
         self.ef = embedding_functions.SentenceTransformerEmbeddingFunction(model_name='multi-qa-mpnet-base-dot-v1')
         
         self.collection = self.client.get_or_create_collection(

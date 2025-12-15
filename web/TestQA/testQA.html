@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test FAQs - InteractiveAvatar</title>
+    <link rel="stylesheet" href="testQA.css">
+</head>
+<body>
+    <nav class="navbar">
+        <ul class="nav-links">
+            <li><a href="../dashboard/main.html">Home</a></li>
+            <li><a href="../createQA/createQA.html">Create FAQ</a></li>
+            <li><a href="#">Edit FAQs</a></li>
+            <li><a href="#" class="active">Test FAQs</a></li>
+        </ul>
+        <div class="logo">InteractiveAvatar</div>
+    </nav>
+
+    <div class="container">
+        <!-- Large Middle Box for Avatar Video -->
+        <div class="video-panel">
+            <h2>Avatar Interaction</h2>
+            <div class="video-container">
+               <!-- 1. Idle Video (Background Layer) -->
+               <video id="idleVideo" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;" muted loop playsinline>
+                <source src="" type="video/mp4">
+            </video>
+
+            <!-- 2. Main Avatar/Answer Video (Top Layer) -->
+            <!-- Default opacity 0 so we see idle video first -->
+            <video id="avatarVideo" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; opacity: 0; transition: opacity 0.5s ease-in-out;" controls>
+                <source src="" type="video/mp4">
+                Your browser does not support the video tag.
+            </video>
+           </div>
+            
+            <div class="controls">
+                <!-- Example controls for recording/starting -->
+                <button id="startBtn" class="action-btn">Start Conversation</button>
+                <button id="stopBtn" class="action-btn secondary">Stop</button>
+            </div>
+        </div>
+
+         <!-- 2. Middle: FAQ Table Panel (NEW) -->
+         <div class="faq-panel">
+            <div class="faq-header">
+                <h2>FAQs</h2>
+                <!-- Search Box for Topics -->
+                <div class="search-container" style="position: relative;">
+                    <input type="text" id="topicSearch" placeholder="Search topics..." autocomplete="off">
+                    <!-- Custom Dropdown List -->
+                    <ul id="customDropdown" class="dropdown-list" style="display: none;">
+                        <!-- Options populated dynamically -->
+                    </ul>
+                </div>
+            </div>
+            <div class="table-container">
+                <table id="faqTable">
+                    <thead>
+                        <tr>
+                            <th>Question</th>
+                            <th>Answer</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Rows will be populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right Box for Chat Log -->
+        <div class="chat-panel">
+            <h2>Conversation Log</h2>
+            <div class="chat-log" id="chatLog">
+                <!-- Chat messages will be appended here -->
+                <div class="message system">Ready to start conversation...</div>
+            </div>
+            
+            <div class="input-area">
+                 <input type="text" id="userInput" placeholder="Type your message...">
+                 <button id="sendBtn" class="action-btn">Send</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Script placeholder -->
+    <!-- <script src="testQA.js"></script> -->
+    <script src="../../backend/pagejs/TestQAPage/testQA.js"></script>
+</body>
+</html>
