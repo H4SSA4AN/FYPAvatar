@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Avatar Player</title>
+    <link rel="stylesheet" href="player.css">
+</head>
+<body>
+    <div class="player-container">
+        <!-- Header -->
+        <div class="header">
+            <h1>Interactive Avatar</h1>
+        </div>
+
+        <!-- Portrait Avatar Video -->
+        <div class="video-wrapper">
+            <video id="avatar-video" class="avatar-video" muted playsinline>
+                <!-- Video source will be set dynamically or added here -->
+            </video>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="chat-interface">
+            <!-- New Chat Log Area -->
+            <div id="chat-log" class="chat-log">
+                <!-- Messages will appear here -->
+            </div>
+
+            <div class="chat-wrapper">
+                <div class="chat-bubble">
+                    <input type="text" id="chat-input" placeholder="Type a message..." class="chat-input-field">
+                </div>
+                <button id="mic-button" class="mic-button" aria-label="Use microphone">
+                    <!-- Simple SVG Microphone Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Placeholder -->
+    <script src="../../backend/pagejs/player/player.js"></script>
+</body>
+</html>

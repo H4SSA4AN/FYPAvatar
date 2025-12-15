@@ -7,3 +7,4 @@ uuid
 requests
 websocket-client
 pyyaml
+faster-whisper

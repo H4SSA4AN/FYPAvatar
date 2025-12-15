@@ -2,8 +2,10 @@ from flask import Flask, request, jsonify, make_response, jsonify, send_from_dir
 from flask_cors import CORS
 from services.FAQService import FAQService
 from services.comfyService import ComfyService
+from services.transcriptionService import TranscriptionService
 import os
 import uuid
+import tempfile
 
 app = Flask(__name__)
 CORS(app)
@@ -13,6 +15,7 @@ os.makedirs(VIDEO_FOLDER, exist_ok=True)
 
 faq_service = FAQService()
 comfy_service = ComfyService()
+transcription_service = TranscriptionService()
 
 @app.route('/upload', methods=['POST'])
 def upload_csv():
@@ -201,6 +204,30 @@ def upload_avatar():
     except Exception as e:
         print(f"Error uploading avatar: {e}")
         return jsonify({'error': str(e)}), 500
+
+@app.route('/transcribe', methods=['POST'])
+def transcribe_audio():
+    if 'audio' not in request.files:
+        return jsonify({'error': 'No audio file provided'}), 400
+    
+    audio_file = request.files['audio']
+    if audio_file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+        
+    # Save to temp file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_audio:
+        audio_file.save(temp_audio.name)
+        temp_path = temp_audio.name
+        
+    try:
+        text = transcription_service.transcribe(temp_path)
+        return jsonify({'text': text}), 200
+    except Exception as e:
+        print(f"Transcription error: {e}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
