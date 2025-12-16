@@ -34,8 +34,8 @@
   },
   "41": {
     "inputs": {
-      "width": 512,
-      "height": 512,
+      "width": 1088,
+      "height": 1920,
       "batch_size": 1
     },
     "class_type": "EmptySD3LatentImage",
@@ -103,7 +103,7 @@
   },
   "45": {
     "inputs": {
-      "text": "\n\nA photorealistic portrait of a human avatar, upper body visible from the waist up, facing the camera. The image includes the full torso, both arms clearly visible, natural relaxed posture, clean clothing, pure white background, well-lit, sharp detailed face, realistic skin texture, symmetrical anatomy, professional appearance, centered composition, high-quality character design. Slight shadow from a light placed on the right, behind the camera. Absolutely no nudity ever, always fully clothed.",
+      "text": "\n\nA photorealistic portrait of a human avatar, upper body visible from the waist up, facing the camera. The image includes the full torso, both arms clearly visible, natural relaxed posture, clean clothing, pure complete white background, well-lit, sharp detailed face, realistic skin texture, symmetrical anatomy, professional appearance, centered composition, high-quality character design. Slight shadow from a light placed on the right, behind the camera. Absolutely no nudity ever, always fully clothed. Complete white background.",
       "clip": [
         "39",
         0

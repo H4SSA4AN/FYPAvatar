@@ -68,6 +68,19 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
     }
+
+    const video = document.getElementById('idleVideo');
+    const container = document.querySelector('.video-container');
+
+    if (video && container) {
+        video.addEventListener('loadedmetadata', function () {
+            // Check to avoid division by zero
+            if (this.videoHeight > 0) {
+                // Apply the exact ratio of the loaded video
+                container.style.aspectRatio = `${this.videoWidth} / ${this.videoHeight}`;
+            }
+        });
+    }
 });
 
 function renderDropdown(titles) {
