@@ -142,26 +142,107 @@ body {
     color: #3498db;
 }
 
-/* --- Management Controls Area --- */
+/* --- Management Controls Area (Updated) --- */
 #managementControls {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
     margin-bottom: 2rem;
-    padding: 1.5rem;
-    background-color: #fcfcfc;
-    border: 1px dashed #e0e0e0;
-    border-radius: 8px;
-    transition: all 0.3s ease;
+    padding: 2rem;
+    background-color: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.02);
 }
 
 #selectedTitle {
     color: #2c3e50;
-    font-size: 1.25rem;
-    margin: 0 0 1rem 0;
-    min-height: 1.5em; /* Prevents layout jump when empty */
+    font-size: 1.5rem;
+    margin: 0 0 1.5rem 0;
+    text-align: center;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 1rem;
+}
+
+.controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr; /* 1 part avatar, 2 parts text */
+    gap: 2rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+    .controls-grid {
+        grid-template-columns: 1fr; /* Stack on mobile */
+    }
+}
+
+/* Left: Avatar Section */
+.avatar-preview-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.avatar-preview-section label {
     font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+.avatar-frame {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%; /* Circle avatar */
+    overflow: hidden;
+    border: 4px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    background-color: #eee;
+}
+
+.avatar-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Right: Prompt Section */
+.prompt-section {
+    display: flex;
+    flex-direction: column;
+}
+
+.prompt-section label {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #555;
+}
+
+.prompt-section textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    resize: vertical;
+    background-color: #fafafa;
+    transition: border-color 0.2s;
+}
+
+.prompt-section textarea:focus {
+    border-color: #3498db;
+    outline: none;
+    background-color: #fff;
+}
+
+/* Bottom: Actions */
+.actions-section {
+    text-align: center;
+    padding-top: 1.5rem;
+    border-top: 1px dashed #eee;
+}
+
+.delete-btn {
+    /* (Use existing .delete-btn styles, just ensure display is block/inline-block) */
+    display: inline-block; 
 }
 
 /* Delete Button Styles */
@@ -238,4 +319,99 @@ tr:hover {
         width: 100%;
         max-width: none;
     }
+}
+
+/* Generate Button Styles */
+.generate-btn {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px; /* Pill shape */
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.generate-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(52, 152, 219, 0.4);
+    background: linear-gradient(135deg, #4aa3df, #3498db);
+}
+
+.generate-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(52, 152, 219, 0.3);
+}
+
+.generate-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Optional: Status badge for "Ready" state */
+.status-ready {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #e8f8f5;
+    color: #27ae60;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    border: 1px solid #d1f2eb;
+}
+
+.status-ready::before {
+    content: "✓";
+    font-weight: bold;
+}
+
+/* Queue Bubble Styles */
+.queue-bubble {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: white;
+    padding: 12px 20px;
+    border-radius: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: #2c3e50;
+    border: 1px solid #eee;
+    animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Simple Spinner */
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }

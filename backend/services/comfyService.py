@@ -186,8 +186,21 @@ class ComfyService:
         workflow_path = "../backend/ComfyAPIs/IndexTTS-2.json"
         
         # Create directory for the title
-        output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'audio', title)
+        # Use absolute path for robustness
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        output_dir = os.path.join(base_dir, 'static', 'audio', title)
         os.makedirs(output_dir, exist_ok=True)
+
+        # Construct the expected filename
+        save_filename = f"{filename_id}.mp3"
+        save_path = os.path.join(output_dir, save_filename)
+
+        # --- NEW CHECK: Return existing file if found ---
+        if os.path.exists(save_path):
+            print(f"Audio already exists for {filename_id}, skipping generation.")
+            # Return the web-accessible URL
+            return f"/static/audio/{title}/{save_filename}"
+        # ------------------------------------------------
 
         with open(workflow_path, 'r', encoding="utf-8") as f:
             workflow = json.load(f)

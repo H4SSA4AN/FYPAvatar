@@ -251,6 +251,26 @@ def delete_title_route():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+
+@app.route('/get-videos', methods=['GET'])
+def get_videos_route():
+    title = request.args.get('title')
+    try:
+        videos = faq_service.get_videos(title)
+        return jsonify({'message': 'Fetched successfully', 'data': videos}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get-avatar', methods=['GET'])
+def get_avatar_route():
+    title = request.args.get('title')
+    try:
+        avatar_path = faq_service.get_avatar(title)
+        # Return path or null
+        return jsonify({'message': 'Fetched successfully', 'avatar_path': avatar_path}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
 

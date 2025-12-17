@@ -60,10 +60,26 @@ function renderDropdown(titles) {
     });
 }
 
-function selectTopic(title) {
-    document.getElementById('selectedTitle').textContent = `Selected Topic: ${title}`;
-    document.getElementById('deleteBtn').style.display = 'inline-block';
-    loadFAQs(title);
+async function selectTopic(title) {
+    document.getElementById('selectedTitle').textContent = title;
+    
+    // Show the controls container
+    document.getElementById('managementControls').style.display = 'block';
+    
+    // Reset Prompt
+    document.getElementById('videoPrompt').value = "talking head"; // Or keep empty
+    
+    // Load FAQs (this will also find the avatar path)
+    await loadFAQs(title);
+    
+    // Update Avatar Image in the UI
+    const avatarImg = document.getElementById('topicAvatar');
+    if (currentAvatarPath) {
+        // currentAvatarPath is like "static/images/Title/img.png"
+        avatarImg.src = `${API_BASE_URL}/${currentAvatarPath}`;
+    } else {
+        avatarImg.src = ""; // Or a placeholder image URL
+    }
 }
 
 function setupDelete() {
@@ -118,19 +134,61 @@ async function fetchTitles() {
 
 async function loadFAQs(title) {
     const tbody = document.querySelector('#faqTable tbody');
-    tbody.innerHTML = '<tr><td colspan="2">Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="3">Loading...</td></tr>';
 
     try {
-        const response = await fetch(`${API_BASE_URL}/faqs?title=${encodeURIComponent(title)}`);
-        const result = await response.json();
+        const encodedTitle = encodeURIComponent(title);
         
-        if (response.ok) {
-            populateFAQTable(result.data);
-        } else {
-            tbody.innerHTML = '<tr><td colspan="2">No FAQs found.</td></tr>';
+        // Fetch in parallel
+        const responses = await Promise.all([
+            fetch(`${API_BASE_URL}/faqs?title=${encodedTitle}`),
+            fetch(`${API_BASE_URL}/get-videos?title=${encodedTitle}`),
+            fetch(`${API_BASE_URL}/get-avatar?title=${encodedTitle}`)
+        ]);
+
+        // Check for HTTP errors first
+        for (const res of responses) {
+            if (!res.ok) {
+                console.error(`Fetch failed for ${res.url}: ${res.status} ${res.statusText}`);
+                const text = await res.text(); // Read text to see error message (or HTML)
+                console.error("Response body:", text);
+                throw new Error(`API Error: ${res.status} from ${res.url}`);
+            }
         }
+
+        // Parse JSON only if OK
+        const faqResult = await responses[0].json();
+        const videoResult = await responses[1].json();
+        const avatarResult = await responses[2].json();
+        
+        if (faqResult.message === 'Fetched successfully' || faqResult.data) {
+             // Update global avatar path
+            currentAvatarPath = avatarResult.avatar_path || null;
+            
+            // Update the UI image
+            const avatarImg = document.getElementById('topicAvatar');
+            if (currentAvatarPath) {
+                avatarImg.src = `${API_BASE_URL}/${currentAvatarPath}`;
+            } else {
+                avatarImg.src = ""; 
+            }
+
+            const faqs = faqResult.data;
+            const existingVideos = videoResult.data || [];
+
+            faqs.forEach(faq => {
+                const expectedFilename = `${faq.id}.mp4`;
+                faq.has_video = existingVideos.includes(expectedFilename);
+            });
+
+            populateFAQTable(faqs);
+        } else {
+            tbody.innerHTML = '<tr><td colspan="3">No FAQs found.</td></tr>';
+        }
+
     } catch (error) {
-        tbody.innerHTML = '<tr><td colspan="2">Error loading FAQs.</td></tr>';
+        console.error("Critical error loading FAQs:", error);
+        tbody.innerHTML = `<tr><td colspan="3" style="color: red;">Error: ${error.message}</td></tr>`;
     }
 }
 
@@ -139,16 +197,176 @@ function populateFAQTable(faqs) {
     tbody.innerHTML = '';
     
     if (!faqs || faqs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="2">No FAQs found for this topic.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3">No FAQs found for this topic.</td></tr>';
         return;
     }
 
     faqs.forEach(faq => {
         const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>${faq.question}</td>
-            <td>${faq.answer}</td>
-        `;
+        
+        // Question
+        const qCell = document.createElement('td');
+        qCell.textContent = faq.question;
+        
+        // Answer
+        const aCell = document.createElement('td');
+        aCell.textContent = faq.answer;
+        
+        // Video Column
+        const vCell = document.createElement('td');
+        
+        if (faq.has_video) {
+            // Display Video Player
+            const video = document.createElement('video');
+            video.src = `${API_BASE_URL}/static/videos/${encodeURIComponent(faq.title)}/${faq.id}.mp4`;
+            video.controls = true;
+            video.style.width = "150px"; 
+            video.style.borderRadius = "8px"; // Slightly rounded corners
+            video.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)"; // Subtle shadow
+            vCell.appendChild(video);
+        } else {
+            const btn = document.createElement('button');
+            btn.textContent = "Generate Video";
+            btn.className = "generate-btn";
+            
+            // Call addToQueue instead of generateVideo
+            btn.onclick = () => {
+                // Read the prompt from the textarea
+                const promptText = document.getElementById('videoPrompt').value.trim() || "talking head";
+                addToQueue(btn, faq.id, faq.title, faq.answer, promptText);
+            };
+            
+            vCell.appendChild(btn);
+        }
+
+        row.appendChild(qCell);
+        row.appendChild(aCell);
+        row.appendChild(vCell);
         tbody.appendChild(row);
     });
+}
+
+let currentAvatarPath = null;
+const videoQueue = []; // Queue to store pending requests
+let isProcessingQueue = false; // Flag to check if we are currently generating
+
+function addToQueue(btnElement, id, title, text, prompt) {
+    if (!currentAvatarPath) {
+        alert("No avatar image found for this topic. Please upload one first.");
+        return;
+    }
+
+    // 1. Update UI immediately
+    btnElement.disabled = true;
+    btnElement.textContent = "Queued";
+    btnElement.style.background = "#f39c12"; // Orange for queued
+    btnElement.style.transform = "none";
+
+    // 2. Add to Queue
+    videoQueue.push({
+        btnElement,
+        id,
+        title,
+        text,
+        prompt // Store it
+    });
+
+    // 3. Update Bubble
+    updateQueueBubble();
+
+    // 4. Start Processing if idle
+    if (!isProcessingQueue) {
+        processQueue();
+    }
+}
+
+async function processQueue() {
+    if (videoQueue.length === 0) {
+        isProcessingQueue = false;
+        updateQueueBubble();
+        return;
+    }
+
+    isProcessingQueue = true;
+    const currentTask = videoQueue[0]; // Peek at first item
+    
+    // Update button status to "Generating..."
+    const { btnElement, id, title, text, prompt } = currentTask; // Extract prompt
+    btnElement.textContent = "Generating...";
+    btnElement.style.background = "#3498db"; // Blue for processing
+
+    try {
+        updateQueueBubble(true); // Show "Processing 1 of X"
+
+        // --- API Call Logic (Same as before) ---
+        // 1. Audio
+        const audioResponse = await fetch(`${API_BASE_URL}/generate-audio-single`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: text, title: title, filename_id: id })
+        });
+        const audioResult = await audioResponse.json();
+        if (!audioResponse.ok) throw new Error(audioResult.error || "Audio failed");
+
+        // 2. Video Fetch - Pass the prompt!
+        const videoResponse = await fetch(`${API_BASE_URL}/generate-video-single`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                audio_path: audioResult.audio_url,
+                image_path: currentAvatarPath, // This comes from loadFAQs logic
+                title: title,
+                filename_id: id,
+                prompt: prompt // Pass the custom prompt here
+            })
+        });
+        const videoResult = await videoResponse.json();
+
+        if (videoResponse.ok) {
+            // Success
+            const cell = btnElement.parentNode;
+            cell.innerHTML = '<span class="status-ready">Ready</span>';
+        } else {
+            throw new Error(videoResult.error || "Video failed");
+        }
+
+    } catch (error) {
+        console.error("Queue task failed:", error);
+        btnElement.textContent = "Retry";
+        btnElement.disabled = false;
+        btnElement.style.background = "#e74c3c";
+        
+        // Optional: Re-bind click to addToQueue if they want to try again
+        btnElement.onclick = () => addToQueue(btnElement, id, title, text, prompt);
+    } finally {
+        // Remove processed item (success or fail)
+        videoQueue.shift();
+        
+        // Process next item
+        processQueue();
+    }
+}
+
+function updateQueueBubble(isProcessing = false) {
+    let bubble = document.getElementById('queueBubble');
+    if (!bubble) return;
+
+    const count = videoQueue.length;
+    
+    if (count === 0 && !isProcessing) {
+        bubble.style.display = 'none';
+        return;
+    }
+
+    bubble.style.display = 'flex';
+    if (isProcessing) {
+        // e.g. "Processing... (2 pending)"
+        // Since we removed the item *after* processing, count includes the current one
+        bubble.innerHTML = `
+            <div class="spinner"></div>
+            <span>Generating video (Queue: ${count})</span>
+        `;
+    } else {
+        bubble.textContent = `Queue: ${count} videos`;
+    }
 }

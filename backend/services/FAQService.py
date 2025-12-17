@@ -3,6 +3,7 @@ import pandas as pd
 import uuid
 from .vectorDB import VectorDBService
 from .database import DatabaseService
+import os
 
 
 class FAQService:
@@ -115,5 +116,53 @@ class FAQService:
         
         return True
 
+
+    
+    def get_videos(self, title):
+        if not title:
+            return []
+        
+        # Robust path construction (points to backend/static/videos/Title)
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        video_dir = os.path.join(backend_dir, 'static', 'videos', title)
+        
+        video_files = []
+        if os.path.exists(video_dir):
+            try:
+                # List all mp4 files
+                files = os.listdir(video_dir)
+                # Return just the filenames (which are UUIDs.mp4) or full relative paths
+                # Returning just filenames (e.g. "uuid.mp4") is usually enough for matching
+                video_files = [f for f in files if f.endswith('.mp4')]
+            except OSError as e:
+                print(f"Error accessing video directory: {e}")
+                
+        return video_files
+
+    def get_avatar(self, title):
+        if not title:
+            return None
+            
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        # Construct path to the FOLDER named after the title
+        image_dir = os.path.join(backend_dir, 'static', 'images', title)
+        
+        # Debug print to verify path
+        # print(f"DEBUG: Looking for avatar in: {image_dir}") 
+        
+        if os.path.exists(image_dir):
+            try:
+                files = os.listdir(image_dir)
+                # Find any image file inside this folder
+                images = [f for f in files if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
+                
+                if images:
+                    # Return path to the first image found
+                    # images[0] is the actual filename (e.g. avatar_uuid.png)
+                    return f"static/images/{title}/{images[0]}"
+            except OSError as e:
+                print(f"Error accessing image directory: {e}")
+                
+        return None
 
 

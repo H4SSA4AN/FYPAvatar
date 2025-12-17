@@ -306,7 +306,7 @@
   },
   "35": {
     "inputs": {
-      "blocks_to_swap": 18,
+      "blocks_to_swap": 20,
       "offload_img_emb": false,
       "offload_txt_emb": false,
       "use_non_blocking": true,

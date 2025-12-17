@@ -4,22 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit FAQs - InteractiveAvatar</title>
-    <!-- Reuse TestQA styles or create editQA.css -->
+    <!-- Use the dedicated CSS file -->
     <link rel="stylesheet" href="editQA.css">
-    <style>
-        /* Simple override for the delete button */
-        .delete-btn {
-            background-color: #dc3545;
-            color: white;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin-top: 20px;
-            display: none; /* Hidden by default */
-        }
-        .delete-btn:hover { background-color: #c82333; }
-    </style>
 </head>
 <body>
     <nav class="navbar">
@@ -32,22 +18,42 @@
         <div class="logo">InteractiveAvatar</div>
     </nav>
 
-    <div class="container" style="flex-direction: column; align-items: center; padding-top: 50px;">
+    <div class="container">
         
-        <div class="faq-panel" style="width: 80%; max-width: 800px;">
+        <div class="faq-panel">
             <div class="faq-header">
                 <h2>Manage Topics</h2>
                 <!-- Search Box -->
-                <div class="search-container" style="position: relative;">
+                <div class="search-container">
                     <input type="text" id="topicSearch" placeholder="Search topics to edit/delete..." autocomplete="off">
                     <ul id="customDropdown" class="dropdown-list" style="display: none;"></ul>
                 </div>
             </div>
 
             <!-- Management Controls -->
-            <div id="managementControls" style="text-align: center; margin: 20px 0;">
-                <h3 id="selectedTitle" style="color: #333; min-height: 1.2em;"></h3>
-                <button id="deleteBtn" class="delete-btn">Delete Entire Topic</button>
+            <div id="managementControls" style="display: none;"> <!-- Hidden by default, shown by JS -->
+                <h3 id="selectedTitle"></h3>
+                
+                <div class="controls-grid">
+                    <!-- Left: Avatar Image -->
+                    <div class="avatar-preview-section">
+                        <label>Current Avatar:</label>
+                        <div class="avatar-frame">
+                            <img id="topicAvatar" src="" alt="Topic Avatar">
+                        </div>
+                    </div>
+
+                    <!-- Right: Prompt Input -->
+                    <div class="prompt-section">
+                        <label for="videoPrompt">Video Generation Prompt:</label>
+                        <textarea id="videoPrompt" rows="5" placeholder="Describe how the avatar should look or act..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Bottom: Delete Button -->
+                <div class="actions-section">
+                    <button id="deleteBtn" class="delete-btn">Delete Entire Topic</button>
+                </div>
             </div>
 
             <!-- Preview Table -->
@@ -57,14 +63,20 @@
                         <tr>
                             <th>Question</th>
                             <th>Answer</th>
+                            <th>Video</th> <!-- Added Video Column -->
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td colspan="2">Select a topic to view or delete...</td></tr>
+                        <tr><td colspan="3">Select a topic to view or delete...</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
+    </div>
+
+    <!-- Queue Status Bubble -->
+    <div id="queueBubble" class="queue-bubble" style="display: none;">
+        <span>Queue: 0</span>
     </div>
 
     <script src="../../backend/pagejs/editQAPage/editQA.js"></script>
