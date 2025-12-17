@@ -308,7 +308,7 @@ async function processQueue() {
         const audioResult = await audioResponse.json();
         if (!audioResponse.ok) throw new Error(audioResult.error || "Audio failed");
 
-        // 2. Video Fetch - Pass the prompt!
+        // 2. Start Video Generation
         const videoResponse = await fetch(`${API_BASE_URL}/generate-video-single`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -321,14 +321,41 @@ async function processQueue() {
             })
         });
         const videoResult = await videoResponse.json();
+        
+        if (!videoResponse.ok) throw new Error(videoResult.error);
 
-        if (videoResponse.ok) {
-            // Success
-            const cell = btnElement.parentNode;
-            cell.innerHTML = '<span class="status-ready">Ready</span>';
-        } else {
-            throw new Error(videoResult.error || "Video failed");
-        }
+        const jobId = videoResult.job_id;
+
+        // 3. Poll for Progress
+        await new Promise((resolve, reject) => {
+            const interval = setInterval(async () => {
+                try {
+                    const progRes = await fetch(`${API_BASE_URL}/progress/${jobId}`);
+                    const progData = await progRes.json();
+
+                    if (progData.status === 'completed') {
+                        clearInterval(interval);
+                        resolve(progData.url);
+                    } else if (progData.status === 'failed') {
+                        clearInterval(interval);
+                        reject(new Error(progData.error));
+                    } else {
+                        // Update UI with Progress
+                        const eta = progData.eta > 0 ? `(${progData.eta}s remaining)` : '';
+                        btnElement.textContent = `${progData.progress}% ${eta}`;
+                        // Update Bubble
+                        updateQueueBubble(true, progData.progress); 
+                    }
+                } catch (e) {
+                    clearInterval(interval);
+                    reject(e);
+                }
+            }, 1000); // Poll every second
+        });
+
+        // Success (loop continues)
+        const cell = btnElement.parentNode;
+        cell.innerHTML = '<span class="status-ready">Ready</span>';
 
     } catch (error) {
         console.error("Queue task failed:", error);
@@ -347,7 +374,7 @@ async function processQueue() {
     }
 }
 
-function updateQueueBubble(isProcessing = false) {
+function updateQueueBubble(isProcessing = false, progress = 0) {
     let bubble = document.getElementById('queueBubble');
     if (!bubble) return;
 

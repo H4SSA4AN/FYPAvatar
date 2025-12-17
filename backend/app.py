@@ -6,6 +6,8 @@ from services.transcriptionService import TranscriptionService
 import os
 import uuid
 import tempfile
+import threading
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -16,6 +18,32 @@ os.makedirs(VIDEO_FOLDER, exist_ok=True)
 faq_service = FAQService()
 comfy_service = ComfyService()
 transcription_service = TranscriptionService()
+
+# Global store for progress: { "uuid": { "status": "processing", "progress": 0, "eta": 0, "url": None, "error": None } }
+PROGRESS_STORE = {}
+
+def video_worker(audio_path, image_path, title, filename_id, prompt, job_id):
+    def update_progress(current, total, eta):
+        PROGRESS_STORE[job_id]['progress'] = int((current / total) * 100)
+        PROGRESS_STORE[job_id]['eta'] = int(eta)
+
+    try:
+        # Call service with callback
+        video_url = comfy_service.generate_video_talking_head(
+            audio_path, image_path, title, filename_id, prompt, progress_callback=update_progress
+        )
+        
+        if video_url:
+            PROGRESS_STORE[job_id]['status'] = 'completed'
+            PROGRESS_STORE[job_id]['progress'] = 100
+            PROGRESS_STORE[job_id]['url'] = video_url
+        else:
+            PROGRESS_STORE[job_id]['status'] = 'failed'
+            PROGRESS_STORE[job_id]['error'] = "Generation returned no URL"
+
+    except Exception as e:
+        PROGRESS_STORE[job_id]['status'] = 'failed'
+        PROGRESS_STORE[job_id]['error'] = str(e)
 
 @app.route('/upload', methods=['POST'])
 def upload_csv():
@@ -161,16 +189,17 @@ def generate_video_single_route():
     if not all([audio_path, image_path, title, filename_id]):
         return jsonify({'error': 'Missing required fields'}), 400
 
-    try:
-        # Pass prompt to service
-        video_url = comfy_service.generate_video_talking_head(audio_path, image_path, title, filename_id, prompt)
-        if video_url:
-             return jsonify({'video_url': video_url}), 200
-        else:
-             return jsonify({'error': 'Failed to generate video'}), 500
-    except Exception as e:
-        print(f"Error generating video: {e}")
-        return jsonify({'error': str(e)}), 500
+    # Use the filename_id (UUID) as the job_id since it's unique per question
+    job_id = filename_id 
+    
+    # Initialize progress
+    PROGRESS_STORE[job_id] = { "status": "processing", "progress": 0, "eta": 0 }
+
+    # Start background thread
+    thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, job_id))
+    thread.start()
+
+    return jsonify({'job_id': job_id, 'status': 'started'}), 202
 
 
 @app.route('/upload-avatar', methods=['POST'])
@@ -270,6 +299,13 @@ def get_avatar_route():
         return jsonify({'message': 'Fetched successfully', 'avatar_path': avatar_path}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/progress/<job_id>', methods=['GET'])
+def get_progress(job_id):
+    info = PROGRESS_STORE.get(job_id)
+    if not info:
+        return jsonify({'error': 'Job not found'}), 404
+    return jsonify(info), 200
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

@@ -7,6 +7,7 @@ import random
 import requests
 import os
 import yaml
+import time
 
 
 class ComfyService:
@@ -269,7 +270,8 @@ class ComfyService:
             response = requests.post(f"http://{self.server_addr}/upload/image", files=files)
         return response.json()
 
-    def generate_video_talking_head(self, audio_path, image_path, title, filename_id, prompt_text):
+    # Update the method signature to accept a progress_callback
+    def generate_video_talking_head(self, audio_path, image_path, title, filename_id, prompt_text, progress_callback=None):
         workflow_path = "../backend/ComfyAPIs/InfiniteTalkWorkflow.json"
         
         # Output directory
@@ -330,12 +332,34 @@ class ComfyService:
         print(f"Queueing video for {filename_id}...")
         prompt_response = self.queue_prompt(workflow)
         prompt_id = prompt_response['prompt_id']
+        
+        start_time = time.time()
 
         # Loop
         while True:
             out = ws.recv()
             if isinstance(out, str):
                 message = json.loads(out)
+                
+                # --- NEW: Handle Progress ---
+                if message['type'] == 'progress':
+                    data = message['data']
+                    current_step = data['value']
+                    max_steps = data['max']
+                    
+                    if progress_callback:
+                        # Calculate simple ETA
+                        elapsed = time.time() - start_time
+                        if current_step > 0:
+                            avg_time_per_step = elapsed / current_step
+                            remaining_steps = max_steps - current_step
+                            eta_seconds = remaining_steps * avg_time_per_step
+                        else:
+                            eta_seconds = 0
+                            
+                        progress_callback(current_step, max_steps, eta_seconds)
+                # -----------------------------
+
                 if message['type'] == 'executing':
                     data = message['data']
                     if data['node'] is None and data['prompt_id'] == prompt_id:
