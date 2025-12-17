@@ -105,5 +105,15 @@ class FAQService:
             
         return {"answer": "No suitable answer found", "id": None}
 
+    def delete_topic(self, title):
+        print(f"Deleting topic: {title}")
+        # 1. Delete from SQL DB
+        self.database_service.delete_title_by_name(title)
+        
+        # 2. Delete from Vector DB
+        self.vector_db_service.delete_by_title(title)
+        
+        return True
+
 
 

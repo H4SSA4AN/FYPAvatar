@@ -229,6 +229,28 @@ def transcribe_audio():
         if os.path.exists(temp_path):
             os.remove(temp_path)
 
+@app.route('/delete-title', methods=['DELETE'])
+def delete_title_route():
+    title = request.args.get('title')
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+
+    try:
+        faq_service.delete_topic(title)
+        
+        # Also try to remove the directory of images if it exists
+        try:
+            image_dir = os.path.join(app.root_path, 'static', 'images', title)
+            if os.path.exists(image_dir):
+                import shutil
+                shutil.rmtree(image_dir)
+        except Exception as e:
+            print(f"Warning: Could not delete image directory: {e}")
+
+        return jsonify({'message': f'Title "{title}" deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
 

@@ -30,3 +30,10 @@ class VectorDBService:
             where={"Title": title}
         )
     
+    # Add this method to the VectorDBService class
+    def delete_by_title(self, title):
+        # ChromaDB allows deleting by metadata filter
+        self.collection.delete(
+            where={"Title": title}
+        )
+    

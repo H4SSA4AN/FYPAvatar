@@ -1,0 +1,241 @@
+/* Reset & Base Styles */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #f4f4f9;
+    color: #333;
+}
+
+/* --- Navigation (Shared) --- */
+.navbar {
+    background-color: #2c3e50;
+    color: white;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 2rem;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+    letter-spacing: 1px;
+}
+
+.nav-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    gap: 15px;
+}
+
+.nav-links li a {
+    text-decoration: none;
+    color: #bdc3c7;
+    font-size: 1rem;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: all 0.3s ease;
+}
+
+.nav-links li a:hover,
+.nav-links li a.active {
+    color: white;
+    background-color: #34495e;
+}
+
+/* --- Main Layout --- */
+.container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px;
+    min-height: calc(100vh - 80px); 
+}
+
+/* --- FAQ Management Panel --- */
+.faq-panel {
+    width: 100%;
+    max-width: 900px; /* Limits width on large screens */
+    background: white;
+    padding: 2.5rem;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    display: flex;
+    flex-direction: column;
+}
+
+.faq-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 1rem;
+}
+
+.faq-header h2 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+/* --- Search & Dropdown --- */
+.search-container {
+    position: relative;
+    flex: 0 0 50%;
+    max-width: 400px;
+}
+
+.search-container input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.3s, box-shadow 0.3s;
+}
+
+.search-container input:focus {
+    border-color: #3498db;
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+    outline: none;
+}
+
+.dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    max-height: 250px;
+    overflow-y: auto;
+    z-index: 1000;
+    list-style: none;
+    padding: 5px 0;
+    margin-top: 5px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.dropdown-item {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #f5f5f5;
+    color: #333;
+    transition: background-color 0.2s;
+}
+
+.dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.dropdown-item:hover {
+    background-color: #f0f7fb;
+    color: #3498db;
+}
+
+/* --- Management Controls Area --- */
+#managementControls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background-color: #fcfcfc;
+    border: 1px dashed #e0e0e0;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+#selectedTitle {
+    color: #2c3e50;
+    font-size: 1.25rem;
+    margin: 0 0 1rem 0;
+    min-height: 1.5em; /* Prevents layout jump when empty */
+    font-weight: 600;
+}
+
+/* Delete Button Styles */
+.delete-btn {
+    background-color: #e74c3c;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.1s;
+    box-shadow: 0 4px 6px rgba(231, 76, 60, 0.2);
+    display: none; /* Hidden by default until topic selected */
+}
+
+.delete-btn:hover {
+    background-color: #c0392b;
+}
+
+.delete-btn:active {
+    transform: translateY(1px);
+    box-shadow: 0 2px 4px rgba(231, 76, 60, 0.2);
+}
+
+/* --- Data Table --- */
+.table-container {
+    overflow-x: auto;
+    border: 1px solid #eee;
+    border-radius: 8px;
+    background: white;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: 16px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    line-height: 1.5;
+}
+
+th {
+    background-color: #f8f9fa;
+    color: #2c3e50;
+    font-weight: 600;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+}
+
+tr:last-child td {
+    border-bottom: none;
+}
+
+tr:hover {
+    background-color: #fafafa;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .faq-header {
+        flex-direction: column;
+        gap: 15px;
+        align-items: flex-start;
+    }
+    
+    .search-container {
+        flex: 1;
+        width: 100%;
+        max-width: none;
+    }
+}

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit FAQs - InteractiveAvatar</title>
+    <!-- Reuse TestQA styles or create editQA.css -->
+    <link rel="stylesheet" href="editQA.css">
+    <style>
+        /* Simple override for the delete button */
+        .delete-btn {
+            background-color: #dc3545;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+            display: none; /* Hidden by default */
+        }
+        .delete-btn:hover { background-color: #c82333; }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <ul class="nav-links">
+            <li><a href="../dashboard/main.html">Home</a></li>
+            <li><a href="../createQA/createQA.html">Create FAQ</a></li>
+            <li><a href="#" class="active">Edit FAQs</a></li>
+            <li><a href="../TestQA/testQA.html">Test FAQs</a></li>
+        </ul>
+        <div class="logo">InteractiveAvatar</div>
+    </nav>
+
+    <div class="container" style="flex-direction: column; align-items: center; padding-top: 50px;">
+        
+        <div class="faq-panel" style="width: 80%; max-width: 800px;">
+            <div class="faq-header">
+                <h2>Manage Topics</h2>
+                <!-- Search Box -->
+                <div class="search-container" style="position: relative;">
+                    <input type="text" id="topicSearch" placeholder="Search topics to edit/delete..." autocomplete="off">
+                    <ul id="customDropdown" class="dropdown-list" style="display: none;"></ul>
+                </div>
+            </div>
+
+            <!-- Management Controls -->
+            <div id="managementControls" style="text-align: center; margin: 20px 0;">
+                <h3 id="selectedTitle" style="color: #333; min-height: 1.2em;"></h3>
+                <button id="deleteBtn" class="delete-btn">Delete Entire Topic</button>
+            </div>
+
+            <!-- Preview Table -->
+            <div class="table-container">
+                <table id="faqTable">
+                    <thead>
+                        <tr>
+                            <th>Question</th>
+                            <th>Answer</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="2">Select a topic to view or delete...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="../../backend/pagejs/editQAPage/editQA.js"></script>
+</body>
+</html>
