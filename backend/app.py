@@ -312,6 +312,16 @@ def get_progress(job_id):
 def player():
     return send_from_directory('../web/player', 'player.html')
 
+@app.route('/player/<path:filename>')
+def player_assets(filename):
+    # Serve CSS from web/player folder
+    if filename.endswith('.css'):
+        return send_from_directory('../web/player', filename)
+    # Serve JS from backend/pagejs/player folder
+    elif filename.endswith('.js'):
+        return send_from_directory('pagejs/player', filename)
+    return send_from_directory('../web/player', filename)
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
