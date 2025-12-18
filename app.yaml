@@ -1,0 +1,18 @@
+runtime: python310
+entrypoint: gunicorn -b :$PORT backend.app:app
+
+handlers:
+  # Serve static files
+  - url: /static
+    static_dir: backend/static
+    secure: always
+  
+  # Route everything else to Flask
+  - url: /.*
+    script: auto
+    secure: always
+
+automatic_scaling:
+  target_cpu_utilization: 0.65
+  min_instances: 1
+  max_instances: 10
