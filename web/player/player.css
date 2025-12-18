@@ -19,43 +19,198 @@ body {
     position: relative;
     width: 100%;
     height: 100%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
+    /* Removed flex centering so we can manually position elements */
+    display: block; 
 }
 
-.header {
+/* --- NEW: Top Left Panel --- */
+.top-left-controls {
     position: absolute;
-    top: 30px;
-    left: 40px;
-    z-index: 10;
+    top: 20px;
+    left: 20px;
+    z-index: 1000; /* Ensure it sits above everything */
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    max-width: 500px; /* Constrain width so it doesn't hit the video */
+}
+
+/* --- Header Layout --- */
+.header {
+    display: flex;
+    /* Change from space-between to flex-start to keep them close */
+    justify-content: flex-start; 
+    align-items: center;
+    gap: 20px; /* Space between Title and Search Box */
+    padding: 0;
+    margin: 0;
 }
 
 .header h1 {
-    font-size: 24px;
-    font-weight: 600;
-    color: #333;
-    letter-spacing: -0.5px;
+    margin: 0;
+    font-size: 1.5rem;
+    white-space: nowrap; /* Prevent wrapping */
 }
 
+/* --- Search Box --- */
+.search-container {
+    position: relative;
+    width: 300px;
+}
+
+.search-container input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    font-size: 0.95rem;
+    outline: none;
+    transition: box-shadow 0.3s;
+}
+
+.search-container input:focus {
+    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    border-color: #3498db;
+}
+
+.dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background-color: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    list-style: none;
+    padding: 5px 0;
+    margin-top: 5px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.dropdown-item {
+    padding: 10px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f5f5f5;
+    color: #333;
+}
+
+.dropdown-item:hover {
+    background-color: #f0f7fb;
+    color: #3498db;
+}
+
+/* --- Controls & Questions Table --- */
+.controls-wrapper {
+    display: flex;
+    flex-direction: column;
+    /* Align button to the left to match header */
+    align-items: flex-start; 
+    width: 100%;
+    position: relative;
+    z-index: 900; /* Ensure it sits above video if needed */
+}
+
+.toggle-btn {
+    background-color: #2c3e50;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.3s;
+    margin-bottom: 10px;
+}
+
+.toggle-btn:hover {
+    background-color: #34495e;
+}
+
+.questions-panel {
+    /* Fixed positioning to take up the full left side */
+    position: fixed;
+    top: 100px;      /* Start below the header/button */
+    left: 20px;
+    bottom: 20px;    /* Stretch to bottom of screen */
+    
+    /* Calculate width: Center (50vw) - Half Video Width (22.5vh) - Gap (40px) */
+    /* Note: 80vh * 9/16 = 45vh. Half of that is 22.5vh. */
+    width: calc(50vw - (80vh * 9 / 16 / 2) - 40px);
+    
+    /* Reset previous constraints */
+    max-width: none;
+    max-height: none;
+    
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    border: 1px solid #eee;
+    overflow-y: auto;
+    z-index: 950; 
+    
+    animation: slideInLeft 0.3s ease;
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+#faqTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#faqTable th, #faqTable td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+#faqTable th {
+    background-color: #f8f9fa;
+    position: sticky;
+    top: 0;
+    font-weight: 600;
+}
+
+/* --- Video Positioning --- */
 .video-wrapper {
-    /* Reduced height from 100% to 80% of viewport height */
+    /* Absolute Center */
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    
     height: 80vh;
-    /* Enforce portrait aspect ratio (9:16) */
     aspect-ratio: 9 / 16;
     background-color: #000;
-    position: relative;
     box-shadow: 0 0 50px rgba(0,0,0,0.5);
     z-index: 1;
-    border-radius: 20px; /* Optional: smooth corners look nice when not full screen */
-    overflow: hidden;    /* Clips the video to the border radius */
+    border-radius: 20px;
+    overflow: hidden;
 }
 
 .avatar-video {
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
     display: block;
+}
+
+#active-video {
+    z-index: 2;
+    transition: opacity 0.5s ease-in-out;
+}
+
+#idle-video {
+    z-index: 1;
 }
 
 /* Re-structuring chat layout */

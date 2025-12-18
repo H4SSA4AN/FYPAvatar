@@ -8,16 +8,48 @@
 </head>
 <body>
     <div class="player-container">
-        <!-- Header -->
-        <div class="header">
-            <h1>Interactive Avatar</h1>
+        
+        <!-- NEW WRAPPER for Top-Left Positioning -->
+        <div class="top-left-controls">
+            <!-- Header with Search -->
+            <div class="header">
+                <h1>Interactive Avatar</h1>
+                
+                <!-- Search Box -->
+                <div class="search-container">
+                    <input type="text" id="topicSearch" placeholder="Search topics..." autocomplete="off">
+                    <ul id="customDropdown" class="dropdown-list" style="display: none;"></ul>
+                </div>
+            </div>
+
+            <!-- Questions Toggle & Table Section -->
+            <div class="controls-wrapper">
+                <button id="toggleQuestionsBtn" class="toggle-btn" style="display: none;">
+                    Show Questions ▼
+                </button>
+                
+                <div id="questionsPanel" class="questions-panel" style="display: none;">
+                    <table id="faqTable">
+                        <thead>
+                            <tr>
+                                <th>Question</th>
+                                <th>Answer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="2">Select a topic to view questions...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
 
         <!-- Portrait Avatar Video -->
         <div class="video-wrapper">
-            <video id="avatar-video" class="avatar-video" muted playsinline>
-                <!-- Video source will be set dynamically or added here -->
-            </video>
+            <!-- Idle Video (Background) -->
+            <video id="idle-video" class="avatar-video" loop muted playsinline></video>
+            <!-- Active Video (Foreground - Intro, Answer, etc) -->
+            <video id="active-video" class="avatar-video" muted playsinline style="opacity: 0;"></video>
         </div>
 
         <!-- Chat Interface -->

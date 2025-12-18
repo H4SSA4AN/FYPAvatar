@@ -90,18 +90,44 @@ class FAQService:
         return formatted_results
 
     def query_faq(self, query_text, title="none"):
+        
+        where_filter = {"Title": title}
+        
+        # Search both selected title AND 'Basic'
+        if title and title != "Basic" and title != "none":
+            where_filter = {
+                "$or": [
+                    {"Title": title},
+                    {"Title": "Basic"}
+                ]
+            }
 
-        results = self.vector_db_service.collection.query(query_texts = query_text, where={"Title": title})
+        # Ensure query_text is a list
+        query_texts = [query_text] if isinstance(query_text, str) else query_text
+
+        results = self.vector_db_service.collection.query(
+            query_texts=query_texts, 
+            n_results=1, 
+            where=where_filter
+        )
         
         if results['metadatas'] and results['metadatas'][0]:
             # Access the first result
             metadata = results['metadatas'][0][0]
-            document_id = results['ids'][0][0] # IDs are in a parallel list
+            document_id = results['ids'][0][0]
             
+            # Extract Distance (Confidence Score)
+            distance = results['distances'][0][0] if 'distances' in results else None
+            
+            # Get the actual title of the matched document (e.g. "Basic" or the selected title)
+            matched_title = metadata.get('Title', title)
+
             return {
                 "answer": metadata['answer'],
-                "question": results['documents'][0][0], # The matched question
-                "id": document_id
+                "question": results['documents'][0][0],
+                "id": document_id,
+                "score": distance,
+                "title": matched_title # Return the matched title
             }
             
         return {"answer": "No suitable answer found", "id": None}
