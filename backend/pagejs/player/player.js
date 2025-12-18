@@ -6,7 +6,7 @@ let silenceTimer;
 let isRecording = false;
 let audioStream = null; // Keep stream alive between recordings
 
-const API_BASE_URL = 'http://127.0.0.1:5000';
+const API_BASE_URL = window.location.origin;
 let allTitles = [];
 let currentTitle = null; // Add this global variable
 let idleTimer = null;
