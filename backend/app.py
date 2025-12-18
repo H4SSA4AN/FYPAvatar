@@ -307,6 +307,11 @@ def get_progress(job_id):
         return jsonify({'error': 'Job not found'}), 404
     return jsonify(info), 200
 
+@app.route('/')
+@app.route('/player')
+def player():
+    return send_from_directory('../web/player', 'player.html')
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)
