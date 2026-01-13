@@ -308,6 +308,11 @@ def get_progress(job_id):
     return jsonify(info), 200
 
 @app.route('/')
+@app.route('/home')
+def createQAPage():
+    return send_from_directory('../web/createQA', 'createQA.html')
+
+
 @app.route('/player')
 def player():
     return send_from_directory('../web/player', 'player.html')
