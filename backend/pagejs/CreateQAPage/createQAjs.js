@@ -493,7 +493,8 @@ function previewCSV(csvText) {
     `;
     
     previewRows.forEach((row, index) => {
-        const cells = row.split(','); // Reminder: simple split
+     //   const cells = row.split(','); // Reminder: simple split
+        const cells = row.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/); // advanced split to handle quotes
         
         if (index === 0) {
             tableHTML += '<tr>';
@@ -773,7 +774,7 @@ async function generateAudioForFAQ(faqData) {
     const title = document.getElementById('title').value;
     const statusDiv = document.getElementById('statusMessage');
     let audioResults = [];
-    let limit = 2;
+    let limit = faqData.length;
 
     for (let i = 0; i < limit; i++) {
         const item = faqData[i];

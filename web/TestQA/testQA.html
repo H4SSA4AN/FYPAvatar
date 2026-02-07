@@ -11,7 +11,7 @@
         <ul class="nav-links">
             <li><a href="../dashboard/main.html">Home</a></li>
             <li><a href="../createQA/createQA.html">Create FAQ</a></li>
-            <li><a href="#">Edit FAQs</a></li>
+            <li><a href="../editQA/editQA.html">Edit FAQs</a></li>
             <li><a href="#" class="active">Test FAQs</a></li>
         </ul>
         <div class="logo">InteractiveAvatar</div>
@@ -23,13 +23,13 @@
             <h2>Avatar Interaction</h2>
             <div class="video-container">
                <!-- 1. Idle Video (Background Layer) -->
-               <video id="idleVideo" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 1;" muted loop playsinline>
+               <video id="idleVideo" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; z-index: 1;" muted loop playsinline>
                 <source src="" type="video/mp4">
             </video>
 
             <!-- 2. Main Avatar/Answer Video (Top Layer) -->
             <!-- Default opacity 0 so we see idle video first -->
-            <video id="avatarVideo" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: 2; opacity: 0; transition: opacity 0.5s ease-in-out;" controls>
+            <video id="avatarVideo" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; z-index: 2; opacity: 0; transition: opacity 0.5s ease-in-out;" controls>
                 <source src="" type="video/mp4">
                 Your browser does not support the video tag.
             </video>

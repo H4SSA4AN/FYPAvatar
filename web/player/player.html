@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Avatar Player</title>
+    <link rel="stylesheet" href="/player/player.css">
+</head>
+<body>
+    <div class="player-container">
+        
+        <!-- NEW WRAPPER for Top-Left Positioning -->
+        <div class="top-left-controls">
+            <!-- Header with Search -->
+            <div class="header">
+                <h1>Interactive Avatar</h1>
+                
+                <!-- Search Box -->
+                <div class="search-container">
+                    <input type="text" id="topicSearch" placeholder="Search topics..." autocomplete="off">
+                    <ul id="customDropdown" class="dropdown-list" style="display: none;"></ul>
+                </div>
+            </div>
+
+            <!-- Questions Toggle & Table Section -->
+            <div class="controls-wrapper">
+                <button id="toggleQuestionsBtn" class="toggle-btn" style="display: none;">
+                    Show Questions ▼
+                </button>
+                
+                <div id="questionsPanel" class="questions-panel" style="display: none;">
+                    <table id="faqTable">
+                        <thead>
+                            <tr>
+                                <th>Question</th>
+                                <th>Answer</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr><td colspan="2">Select a topic to view questions...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Portrait Avatar Video -->
+        <div class="video-wrapper">
+            <!-- Idle Video (Background) -->
+            <video id="idle-video" class="avatar-video" loop muted playsinline></video>
+            <!-- Active Video (Foreground - Intro, Answer, etc) -->
+            <video id="active-video" class="avatar-video" muted playsinline style="opacity: 0;"></video>
+        </div>
+
+        <!-- Chat Interface -->
+        <div class="chat-interface">
+            <!-- New Chat Log Area -->
+            <div id="chat-log" class="chat-log">
+                <!-- Messages will appear here -->
+            </div>
+
+            <div class="chat-wrapper">
+                <div class="chat-bubble">
+                    <input type="text" id="chat-input" placeholder="Type a message..." class="chat-input-field">
+                </div>
+                <button id="mic-button" class="mic-button" aria-label="Use microphone">
+                    <!-- Simple SVG Microphone Icon -->
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+                        <path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3z"/>
+                        <path d="M17 11c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script Placeholder -->
+    <script src="/player/player.js"></script>
+</body>
+</html>

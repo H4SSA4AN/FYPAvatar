@@ -125,8 +125,8 @@
   "14": {
     "inputs": {
       "upscale_method": "lanczos",
-      "width": 512,
-      "height": 512,
+      "width": 576,
+      "height": 1024,
       "crop": "disabled",
       "image": [
         "12",
@@ -191,7 +191,7 @@
     "inputs": {
       "model_name": "umt5-xxl-enc-bf16.safetensors",
       "precision": "bf16",
-      "positive_prompt": "A lady is talking, waving her clipboard around while she speaks, slow and soft movements.",
+      "positive_prompt": "",
       "negative_prompt": "bright tones, overexposed, static, blurred details, subtitles, style, works, paintings, images, static, overall gray, worst quality, low quality, JPEG compression residue, ugly, incomplete, extra fingers, poorly drawn hands, poorly drawn faces, deformed, disfigured, misshapen limbs, fused fingers, still picture, messy background, three legs, many people in the background, walking backwards, exaggerated movement.",
       "quantization": "disabled",
       "use_disk_cache": false,
@@ -312,7 +312,7 @@
       "use_non_blocking": true,
       "vace_blocks_to_swap": 0,
       "prefetch_blocks": 1,
-      "block_swap_debug": false
+      "block_swap_debug": true
     },
     "class_type": "WanVideoBlockSwap",
     "_meta": {

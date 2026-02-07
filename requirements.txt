@@ -7,3 +7,5 @@ uuid
 requests
 websocket-client
 pyyaml
+faster-whisper
+gunicorn==21.2.0

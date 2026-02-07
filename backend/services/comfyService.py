@@ -7,6 +7,7 @@ import random
 import requests
 import os
 import yaml
+import time
 
 
 class ComfyService:
@@ -186,8 +187,21 @@ class ComfyService:
         workflow_path = "../backend/ComfyAPIs/IndexTTS-2.json"
         
         # Create directory for the title
-        output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'audio', title)
+        # Use absolute path for robustness
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        output_dir = os.path.join(base_dir, 'static', 'audio', title)
         os.makedirs(output_dir, exist_ok=True)
+
+        # Construct the expected filename
+        save_filename = f"{filename_id}.mp3"
+        save_path = os.path.join(output_dir, save_filename)
+
+        # --- NEW CHECK: Return existing file if found ---
+        if os.path.exists(save_path):
+            print(f"Audio already exists for {filename_id}, skipping generation.")
+            # Return the web-accessible URL
+            return f"/static/audio/{title}/{save_filename}"
+        # ------------------------------------------------
 
         with open(workflow_path, 'r', encoding="utf-8") as f:
             workflow = json.load(f)
@@ -256,7 +270,8 @@ class ComfyService:
             response = requests.post(f"http://{self.server_addr}/upload/image", files=files)
         return response.json()
 
-    def generate_video_talking_head(self, audio_path, image_path, title, filename_id, prompt_text):
+    # Update the method signature to accept a progress_callback
+    def generate_video_talking_head(self, audio_path, image_path, title, filename_id, prompt_text, progress_callback=None):
         workflow_path = "../backend/ComfyAPIs/InfiniteTalkWorkflow.json"
         
         # Output directory
@@ -317,12 +332,34 @@ class ComfyService:
         print(f"Queueing video for {filename_id}...")
         prompt_response = self.queue_prompt(workflow)
         prompt_id = prompt_response['prompt_id']
+        
+        start_time = time.time()
 
         # Loop
         while True:
             out = ws.recv()
             if isinstance(out, str):
                 message = json.loads(out)
+                
+                # --- NEW: Handle Progress ---
+                if message['type'] == 'progress':
+                    data = message['data']
+                    current_step = data['value']
+                    max_steps = data['max']
+                    
+                    if progress_callback:
+                        # Calculate simple ETA
+                        elapsed = time.time() - start_time
+                        if current_step > 0:
+                            avg_time_per_step = elapsed / current_step
+                            remaining_steps = max_steps - current_step
+                            eta_seconds = remaining_steps * avg_time_per_step
+                        else:
+                            eta_seconds = 0
+                            
+                        progress_callback(current_step, max_steps, eta_seconds)
+                # -----------------------------
+
                 if message['type'] == 'executing':
                     data = message['data']
                     if data['node'] is None and data['prompt_id'] == prompt_id:

@@ -81,21 +81,32 @@ h2 {
 }
 
 .video-container {
-    /* Fixed dimensions for 512x512 video */
-    width: 512px;
-    height: 512px;
-    /* Remove flex-grow so it doesn't stretch */
-    flex-grow: 0; 
+    /* Give it a width so aspect-ratio has a base to calculate height from */
+    width: 100%;
+    /* Optional: Limit max width so it doesn't get too huge on wide screens */
+    max-width: 600px; 
+    
+    /* Default aspect ratio (Vertical 9:16) - acts as placeholder until JS updates it */
+    aspect-ratio: 9 / 16;
+    
+    /* Ensure it doesn't overflow the viewport height */
+    max-height: 80vh;
+    
     background-color: #000;
     border-radius: 4px;
     margin-bottom: 1.5rem;
-    display: flex; /* Kept for centering if needed, but absolute children ignore flex layout */
+    display: flex;
     align-items: center;
     justify-content: center;
     overflow: hidden;
-    
-    /* FIX: Add relative positioning to contain absolute children */
-    position: relative;
+    position: relative; /* Crucial for absolute children */
+}
+
+/* Ensure the video tag preserves its ratio */
+#idleVideo, #avatarVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: contain; /* changed from 'cover' to 'contain' so we see the whole video */
 }
 
 .controls {

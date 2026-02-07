@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit FAQs - InteractiveAvatar</title>
+    <!-- Use the dedicated CSS file -->
+    <link rel="stylesheet" href="editQA.css">
+</head>
+<body>
+    <nav class="navbar">
+        <ul class="nav-links">
+            <li><a href="../dashboard/main.html">Home</a></li>
+            <li><a href="../createQA/createQA.html">Create FAQ</a></li>
+            <li><a href="#" class="active">Edit FAQs</a></li>
+            <li><a href="../TestQA/testQA.html">Test FAQs</a></li>
+        </ul>
+        <div class="logo">InteractiveAvatar</div>
+    </nav>
+
+    <div class="container">
+        
+        <div class="faq-panel">
+            <div class="faq-header">
+                <h2>Manage Topics</h2>
+                <!-- Search Box -->
+                <div class="search-container">
+                    <input type="text" id="topicSearch" placeholder="Search topics to edit/delete..." autocomplete="off">
+                    <ul id="customDropdown" class="dropdown-list" style="display: none;"></ul>
+                </div>
+            </div>
+
+            <!-- Management Controls -->
+            <div id="managementControls" style="display: none;"> <!-- Hidden by default, shown by JS -->
+                <h3 id="selectedTitle"></h3>
+                
+                <div class="controls-grid">
+                    <!-- Left: Avatar Image -->
+                    <div class="avatar-preview-section">
+                        <label>Current Avatar:</label>
+                        <div class="avatar-frame">
+                            <img id="topicAvatar" src="" alt="Topic Avatar">
+                        </div>
+                    </div>
+
+                    <!-- Right: Prompt Input -->
+                    <div class="prompt-section">
+                        <label for="videoPrompt">Video Generation Prompt:</label>
+                        <textarea id="videoPrompt" rows="5" placeholder="Describe how the avatar should look or act..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Bottom: Delete Button -->
+                <div class="actions-section">
+                    <button id="deleteBtn" class="delete-btn">Delete Entire Topic</button>
+                </div>
+            </div>
+
+            <!-- Preview Table -->
+            <div class="table-container">
+                <table id="faqTable">
+                    <thead>
+                        <tr>
+                            <th>Question</th>
+                            <th>Answer</th>
+                            <th>Video</th> <!-- Added Video Column -->
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="3">Select a topic to view or delete...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Queue Status Bubble -->
+    <div id="queueBubble" class="queue-bubble" style="display: none;">
+        <span>Queue: 0</span>
+    </div>
+
+    <script src="../../backend/pagejs/editQAPage/editQA.js"></script>
+</body>
+</html>

@@ -107,6 +107,35 @@ class DatabaseService:
         finally:
             conn.close()
 
+    def delete_title_by_name(self, title):
+        conn = self.get_conn()
+        cursor = conn.cursor()
+        try:
+            # 1. Get the Title ID
+            cursor.execute('SELECT id FROM titles WHERE name = ?', (title,))
+            result = cursor.fetchone()
+            if not result:
+                return False
+            
+            title_id = result['id']
+
+            # 2. Delete from videos (FK to title_id)
+            cursor.execute('DELETE FROM videos WHERE title_id = ?', (title_id,))
+
+            # 3. Delete from questionAnswers (FK to title_id)
+            cursor.execute('DELETE FROM questionAnswers WHERE title_id = ?', (title_id,))
+
+            # 4. Delete from titles
+            cursor.execute('DELETE FROM titles WHERE id = ?', (title_id,))
+            
+            conn.commit()
+            return True
+        except Exception as e:
+            print(f"Error deleting title {title}: {e}")
+            return False
+        finally:
+            conn.close()
+
     
 
     

@@ -2,8 +2,12 @@ from flask import Flask, request, jsonify, make_response, jsonify, send_from_dir
 from flask_cors import CORS
 from services.FAQService import FAQService
 from services.comfyService import ComfyService
+from services.transcriptionService import TranscriptionService
 import os
 import uuid
+import tempfile
+import threading
+import time
 
 app = Flask(__name__)
 CORS(app)
@@ -13,6 +17,33 @@ os.makedirs(VIDEO_FOLDER, exist_ok=True)
 
 faq_service = FAQService()
 comfy_service = ComfyService()
+transcription_service = TranscriptionService()
+
+# Global store for progress: { "uuid": { "status": "processing", "progress": 0, "eta": 0, "url": None, "error": None } }
+PROGRESS_STORE = {}
+
+def video_worker(audio_path, image_path, title, filename_id, prompt, job_id):
+    def update_progress(current, total, eta):
+        PROGRESS_STORE[job_id]['progress'] = int((current / total) * 100)
+        PROGRESS_STORE[job_id]['eta'] = int(eta)
+
+    try:
+        # Call service with callback
+        video_url = comfy_service.generate_video_talking_head(
+            audio_path, image_path, title, filename_id, prompt, progress_callback=update_progress
+        )
+        
+        if video_url:
+            PROGRESS_STORE[job_id]['status'] = 'completed'
+            PROGRESS_STORE[job_id]['progress'] = 100
+            PROGRESS_STORE[job_id]['url'] = video_url
+        else:
+            PROGRESS_STORE[job_id]['status'] = 'failed'
+            PROGRESS_STORE[job_id]['error'] = "Generation returned no URL"
+
+    except Exception as e:
+        PROGRESS_STORE[job_id]['status'] = 'failed'
+        PROGRESS_STORE[job_id]['error'] = str(e)
 
 @app.route('/upload', methods=['POST'])
 def upload_csv():
@@ -158,16 +189,17 @@ def generate_video_single_route():
     if not all([audio_path, image_path, title, filename_id]):
         return jsonify({'error': 'Missing required fields'}), 400
 
-    try:
-        # Pass prompt to service
-        video_url = comfy_service.generate_video_talking_head(audio_path, image_path, title, filename_id, prompt)
-        if video_url:
-             return jsonify({'video_url': video_url}), 200
-        else:
-             return jsonify({'error': 'Failed to generate video'}), 500
-    except Exception as e:
-        print(f"Error generating video: {e}")
-        return jsonify({'error': str(e)}), 500
+    # Use the filename_id (UUID) as the job_id since it's unique per question
+    job_id = filename_id 
+    
+    # Initialize progress
+    PROGRESS_STORE[job_id] = { "status": "processing", "progress": 0, "eta": 0 }
+
+    # Start background thread
+    thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, job_id))
+    thread.start()
+
+    return jsonify({'job_id': job_id, 'status': 'started'}), 202
 
 
 @app.route('/upload-avatar', methods=['POST'])
@@ -202,8 +234,102 @@ def upload_avatar():
         print(f"Error uploading avatar: {e}")
         return jsonify({'error': str(e)}), 500
 
+@app.route('/transcribe', methods=['POST'])
+def transcribe_audio():
+    if 'audio' not in request.files:
+        return jsonify({'error': 'No audio file provided'}), 400
+    
+    audio_file = request.files['audio']
+    if audio_file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+        
+    # Save to temp file
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_audio:
+        audio_file.save(temp_audio.name)
+        temp_path = temp_audio.name
+        
+    try:
+        text = transcription_service.transcribe(temp_path)
+        return jsonify({'text': text}), 200
+    except Exception as e:
+        print(f"Transcription error: {e}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+
+@app.route('/delete-title', methods=['DELETE'])
+def delete_title_route():
+    title = request.args.get('title')
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+
+    try:
+        faq_service.delete_topic(title)
+        
+        # Also try to remove the directory of images if it exists
+        try:
+            image_dir = os.path.join(app.root_path, 'static', 'images', title)
+            if os.path.exists(image_dir):
+                import shutil
+                shutil.rmtree(image_dir)
+        except Exception as e:
+            print(f"Warning: Could not delete image directory: {e}")
+
+        return jsonify({'message': f'Title "{title}" deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/get-videos', methods=['GET'])
+def get_videos_route():
+    title = request.args.get('title')
+    try:
+        videos = faq_service.get_videos(title)
+        return jsonify({'message': 'Fetched successfully', 'data': videos}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/get-avatar', methods=['GET'])
+def get_avatar_route():
+    title = request.args.get('title')
+    try:
+        avatar_path = faq_service.get_avatar(title)
+        # Return path or null
+        return jsonify({'message': 'Fetched successfully', 'avatar_path': avatar_path}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/progress/<job_id>', methods=['GET'])
+def get_progress(job_id):
+    info = PROGRESS_STORE.get(job_id)
+    if not info:
+        return jsonify({'error': 'Job not found'}), 404
+    return jsonify(info), 200
+
+@app.route('/')
+@app.route('/home')
+def createQAPage():
+    return send_from_directory('../web/createQA', 'createQA.html')
+
+
+@app.route('/player')
+def player():
+    return send_from_directory('../web/player', 'player.html')
+
+@app.route('/player/<path:filename>')
+def player_assets(filename):
+    # Serve CSS from web/player folder
+    if filename.endswith('.css'):
+        return send_from_directory('../web/player', filename)
+    # Serve JS from backend/pagejs/player folder
+    elif filename.endswith('.js'):
+        return send_from_directory('pagejs/player', filename)
+    return send_from_directory('../web/player', filename)
+
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
 
 
 
