@@ -156,6 +156,23 @@ def generate_video_route():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/generate-audio-test', methods=['POST'])
+def generate_audio_test_route():
+    data = request.get_json()
+    speechSettings = data.get('speechSettings')
+    if not speechSettings:
+        return jsonify({'error': 'Missing speechSettings'}), 400
+    try:
+        audio_url = comfy_service.generate_audio_test(speechSettings)
+        if audio_url:
+            return jsonify({'audio_url': audio_url}), 200
+        else:
+            return jsonify({'error': 'Failed to generate audio'}), 500
+    except Exception as e:
+        print(f"Error generating audio: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/generate-audio-single', methods=['POST'])
 def generate_audio_single_route():
     data = request.get_json()
@@ -311,6 +328,18 @@ def get_progress(job_id):
 @app.route('/home')
 def createQAPage():
     return send_from_directory('../web/createQA', 'createQA.html')
+
+@app.route('/createQA.css')
+def createQA_css():
+    return send_from_directory('../web/createQA', 'createQA.css')
+
+@app.route('/backend/pagejs/<path:filename>')
+def serve_pagejs(filename):
+    return send_from_directory('pagejs', filename)
+
+@app.route('/editQA')
+def editQAPage():
+    return send_from_directory('../web/editQA', 'editQA.html')
 
 
 @app.route('/player')

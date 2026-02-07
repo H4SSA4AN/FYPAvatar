@@ -653,6 +653,7 @@ async function confirmImage() {
     const middlePanel = document.getElementById('videoPreviewContainer');
     const videoPreview = document.getElementById('videoPreview');
     const promptContainer = document.getElementById('videoPromptContainer');
+    const speechSettingsContainer = document.getElementById('speechSettingsContainer');
     
     if (middlePanel) {
         // Create an image element if it doesn't exist, or find it
@@ -675,6 +676,7 @@ async function confirmImage() {
 
         // Show the prompt container
         if (promptContainer) promptContainer.style.display = 'block';
+        if (speechSettingsContainer) speechSettingsContainer.style.display = 'block';
         
         // Show the panel
         middlePanel.style.display = 'flex';
@@ -769,12 +771,48 @@ async function uploadAvatarImage(title) {
     }
 }
 
+async function generateAudioTest() {
+
+    let speechSettings = [];
+    speechSettings.push(document.getElementById('speechHappy').value);
+    speechSettings.push(document.getElementById('speechAngry').value);
+    speechSettings.push(document.getElementById('speechSad').value);
+    speechSettings.push(document.getElementById('speechSurprised').value);
+    speechSettings.push(document.getElementById('speechAfraid').value);
+    speechSettings.push(document.getElementById('speechDisgusted').value);
+    speechSettings.push(document.getElementById('speechCalm').value);
+    speechSettings.push(document.getElementById('speechMelancholic').value);
+
+    const response = await fetch('http://127.0.0.1:5000/generate-audio-test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ speechSettings: speechSettings })
+    });
+    const result = await response.json();
+    console.log(result);
+
+    return result;
+
+}
+
 
 async function generateAudioForFAQ(faqData) {
     const title = document.getElementById('title').value;
     const statusDiv = document.getElementById('statusMessage');
+    let speechSettings = [];
+
+    speechSettings.push(document.getElementById('speechHappy').value);
+    speechSettings.push(document.getElementById('speechAngry').value);
+    speechSettings.push(document.getElementById('speechSad').value);
+    speechSettings.push(document.getElementById('speechSurprised').value);
+    speechSettings.push(document.getElementById('speechAfraid').value);
+    speechSettings.push(document.getElementById('speechDisgusted').value);
+    speechSettings.push(document.getElementById('speechCalm').value);
+    speechSettings.push(document.getElementById('speechMelancholic').value);
+
+
     let audioResults = [];
-    let limit = faqData.length;
+    let limit = faqData.length; // Can change this to limit the number of audios and videos generated
 
     for (let i = 0; i < limit; i++) {
         const item = faqData[i];
@@ -786,13 +824,15 @@ async function generateAudioForFAQ(faqData) {
 
         try {
             // Call the new single audio endpoint
+            // Address should not be hardcoded in future
             const response = await fetch('http://127.0.0.1:5000/generate-audio-single', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ 
                     text: answerText,
                     title: title,
-                    filename_id: answerId // Use the ID as the filename
+                    filename_id: answerId, // Use the ID as the filename
+                    speechSettings: speechSettings
                 })
             });
             
