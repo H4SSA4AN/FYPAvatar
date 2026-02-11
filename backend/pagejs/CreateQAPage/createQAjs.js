@@ -799,6 +799,8 @@ async function generateAudioTest() {
 async function generateAudioForFAQ(faqData) {
     const title = document.getElementById('title').value;
     const statusDiv = document.getElementById('statusMessage');
+    // This is a checkbox to use placeholder videos instead of generating audio and video for each answer
+    const usePlaceholders = document.getElementById('usePlaceholders').checked;
     let speechSettings = [];
 
     speechSettings.push(document.getElementById('speechHappy').value);
@@ -811,49 +813,61 @@ async function generateAudioForFAQ(faqData) {
     speechSettings.push(document.getElementById('speechMelancholic').value);
 
 
+    const VARIANT_COUNT = 3;
     let audioResults = [];
     let limit = faqData.length; // Can change this to limit the number of audios and videos generated
+    const totalGenerations = limit * VARIANT_COUNT;
+    let generationCount = 0;
 
     for (let i = 0; i < limit; i++) {
         const item = faqData[i];
         const answerText = item.answer; 
         const answerId = item.id; // Get the UUID from the response
 
-        statusDiv.innerHTML = `Generating audio for answer ${i + 1} of ${limit}...`;
-        statusDiv.className = 'status-message processing';
+        let variantUrls = [];
 
-        try {
-            // Call the new single audio endpoint
-            // Address should not be hardcoded in future
-            const response = await fetch('http://127.0.0.1:5000/generate-audio-single', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    text: answerText,
-                    title: title,
-                    filename_id: answerId, // Use the ID as the filename
-                    speechSettings: speechSettings
-                })
-            });
-            
-            const result = await response.json();
-            if (response.ok) {
-                console.log(`Audio generated for Q${i+1} (${answerId}):`, result.audio_url);
-                audioResults.push({
-                    id: answerId,
-                    audio_url: result.audio_url
+        for (let v = 1; v <= VARIANT_COUNT; v++) {
+            generationCount++;
+            const variantId = `${answerId}_${v}`;
+
+            statusDiv.innerHTML = `Generating audio ${generationCount} of ${totalGenerations} (Q${i+1}, variant ${v})...`;
+            statusDiv.className = 'status-message processing';
+
+            try {
+                const response = await fetch('http://127.0.0.1:5000/generate-audio-single', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        text: answerText,
+                        title: title,
+                        filename_id: variantId,
+                        speechSettings: speechSettings,
+                        usePlaceholder: usePlaceholders
+                    })
                 });
-
-            } else {
-                console.error(`Failed to generate audio for Q${i+1}:`, result.error);
+                
+                const result = await response.json();
+                if (response.ok) {
+                    console.log(`Audio generated for Q${i+1} variant ${v} (${variantId}):`, result.audio_url);
+                    variantUrls.push({
+                        variant: v,
+                        audio_url: result.audio_url
+                    });
+                } else {
+                    console.error(`Failed to generate audio for Q${i+1} variant ${v}:`, result.error);
+                }
+            } catch (e) {
+                console.error(`Error processing answer ${i+1} variant ${v}:`, e);
             }
-
-        } catch (e) {
-             console.error(`Error processing answer ${i+1}:`, e);
         }
+
+        audioResults.push({
+            id: answerId,
+            variants: variantUrls
+        });
     }
 
-    statusDiv.innerHTML = `FAQ Created Successfully! Audio generated for ${faqData.length} items.`;
+    statusDiv.innerHTML = `Audio generated for ${faqData.length} items (${VARIANT_COUNT} variants each).`;
     statusDiv.className = 'status-message success';
 
     return audioResults;
@@ -864,6 +878,9 @@ async function generateVideoForFAQ(audioResults) {
     const statusDiv = document.getElementById('statusMessage');
     const imagePreview = document.getElementById('finalImagePreview') || document.getElementById('avatarPreview');
     const videoPrompt = document.getElementById('videoPrompt').value;
+
+    // This is a checkbox to use placeholder videos instead of generating audio and video for each answer
+    const usePlaceholders = document.getElementById('usePlaceholders').checked;
 
     let uploadedImagePath = await uploadAvatarImage(title);
     if (!uploadedImagePath) {
@@ -878,7 +895,8 @@ async function generateVideoForFAQ(audioResults) {
             image_path: uploadedImagePath,
             title: title,
             filename_id: `Idle`,
-            prompt: "Smiling and looking at the camera, blinking idly."
+            prompt: "Smiling and looking at the camera, blinking idly.",
+            usePlaceholder : usePlaceholders // If we want to generate video or skip 
         });
         const result = await response.json();
         if (response.ok) {
@@ -889,33 +907,40 @@ async function generateVideoForFAQ(audioResults) {
     }
     
 
+    const totalGenerations = audioResults.reduce((sum, item) => sum + item.variants.length, 0);
+    let generationCount = 0;
+
     for (let i = 0; i < audioResults.length; i++) {
         const item = audioResults[i];
-        const audioPath = item.audio_url; 
-        const filenameId = item.id;
+        const baseId = item.id;
 
-        statusDiv.innerHTML = `Generating video for answer ${i + 1} of ${audioResults.length}...`;
-        statusDiv.className = 'status-message processing';
+        for (let j = 0; j < item.variants.length; j++) {
+            const variant = item.variants[j];
+            const variantId = `${baseId}_${variant.variant}`;
+            generationCount++;
 
-        try {
-            // Use the new apiCall function
-            const response = await generateVideoSingleRequest({ 
-                audio_path: audioPath,
-                image_path: uploadedImagePath,
-                title: title,
-                filename_id: filenameId,
-                prompt: videoPrompt
-            });
+            statusDiv.innerHTML = `Generating video ${generationCount} of ${totalGenerations} (Q${i+1}, variant ${variant.variant})...`;
+            statusDiv.className = 'status-message processing';
 
-            const result = await response.json();
-            if (response.ok) {
-                console.log(`Video generated for (${filenameId}):`, result.video_url);
-            } else {
-                console.error(`Failed to generate video for (${filenameId}):`, result.error);
+            try {
+                const response = await generateVideoSingleRequest({ 
+                    audio_path: variant.audio_url,
+                    image_path: uploadedImagePath,
+                    title: title,
+                    filename_id: variantId,
+                    prompt: videoPrompt,
+                    usePlaceholder: usePlaceholders
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    console.log(`Video generated for (${variantId}):`, result.video_url);
+                } else {
+                    console.error(`Failed to generate video for (${variantId}):`, result.error);
+                }
+            } catch (e) {
+                console.error(`Error generating video for ${variantId}:`, e);
             }
-
-        } catch (e) {
-            console.error(`Error generating video for ${filenameId}:`, e);
         }
     }
 

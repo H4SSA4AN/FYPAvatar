@@ -17,6 +17,8 @@ async function generateImageRequest(prompt) {
     });
 }
 
+
+// This is the old endpoint for generating video do not use
 async function generateVideoRequest(formData) {
     return await fetch(`${API_BASE_URL}/generate-video`, {
         method: 'POST',

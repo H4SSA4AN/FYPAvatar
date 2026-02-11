@@ -8,6 +8,7 @@ import uuid
 import tempfile
 import threading
 import time
+import shutil
 
 app = Flask(__name__)
 CORS(app)
@@ -179,16 +180,29 @@ def generate_audio_single_route():
     text = data.get('text')
     title = data.get('title')
     filename_id = data.get('filename_id') # Get the UUID
+    use_placeholder = data.get('usePlaceholder', False)
+    speechSettings = data.get('speechSettings', [])
     
     if not text or not title or not filename_id:
         return jsonify({'error': 'Missing text, title, or filename_id'}), 400
 
     try:
-        audio_url = comfy_service.generate_audio_single(text, title, filename_id)
-        if audio_url:
-             return jsonify({'audio_url': audio_url}), 200
+        if use_placeholder:
+            # Skip ComfyUI -- copy placeholder file directly
+            output_dir = os.path.join(app.root_path, 'static', 'audio', title)
+            os.makedirs(output_dir, exist_ok=True)
+            save_filename = f"{filename_id}.mp3"
+            save_path = os.path.join(output_dir, save_filename)
+            placeholder_path = os.path.join(app.root_path, 'static', 'placeholder.mp3')
+            shutil.copy(placeholder_path, save_path)
+            audio_url = f"/static/audio/{title}/{save_filename}"
+            return jsonify({'audio_url': audio_url}), 200
         else:
-             return jsonify({'error': 'Failed to generate audio'}), 500
+            audio_url = comfy_service.generate_audio_single(text, title, filename_id, speechSettings)
+            if audio_url:
+                 return jsonify({'audio_url': audio_url}), 200
+            else:
+                 return jsonify({'error': 'Failed to generate audio'}), 500
     except Exception as e:
         print(f"Error generating audio: {e}")
         return jsonify({'error': str(e)}), 500
@@ -202,21 +216,36 @@ def generate_video_single_route():
     title = data.get('title')
     filename_id = data.get('filename_id')
     prompt = data.get('prompt') # Get prompt
+    use_placeholder = data.get('usePlaceholder', False)
     
     if not all([audio_path, image_path, title, filename_id]):
         return jsonify({'error': 'Missing required fields'}), 400
 
-    # Use the filename_id (UUID) as the job_id since it's unique per question
-    job_id = filename_id 
-    
-    # Initialize progress
-    PROGRESS_STORE[job_id] = { "status": "processing", "progress": 0, "eta": 0 }
+    if use_placeholder:
+        # Skip ComfyUI -- copy placeholder file directly (no background thread needed)
+        output_dir = os.path.join(app.root_path, 'static', 'videos', title)
+        os.makedirs(output_dir, exist_ok=True)
+        save_filename = f"{filename_id}.mp4"
+        save_path = os.path.join(output_dir, save_filename)
+        placeholder_path = os.path.join(app.root_path, 'static', 'placeholder.mp4')
+        shutil.copy(placeholder_path, save_path)
+        video_url = f"/static/videos/{title}/{save_filename}"
+        # Still use job_id/progress pattern so frontend doesn't need separate handling
+        job_id = filename_id
+        PROGRESS_STORE[job_id] = { "status": "completed", "progress": 100, "eta": 0, "url": video_url }
+        return jsonify({'job_id': job_id, 'status': 'started'}), 202
+    else:
+        # Use the filename_id (UUID) as the job_id since it's unique per question
+        job_id = filename_id 
+        
+        # Initialize progress
+        PROGRESS_STORE[job_id] = { "status": "processing", "progress": 0, "eta": 0 }
 
-    # Start background thread
-    thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, job_id))
-    thread.start()
+        # Start background thread
+        thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, job_id))
+        thread.start()
 
-    return jsonify({'job_id': job_id, 'status': 'started'}), 202
+        return jsonify({'job_id': job_id, 'status': 'started'}), 202
 
 
 @app.route('/upload-avatar', methods=['POST'])
@@ -324,8 +353,15 @@ def get_progress(job_id):
         return jsonify({'error': 'Job not found'}), 404
     return jsonify(info), 200
 
+# --- Shared asset route for all JS under pagejs ---
+@app.route('/backend/pagejs/<path:filename>')
+def serve_pagejs(filename):
+    return send_from_directory('pagejs', filename)
+
+# --- Create FAQ page ---
 @app.route('/')
 @app.route('/home')
+@app.route('/createQA')
 def createQAPage():
     return send_from_directory('../web/createQA', 'createQA.html')
 
@@ -333,25 +369,33 @@ def createQAPage():
 def createQA_css():
     return send_from_directory('../web/createQA', 'createQA.css')
 
-@app.route('/backend/pagejs/<path:filename>')
-def serve_pagejs(filename):
-    return send_from_directory('pagejs', filename)
-
+# --- Edit FAQ page ---
 @app.route('/editQA')
 def editQAPage():
     return send_from_directory('../web/editQA', 'editQA.html')
 
+@app.route('/editQA.css')
+def editQA_css():
+    return send_from_directory('../web/editQA', 'editQA.css')
 
+# --- Test FAQ page ---
+@app.route('/testQA')
+def testQAPage():
+    return send_from_directory('../web/TestQA', 'testQA.html')
+
+@app.route('/testQA.css')
+def testQA_css():
+    return send_from_directory('../web/TestQA', 'testQA.css')
+
+# --- Player page ---
 @app.route('/player')
 def player():
     return send_from_directory('../web/player', 'player.html')
 
 @app.route('/player/<path:filename>')
 def player_assets(filename):
-    # Serve CSS from web/player folder
     if filename.endswith('.css'):
         return send_from_directory('../web/player', filename)
-    # Serve JS from backend/pagejs/player folder
     elif filename.endswith('.js'):
         return send_from_directory('pagejs/player', filename)
     return send_from_directory('../web/player', filename)

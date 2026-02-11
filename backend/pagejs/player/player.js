@@ -12,6 +12,32 @@ let currentTitle = null; // Add this global variable
 let idleTimer = null;
 const IDLE_TIMEOUT_MS = 45000; // 45 seconds
 
+// Variant tracking: Map<questionId, Set<playedVariantNumbers>>
+const VARIANT_COUNT = 3;
+const playedVariants = new Map();
+
+function pickVariant(questionId) {
+    if (!playedVariants.has(questionId)) {
+        playedVariants.set(questionId, new Set());
+    }
+    let played = playedVariants.get(questionId);
+
+    // Reset if all variants have been played
+    if (played.size >= VARIANT_COUNT) {
+        played.clear();
+    }
+
+    // Pick a random unplayed variant
+    let available = [];
+    for (let v = 1; v <= VARIANT_COUNT; v++) {
+        if (!played.has(v)) available.push(v);
+    }
+    const chosen = available[Math.floor(Math.random() * available.length)];
+    played.add(chosen);
+    console.log(`Picked variant ${chosen} for ${questionId}`);
+    return chosen;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('chat-input');
     const micButton = document.getElementById('mic-button');
@@ -526,8 +552,10 @@ function setupToggle() {
 
 function playAnswerVideo(videoId, videoTitle) {
     const useTitle = videoTitle || currentTitle;
-    const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(useTitle)}/${videoId}.mp4`;
+    const variant = pickVariant(videoId);
+    const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(useTitle)}/${videoId}_${variant}.mp4`;
     
+    console.log(`Playing variant ${variant} for ${videoId}`);
     playActiveVideo(videoUrl, () => {
          console.log("Answer finished. Revealing Idle.");
          resetIdleTimer();
