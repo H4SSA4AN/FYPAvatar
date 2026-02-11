@@ -1,6 +1,7 @@
 
 import pandas as pd
 import uuid
+import json
 from .vectorDB import VectorDBService
 from .database import DatabaseService
 import os
@@ -27,7 +28,7 @@ class FAQService:
         return self.database_service.get_title_id(title)
 
 
-    def process_csv(self, file_stream, title):
+    def process_csv(self, file_stream, title, category='answers'):
 
         titles = self.get_titles()
 
@@ -53,6 +54,7 @@ class FAQService:
 
         for metadata in metadatas:
             metadata['Title'] = title
+            metadata['category'] = category
 
         self.vector_db_service.add_documents(id_strings, questions, metadatas)
         print("DONE")
@@ -90,20 +92,38 @@ class FAQService:
         return formatted_results
 
     def query_faq(self, query_text, title="none"):
-        
+        query_texts = [query_text] if isinstance(query_text, str) else query_text
+
+        # Step 1: Check rude collection first
+        try:
+            rude_results = self.vector_db_service.query_rude(query_text, n_results=1)
+            if rude_results['distances'] and rude_results['distances'][0]:
+                rude_distance = rude_results['distances'][0][0]
+                rude_confidence = max(0, min(100, (1 - rude_distance) * 100))
+                if rude_confidence >= 60:
+                    return {
+                        "answer": None,
+                        "question": rude_results['documents'][0][0],
+                        "id": None,
+                        "score": rude_distance,
+                        "title": title,
+                        "category": "rude"
+                    }
+        except Exception as e:
+            # Rude collection might be empty -- that's fine, skip
+            print(f"Rude check skipped: {e}")
+
+        # Step 2: Query answers + conversational
         where_filter = {"Title": title}
         
-        # Search both selected title AND 'Basic'
-        if title and title != "Basic" and title != "none":
+        # Search both selected title AND conversational entries
+        if title and title != "none":
             where_filter = {
                 "$or": [
                     {"Title": title},
-                    {"Title": "Basic"}
+                    {"category": "conversational"}
                 ]
             }
-
-        # Ensure query_text is a list
-        query_texts = [query_text] if isinstance(query_text, str) else query_text
 
         results = self.vector_db_service.collection.query(
             query_texts=query_texts, 
@@ -112,25 +132,36 @@ class FAQService:
         )
         
         if results['metadatas'] and results['metadatas'][0]:
-            # Access the first result
             metadata = results['metadatas'][0][0]
             document_id = results['ids'][0][0]
-            
-            # Extract Distance (Confidence Score)
             distance = results['distances'][0][0] if 'distances' in results else None
-            
-            # Get the actual title of the matched document (e.g. "Basic" or the selected title)
             matched_title = metadata.get('Title', title)
+            matched_category = metadata.get('category', 'answers')
+
+            # Calculate confidence
+            confidence = max(0, min(100, (1 - distance) * 100)) if distance is not None else 0
+
+            # Step 3: If confidence too low, return no_answer
+            if confidence < 60:
+                return {
+                    "answer": None,
+                    "question": results['documents'][0][0],
+                    "id": None,
+                    "score": distance,
+                    "title": title,
+                    "category": "no_answer"
+                }
 
             return {
                 "answer": metadata['answer'],
                 "question": results['documents'][0][0],
                 "id": document_id,
                 "score": distance,
-                "title": matched_title # Return the matched title
+                "title": matched_title,
+                "category": matched_category
             }
             
-        return {"answer": "No suitable answer found", "id": None}
+        return {"answer": "No suitable answer found", "id": None, "category": "no_answer"}
 
     def delete_topic(self, title):
         print(f"Deleting topic: {title}")
@@ -144,26 +175,37 @@ class FAQService:
 
 
     
-    def get_videos(self, title):
+    def get_videos(self, title, category=None):
         if not title:
             return []
         
-        # Robust path construction (points to backend/static/videos/Title)
         backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        video_dir = os.path.join(backend_dir, 'static', 'videos', title)
+        
+        if category:
+            video_dir = os.path.join(backend_dir, 'static', 'videos', title, category)
+        else:
+            video_dir = os.path.join(backend_dir, 'static', 'videos', title)
         
         video_files = []
         if os.path.exists(video_dir):
             try:
-                # List all mp4 files
                 files = os.listdir(video_dir)
-                # Return just the filenames (which are UUIDs.mp4) or full relative paths
-                # Returning just filenames (e.g. "uuid.mp4") is usually enough for matching
                 video_files = [f for f in files if f.endswith('.mp4')]
             except OSError as e:
                 print(f"Error accessing video directory: {e}")
                 
         return video_files
+
+    def get_default_responses(self):
+        """Read defaultResponses.json and return the rude and no_answer text arrays"""
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        json_path = os.path.join(backend_dir, 'defaultResponses.json')
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception as e:
+            print(f"Error reading defaultResponses.json: {e}")
+            return {"rude": [], "no_answer": []}
 
     def get_avatar(self, title):
         if not title:

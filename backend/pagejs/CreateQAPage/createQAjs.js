@@ -841,6 +841,7 @@ async function generateAudioForFAQ(faqData) {
                         text: answerText,
                         title: title,
                         filename_id: variantId,
+                        category: 'answers',
                         speechSettings: speechSettings,
                         usePlaceholder: usePlaceholders
                     })
@@ -928,6 +929,7 @@ async function generateVideoForFAQ(audioResults) {
                     image_path: uploadedImagePath,
                     title: title,
                     filename_id: variantId,
+                    category: 'answers',
                     prompt: videoPrompt,
                     usePlaceholder: usePlaceholders
                 });
@@ -945,6 +947,112 @@ async function generateVideoForFAQ(audioResults) {
     }
 
     statusDiv.innerHTML = `FAQ Creation & Video Generation Complete!`;
+    statusDiv.className = 'status-message success';
+}
+
+
+async function generateDefaultCategoryVideos(title) {
+    const statusDiv = document.getElementById('statusMessage');
+    const usePlaceholders = document.getElementById('usePlaceholders').checked;
+    const videoPrompt = document.getElementById('videoPrompt').value;
+    let speechSettings = [];
+    speechSettings.push(document.getElementById('speechHappy').value);
+    speechSettings.push(document.getElementById('speechAngry').value);
+    speechSettings.push(document.getElementById('speechSad').value);
+    speechSettings.push(document.getElementById('speechSurprised').value);
+    speechSettings.push(document.getElementById('speechAfraid').value);
+    speechSettings.push(document.getElementById('speechDisgusted').value);
+    speechSettings.push(document.getElementById('speechCalm').value);
+    speechSettings.push(document.getElementById('speechMelancholic').value);
+
+    const VARIANT_COUNT = 3;
+
+    // Fetch default responses from backend
+    let defaultResponses;
+    try {
+        const resp = await fetch('http://127.0.0.1:5000/default-responses');
+        defaultResponses = await resp.json();
+    } catch (e) {
+        console.error("Failed to fetch default responses:", e);
+        return;
+    }
+
+    // Get the uploaded image path for this topic
+    let uploadedImagePath = await uploadAvatarImage(title);
+    if (!uploadedImagePath) {
+        console.error("Failed to upload avatar image for default category video generation.");
+        return;
+    }
+
+    // Generate for each category: rude and no_answer
+    const categories = ['rude', 'no_answer'];
+    for (const category of categories) {
+        const texts = defaultResponses[category] || [];
+        const totalForCategory = texts.length * VARIANT_COUNT;
+        let count = 0;
+
+        for (let i = 0; i < texts.length; i++) {
+            const text = texts[i];
+            const baseId = `${category}_${i + 1}`;
+
+            for (let v = 1; v <= VARIANT_COUNT; v++) {
+                count++;
+                const variantId = `${baseId}_${v}`;
+
+                statusDiv.innerHTML = `Generating ${category} audio ${count} of ${totalForCategory}...`;
+                statusDiv.className = 'status-message processing';
+
+                // Generate audio
+                let audioUrl = null;
+                try {
+                    const audioResp = await fetch('http://127.0.0.1:5000/generate-audio-single', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text: text,
+                            title: title,
+                            filename_id: variantId,
+                            category: category,
+                            speechSettings: speechSettings,
+                            usePlaceholder: usePlaceholders
+                        })
+                    });
+                    const audioResult = await audioResp.json();
+                    if (audioResp.ok) {
+                        audioUrl = audioResult.audio_url;
+                        console.log(`${category} audio ${variantId}:`, audioUrl);
+                    }
+                } catch (e) {
+                    console.error(`Error generating ${category} audio ${variantId}:`, e);
+                }
+
+                // Generate video
+                if (audioUrl) {
+                    statusDiv.innerHTML = `Generating ${category} video ${count} of ${totalForCategory}...`;
+
+                    try {
+                        const videoResp = await generateVideoSingleRequest({
+                            audio_path: audioUrl,
+                            image_path: uploadedImagePath,
+                            title: title,
+                            filename_id: variantId,
+                            category: category,
+                            prompt: videoPrompt,
+                            usePlaceholder: usePlaceholders
+                        });
+                        const videoResult = await videoResp.json();
+                        if (videoResp.ok) {
+                            console.log(`${category} video ${variantId}:`, videoResult);
+                        }
+                    } catch (e) {
+                        console.error(`Error generating ${category} video ${variantId}:`, e);
+                    }
+                }
+            }
+        }
+    }
+
+    statusDiv.innerHTML = `Default category videos generated!`;
     statusDiv.className = 'status-message success';
 }
 
@@ -968,7 +1076,8 @@ async function createFAQ() {
         return;
     }
 
-    
+    const title = document.getElementById('title').value;
+
     // 3. Generate Audio for each Answer
     let audioResults = await generateAudioForFAQ(faqData);
     if (!audioResults || audioResults.length === 0) {
@@ -978,7 +1087,9 @@ async function createFAQ() {
 
     // 4. Generate Video for each Answer
     await generateVideoForFAQ(audioResults);
-    
+
+    // 5. Generate default category videos (rude + no_answer)
+    await generateDefaultCategoryVideos(title);
     
     console.log("FAQ Creation Complete");
 }

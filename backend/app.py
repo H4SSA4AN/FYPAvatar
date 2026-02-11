@@ -180,6 +180,7 @@ def generate_audio_single_route():
     text = data.get('text')
     title = data.get('title')
     filename_id = data.get('filename_id') # Get the UUID
+    category = data.get('category', 'answers')
     use_placeholder = data.get('usePlaceholder', False)
     speechSettings = data.get('speechSettings', [])
     
@@ -189,13 +190,13 @@ def generate_audio_single_route():
     try:
         if use_placeholder:
             # Skip ComfyUI -- copy placeholder file directly
-            output_dir = os.path.join(app.root_path, 'static', 'audio', title)
+            output_dir = os.path.join(app.root_path, 'static', 'audio', title, category)
             os.makedirs(output_dir, exist_ok=True)
             save_filename = f"{filename_id}.mp3"
             save_path = os.path.join(output_dir, save_filename)
             placeholder_path = os.path.join(app.root_path, 'static', 'placeholder.mp3')
             shutil.copy(placeholder_path, save_path)
-            audio_url = f"/static/audio/{title}/{save_filename}"
+            audio_url = f"/static/audio/{title}/{category}/{save_filename}"
             return jsonify({'audio_url': audio_url}), 200
         else:
             audio_url = comfy_service.generate_audio_single(text, title, filename_id, speechSettings)
@@ -221,15 +222,17 @@ def generate_video_single_route():
     if not all([audio_path, image_path, title, filename_id]):
         return jsonify({'error': 'Missing required fields'}), 400
 
+    category = data.get('category', 'answers')
+
     if use_placeholder:
         # Skip ComfyUI -- copy placeholder file directly (no background thread needed)
-        output_dir = os.path.join(app.root_path, 'static', 'videos', title)
+        output_dir = os.path.join(app.root_path, 'static', 'videos', title, category)
         os.makedirs(output_dir, exist_ok=True)
         save_filename = f"{filename_id}.mp4"
         save_path = os.path.join(output_dir, save_filename)
         placeholder_path = os.path.join(app.root_path, 'static', 'placeholder.mp4')
         shutil.copy(placeholder_path, save_path)
-        video_url = f"/static/videos/{title}/{save_filename}"
+        video_url = f"/static/videos/{title}/{category}/{save_filename}"
         # Still use job_id/progress pattern so frontend doesn't need separate handling
         job_id = filename_id
         PROGRESS_STORE[job_id] = { "status": "completed", "progress": 100, "eta": 0, "url": video_url }
@@ -330,9 +333,18 @@ def delete_title_route():
 @app.route('/get-videos', methods=['GET'])
 def get_videos_route():
     title = request.args.get('title')
+    category = request.args.get('category')
     try:
-        videos = faq_service.get_videos(title)
+        videos = faq_service.get_videos(title, category)
         return jsonify({'message': 'Fetched successfully', 'data': videos}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/default-responses', methods=['GET'])
+def get_default_responses():
+    try:
+        responses = faq_service.get_default_responses()
+        return jsonify(responses), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
