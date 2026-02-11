@@ -73,6 +73,23 @@
                     <label for="videoPrompt" style="display: block; margin-bottom: 5px; font-weight: bold; color: #555;">Video Generation Prompt</label>
                     <textarea id="videoPrompt" rows="3" placeholder="Describe how the video should look (movements, expression)..." style="width: 100%; font-family: inherit; padding: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; resize: vertical;"></textarea>
                 </div>
+                <div id="speechSettingsContainer" style="width: 100%; margin-top: 15px; display: none;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #555;">Speech Settings</label>
+                    <div class="slider-grid">
+                        <div class="slider-item">Happy <input type="range" id="speechHappy" value="0" min="0" max="1.2" step="0.1"></div>
+                        <div class="slider-item">Angry <input type="range" id="speechAngry" value="0" min="0" max="1.2" step="0.1"></div>
+                        <div class="slider-item">Sad <input type="range" id="speechSad" value="0" min="0" max="1.2" step="0.1"></div>
+                        <div class="slider-item">Surprised <input type="range" id="speechSurprised" value="0" min="0.5" max="1.2" step="0.1"></div>
+                        <div class="slider-item">Afraid <input type="range" id="speechAfraid" value="0" min="0" max="1.2" step="0.1"></div>
+                        <div class="slider-item">Disgusted <input type="range" id="speechDisgusted" value="0" min="0" max="1.2" step="0.1"></div>
+                        <div class="slider-item">Calm <input type="range" id="speechCalm" value="0" min="0" max="1.2" step="0.1"></div>
+                        <div class="slider-item">Melancholic <input type="range" id="speechMelancholic" value="0" min="0.5" max="1.2" step="0.1"></div>
+                    </div>
+
+                <!--  Test button for audio generation
+                    <button type="button" class="submit-btn" id="generateAudioTestBtn" onclick="generateAudioTest()">Generate Audio Test</button> -->
+            
+                </div>
             </div>
 
         <div class="right-panel">

@@ -182,8 +182,73 @@ class ComfyService:
 
         return output_videos[0] if output_videos else None
 
+    def generate_audio_test(self, speechSettings):
+        workflow_path = "../backend/ComfyAPIs/IndexTTS-2.json"
 
-    def generate_audio_single(self, text, title, filename_id):
+        with open(workflow_path, 'r', encoding="utf-8") as f:
+            workflow = json.load(f)
+        
+        workflow["125"]["inputs"]["Happy"] = speechSettings[0]
+        workflow["125"]["inputs"]["Angry"] = speechSettings[1]
+        workflow["125"]["inputs"]["Sad"] = speechSettings[2]
+        workflow["125"]["inputs"]["Surprised"] = speechSettings[3]
+        workflow["125"]["inputs"]["Afraid"] = speechSettings[4]
+        workflow["125"]["inputs"]["Disgusted"] = speechSettings[5]
+        workflow["125"]["inputs"]["Calm"] = speechSettings[6]
+        workflow["125"]["inputs"]["Melancholic"] = speechSettings[7]
+
+        workflow["47"]["inputs"]["seed"] = random.randint(1, 10**9)
+        workflow["82"]["inputs"]["value"] += " I am a test audio, to see if the emotions work. [pause:0.5s]"
+
+        ws = websocket.WebSocket()
+        ws.connect(f"ws://{self.server_addr}/ws?clientId={self.client_id}")
+
+        print("Queueing audio test...")
+        prompt_response = self.queue_prompt(workflow)
+        prompt_id = prompt_response['prompt_id']
+
+        while True:
+            out = ws.recv()
+            if isinstance(out, str):
+                message = json.loads(out)
+                if message['type'] == 'executing':
+                    data = message['data']
+                    if data['node'] is None and data['prompt_id'] == prompt_id:
+                        break 
+            else:
+                continue
+
+
+        # Retrieve output from history
+        history = self.get_history(prompt_id)[prompt_id]
+        node_outputs = history['outputs']
+
+        # Save to static/test/
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        output_dir = os.path.join(base_dir, 'static', 'test')
+        os.makedirs(output_dir, exist_ok=True)
+
+        if "134" in node_outputs:
+            outputs = node_outputs["134"]
+            if "audio" in outputs and len(outputs["audio"]) > 0:
+                audio_info = outputs["audio"][0]
+                audio_filename = audio_info.get("filename")
+                subfolder = audio_info.get("subfolder", "")
+                folder_type = audio_info.get("type", "output")
+
+                audio_data = self.get_image(audio_filename, subfolder, folder_type)
+
+                save_filename = f"test_{uuid.uuid4()}.mp3"
+                save_path = os.path.join(output_dir, save_filename)
+                with open(save_path, 'wb') as audio_file:
+                    audio_file.write(audio_data)
+
+                return f"/static/test/{save_filename}"
+
+        return None
+
+
+    def generate_audio_single(self, text, title, filename_id, speechSettings):
         workflow_path = "../backend/ComfyAPIs/IndexTTS-2.json"
         
         # Create directory for the title
@@ -205,6 +270,16 @@ class ComfyService:
 
         with open(workflow_path, 'r', encoding="utf-8") as f:
             workflow = json.load(f)
+
+        workflow["125"]["inputs"]["Happy"] = speechSettings[0]
+        workflow["125"]["inputs"]["Angry"] = speechSettings[1]
+        workflow["125"]["inputs"]["Sad"] = speechSettings[2]
+        workflow["125"]["inputs"]["Surprised"] = speechSettings[3]
+        workflow["125"]["inputs"]["Afraid"] = speechSettings[4]
+        workflow["125"]["inputs"]["Disgusted"] = speechSettings[5]
+        workflow["125"]["inputs"]["Calm"] = speechSettings[6]
+        workflow["125"]["inputs"]["Melancholic"] = speechSettings[7]
+
 
         # Node 82 is PrimitiveStringMultiline (Text Input)
         workflow["82"]["inputs"]["value"] += " " + text + " [pause:0.5s]"

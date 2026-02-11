@@ -389,5 +389,37 @@ textarea:focus {
 #avatar-preview img {
     width: 100%;
     height: 100%;
-    object-fit: contain; /* CHANGE: This ensures the WHOLE image is seen */
+    object-fit: contain; 
+}
+
+#speechSettingsContainer {
+    background: linear-gradient(135deg, #f5f7fa 0%, #e3e7f0 100%);
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid #e1e8ed;
+    box-sizing: border-box;      
+}
+
+input[type="range"] {
+    flex: 1;                     
+    min-width: 0;                  
+    margin: 8px 10px;
+    accent-color: #667eea;
+    cursor: pointer;
+}
+
+.slider-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.slider-item {
+    display: grid;
+    grid-template-columns: 90px 1fr;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    color: #555;
 }
