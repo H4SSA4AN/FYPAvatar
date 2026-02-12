@@ -1,3 +1,4 @@
+const API_BASE_URL = window.location.origin;
 const statusDiv = document.getElementById('statusMessage');
 let counter = 1;
 
@@ -616,7 +617,7 @@ async function generateVideo() {
 
 
         // 2. Update Video Player
-        videoPlayer.src = `http://127.0.0.1:5000${videoUrl}`;
+        videoPlayer.src = `${API_BASE_URL}${videoUrl}`;
         videoContainer.style.display = 'block';
         videoContainer.classList.add('open');
         videoPlayer.style.display = 'block';
@@ -749,7 +750,7 @@ async function uploadAvatarImage(title) {
     formData.append('title', title);
 
     try {
-        const response = await fetch('http://127.0.0.1:5000/upload-avatar', {
+        const response = await fetch(`${API_BASE_URL}/upload-avatar`, {
             method: 'POST',
             body: formData
         });
@@ -783,7 +784,7 @@ async function generateAudioTest() {
     speechSettings.push(document.getElementById('speechCalm').value);
     speechSettings.push(document.getElementById('speechMelancholic').value);
 
-    const response = await fetch('http://127.0.0.1:5000/generate-audio-test', {
+    const response = await fetch(`${API_BASE_URL}/generate-audio-test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ speechSettings: speechSettings })
@@ -834,7 +835,7 @@ async function generateAudioForFAQ(faqData) {
             statusDiv.className = 'status-message processing';
 
             try {
-                const response = await fetch('http://127.0.0.1:5000/generate-audio-single', {
+                const response = await fetch(`${API_BASE_URL}/generate-audio-single`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ 
@@ -970,7 +971,7 @@ async function generateDefaultCategoryVideos(title) {
     // Fetch default responses from backend
     let defaultResponses;
     try {
-        const resp = await fetch('http://127.0.0.1:5000/default-responses');
+        const resp = await fetch(`${API_BASE_URL}/default-responses`);
         defaultResponses = await resp.json();
     } catch (e) {
         console.error("Failed to fetch default responses:", e);
@@ -1005,7 +1006,7 @@ async function generateDefaultCategoryVideos(title) {
                 // Generate audio
                 let audioUrl = null;
                 try {
-                    const audioResp = await fetch('http://127.0.0.1:5000/generate-audio-single', {
+                    const audioResp = await fetch(`${API_BASE_URL}/generate-audio-single`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -1057,6 +1058,126 @@ async function generateDefaultCategoryVideos(title) {
 }
 
 
+async function generateConversationalVideos(title) {
+    const statusDiv = document.getElementById('statusMessage');
+    const usePlaceholders = document.getElementById('usePlaceholders').checked;
+    const videoPrompt = document.getElementById('videoPrompt').value;
+    let speechSettings = [];
+    speechSettings.push(document.getElementById('speechHappy').value);
+    speechSettings.push(document.getElementById('speechAngry').value);
+    speechSettings.push(document.getElementById('speechSad').value);
+    speechSettings.push(document.getElementById('speechSurprised').value);
+    speechSettings.push(document.getElementById('speechAfraid').value);
+    speechSettings.push(document.getElementById('speechDisgusted').value);
+    speechSettings.push(document.getElementById('speechCalm').value);
+    speechSettings.push(document.getElementById('speechMelancholic').value);
+
+    const VARIANT_COUNT = 3;
+
+    // 1. Load conversational CSV into vector DB for this title
+    statusDiv.innerHTML = 'Loading conversational data...';
+    statusDiv.className = 'status-message processing';
+
+    let convData;
+    try {
+        const resp = await fetch(`${API_BASE_URL}/load-conversational`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: title })
+        });
+        const result = await resp.json();
+        if (!resp.ok) {
+            console.error("Failed to load conversational data:", result.error);
+            return;
+        }
+        convData = result.data;
+    } catch (e) {
+        console.error("Failed to load conversational data:", e);
+        return;
+    }
+
+    if (!convData || convData.length === 0) {
+        console.warn("No conversational data found.");
+        return;
+    }
+
+    // Get the uploaded image path for this topic
+    let uploadedImagePath = await uploadAvatarImage(title);
+    if (!uploadedImagePath) {
+        console.error("Failed to upload avatar image for conversational video generation.");
+        return;
+    }
+
+    const category = 'conversational';
+    const totalGenerations = convData.length * VARIANT_COUNT;
+    let count = 0;
+
+    for (let i = 0; i < convData.length; i++) {
+        const item = convData[i];
+        const text = item.answer;
+        const answerId = item.id;
+
+        for (let v = 1; v <= VARIANT_COUNT; v++) {
+            count++;
+            const variantId = `${answerId}_${v}`;
+
+            statusDiv.innerHTML = `Generating conversational audio ${count} of ${totalGenerations}...`;
+            statusDiv.className = 'status-message processing';
+
+            // Generate audio
+            let audioUrl = null;
+            try {
+                const audioResp = await fetch(`${API_BASE_URL}/generate-audio-single`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text,
+                        title: title,
+                        filename_id: variantId,
+                        category: category,
+                        speechSettings: speechSettings,
+                        usePlaceholder: usePlaceholders
+                    })
+                });
+                const audioResult = await audioResp.json();
+                if (audioResp.ok) {
+                    audioUrl = audioResult.audio_url;
+                    console.log(`Conversational audio ${variantId}:`, audioUrl);
+                }
+            } catch (e) {
+                console.error(`Error generating conversational audio ${variantId}:`, e);
+            }
+
+            // Generate video
+            if (audioUrl) {
+                statusDiv.innerHTML = `Generating conversational video ${count} of ${totalGenerations}...`;
+
+                try {
+                    const videoResp = await generateVideoSingleRequest({
+                        audio_path: audioUrl,
+                        image_path: uploadedImagePath,
+                        title: title,
+                        filename_id: variantId,
+                        category: category,
+                        prompt: videoPrompt,
+                        usePlaceholder: usePlaceholders
+                    });
+                    const videoResult = await videoResp.json();
+                    if (videoResp.ok) {
+                        console.log(`Conversational video ${variantId}:`, videoResult);
+                    }
+                } catch (e) {
+                    console.error(`Error generating conversational video ${variantId}:`, e);
+                }
+            }
+        }
+    }
+
+    statusDiv.innerHTML = 'Conversational videos generated!';
+    statusDiv.className = 'status-message success';
+}
+
+
 async function createFAQ() {
     //Check if user has uploaded a csv file, and does api request to create FAQ
   //  await uploadCSV();
@@ -1090,6 +1211,9 @@ async function createFAQ() {
 
     // 5. Generate default category videos (rude + no_answer)
     await generateDefaultCategoryVideos(title);
+
+    // 6. Generate conversational category videos
+    await generateConversationalVideos(title);
     
     console.log("FAQ Creation Complete");
 }

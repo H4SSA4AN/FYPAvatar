@@ -240,11 +240,6 @@ body {
     border-top: 1px dashed #eee;
 }
 
-.delete-btn {
-    /* (Use existing .delete-btn styles, just ensure display is block/inline-block) */
-    display: inline-block; 
-}
-
 /* Delete Button Styles */
 .delete-btn {
     background-color: #e74c3c;
@@ -257,7 +252,7 @@ body {
     cursor: pointer;
     transition: background-color 0.3s, transform 0.1s;
     box-shadow: 0 4px 6px rgba(231, 76, 60, 0.2);
-    display: none; /* Hidden by default until topic selected */
+    display: inline-block;
 }
 
 .delete-btn:hover {

@@ -1,4 +1,4 @@
-const API_BASE_URL = 'http://127.0.0.1:5000';
+const API_BASE_URL = window.location.origin;
 let allTitles = [];
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -102,12 +102,14 @@ function setupDelete() {
                 // Reset UI
                 document.getElementById('topicSearch').value = '';
                 document.getElementById('selectedTitle').textContent = '';
-                document.getElementById('deleteBtn').style.display = 'none';
-                document.querySelector('#faqTable tbody').innerHTML = '<tr><td colspan="2">Select a topic...</td></tr>';
+                document.getElementById('managementControls').style.display = 'none';
+                document.querySelector('#faqTable tbody').innerHTML = '<tr><td colspan="3">Select a topic to view or delete...</td></tr>';
+                currentAvatarPath = null;
                 // Refresh titles
                 fetchTitles();
             } else {
-                alert('Failed to delete topic.');
+                const result = await response.json();
+                alert(`Failed to delete topic: ${result.error || 'Unknown error'}`);
             }
         } catch (error) {
             console.error('Error deleting topic:', error);

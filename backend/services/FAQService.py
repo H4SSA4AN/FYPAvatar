@@ -207,6 +207,37 @@ class FAQService:
             print(f"Error reading defaultResponses.json: {e}")
             return {"rude": [], "no_answer": []}
 
+    def load_conversational(self, title):
+        """Load conversational.csv into the vector DB with category='conversational' for the given title"""
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        csv_path = os.path.join(backend_dir, 'conversational.csv')
+
+        df = pd.read_csv(csv_path, skipinitialspace=True)
+        df.columns = df.columns.str.strip().str.lower()
+
+        ids = [f"conv_{uuid.uuid4()}" for _ in range(len(df))]
+        df['id'] = ids
+
+        questions = df['question'].tolist()
+        id_strings = df['id'].astype(str).tolist()
+
+        metadatas = df[['answer']].to_dict(orient='records')
+        for metadata in metadatas:
+            metadata['Title'] = title
+            metadata['category'] = 'conversational'
+
+        self.vector_db_service.add_documents(id_strings, questions, metadatas)
+
+        # Also add to SQL DB so they show up in FAQ lists
+        try:
+            title_id = self.get_title_id(title)
+            for _, row in df.iterrows():
+                self.database_service.add_question_answer(row['id'], title_id, row['question'], row['answer'])
+        except Exception as e:
+            print(f"Error adding conversational to SQL: {e}")
+
+        return df.to_dict(orient='records')
+
     def get_avatar(self, title):
         if not title:
             return None

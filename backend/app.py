@@ -316,14 +316,15 @@ def delete_title_route():
     try:
         faq_service.delete_topic(title)
         
-        # Also try to remove the directory of images if it exists
-        try:
-            image_dir = os.path.join(app.root_path, 'static', 'images', title)
-            if os.path.exists(image_dir):
-                import shutil
-                shutil.rmtree(image_dir)
-        except Exception as e:
-            print(f"Warning: Could not delete image directory: {e}")
+        # Remove all static directories for this topic (images, videos, audio)
+        for folder in ['images', 'videos', 'audio']:
+            try:
+                dir_path = os.path.join(app.root_path, 'static', folder, title)
+                if os.path.exists(dir_path):
+                    shutil.rmtree(dir_path)
+                    print(f"Deleted {folder} directory for '{title}'")
+            except Exception as e:
+                print(f"Warning: Could not delete {folder} directory: {e}")
 
         return jsonify({'message': f'Title "{title}" deleted successfully'}), 200
     except Exception as e:
@@ -346,6 +347,20 @@ def get_default_responses():
         responses = faq_service.get_default_responses()
         return jsonify(responses), 200
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/load-conversational', methods=['POST'])
+def load_conversational():
+    """Load the conversational.csv into ChromaDB for a given title"""
+    data = request.get_json()
+    title = data.get('title')
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+    try:
+        result = faq_service.load_conversational(title)
+        return jsonify({'message': 'Conversational data loaded', 'data': result}), 200
+    except Exception as e:
+        print(f"Error loading conversational data: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/get-avatar', methods=['GET'])
