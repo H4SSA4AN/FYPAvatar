@@ -1,8 +1,30 @@
 const API_BASE_URL = window.location.origin;
 let allTitles = []; // Store titles locally for filtering
+let defaultResponses = null; // Cached default responses from JSON
+
+const VARIANT_COUNT = 3;
+const playedVariants = new Map(); // Map<id, Set<playedVariantNumbers>>
+
+function pickVariant(questionId) {
+    if (!playedVariants.has(questionId)) {
+        playedVariants.set(questionId, new Set());
+    }
+    const played = playedVariants.get(questionId);
+    if (played.size >= VARIANT_COUNT) {
+        played.clear();
+    }
+    let variant;
+    do {
+        variant = Math.floor(Math.random() * VARIANT_COUNT) + 1;
+    } while (played.has(variant));
+    played.add(variant);
+    console.log(`Picked variant ${variant} for ${questionId}`);
+    return variant;
+}
 
 document.addEventListener('DOMContentLoaded', () => {
     fetchTitles();
+    fetchDefaultResponses();
     
     const searchInput = document.getElementById('topicSearch');
     const dropdown = document.getElementById('customDropdown');
@@ -232,40 +254,56 @@ async function sendMessage() {
         if (loadingMsgElement) loadingMsgElement.remove();
 
         if (response.ok) {
-            // 4. Display Answer
-            if (result.question) {
-                addMessageToLog('system', `Found related question: "${result.question}"`);
+            const category = result.category || 'answers';
+
+            // Show matched question + confidence info
+            if (result.question && result.score !== undefined && result.score !== null) {
+                const confidencePercent = Math.max(0, Math.min(100, (1 - result.score) * 100));
+                addMessageToLog('system', `Matched: "${result.question}" | Confidence: ${confidencePercent.toFixed(1)}% | Category: ${category}`);
             }
-            addMessageToLog('bot', result.answer);
-            
-               // 5. Play Video if UUID exists
-               if (result.id) {
-                console.log("Relevant FAQ UUID:", result.id);
-                
-                const avatarVideo = document.getElementById('avatarVideo');
-                const idleVideo = document.getElementById('idleVideo');
 
-                if (avatarVideo && title) {
-                    const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(title)}/${result.id}.mp4`;
-                    
-                    console.log("Playing video:", videoUrl);
-                    avatarVideo.src = videoUrl;
-                    avatarVideo.loop = false;
-                    avatarVideo.muted = false; 
-                    
-                    // Ensure idle is playing in background for smooth transition later
-                    if(idleVideo && idleVideo.paused) idleVideo.play();
+            const avatarVideo = document.getElementById('avatarVideo');
+            const idleVideo = document.getElementById('idleVideo');
 
-                    try {
-                        await avatarVideo.play();
-                        // Fade in the answer video ON TOP of the idle video
-                        avatarVideo.style.opacity = '1';
-                    } catch (e) {
-                        console.warn("Auto-play failed:", e);
-                    }
+            if (category === 'rude' || category === 'no_answer') {
+                // Pick a random response index from defaultResponses
+                const texts = (defaultResponses && defaultResponses[category]) || [];
+                if (texts.length > 0) {
+                    const responseIndex = Math.floor(Math.random() * texts.length);
+                    addMessageToLog('bot', texts[responseIndex]);
+
+                    // Video files are named {category}_{index+1}_{variant}.mp4
+                    const baseId = `${category}_${responseIndex + 1}`;
+                    const variant = pickVariant(baseId);
+                    const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(title)}/${category}/${baseId}_${variant}.mp4`;
+                    await playVideoOverlay(videoUrl, avatarVideo, idleVideo);
+                } else {
+                    addMessageToLog('bot', category === 'rude'
+                        ? "That language is not appropriate."
+                        : "I'm not confident about this answer.");
                 }
+
+            } else if (category === 'conversational') {
+                // Conversational: show the matched answer and play from conversational folder
+                if (result.answer) {
+                    addMessageToLog('bot', result.answer);
+                }
+                if (result.id && title) {
+                    const variant = pickVariant(result.id);
+                    const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(title)}/conversational/${result.id}_${variant}.mp4`;
+                    await playVideoOverlay(videoUrl, avatarVideo, idleVideo);
+                }
+
             } else {
-                console.log("Answer received (No UUID returned)");
+                // 'answers' category
+                if (result.answer) {
+                    addMessageToLog('bot', result.answer);
+                }
+                if (result.id && title) {
+                    const variant = pickVariant(result.id);
+                    const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(title)}/answers/${result.id}_${variant}.mp4`;
+                    await playVideoOverlay(videoUrl, avatarVideo, idleVideo);
+                }
             }
 
         } else {
@@ -283,9 +321,38 @@ function addMessageToLog(sender, text) {
     msgDiv.className = `message ${sender}`;
     msgDiv.textContent = text;
     
-    // Generate simple ID for removal (loading state)
-    
     chatLog.appendChild(msgDiv);
     chatLog.scrollTop = chatLog.scrollHeight; // Auto-scroll
     return msgDiv;
+}
+
+async function fetchDefaultResponses() {
+    try {
+        const response = await fetch(`${API_BASE_URL}/default-responses`);
+        if (response.ok) {
+            defaultResponses = await response.json();
+            console.log("Default responses loaded:", defaultResponses);
+        }
+    } catch (e) {
+        console.error("Failed to fetch default responses:", e);
+    }
+}
+
+async function playVideoOverlay(videoUrl, avatarVideo, idleVideo) {
+    if (!avatarVideo) return;
+
+    console.log("Playing video:", videoUrl);
+    avatarVideo.src = videoUrl;
+    avatarVideo.loop = false;
+    avatarVideo.muted = false;
+
+    // Ensure idle is playing underneath for smooth transition
+    if (idleVideo && idleVideo.paused) idleVideo.play();
+
+    try {
+        await avatarVideo.play();
+        avatarVideo.style.opacity = '1'; // Fade in on top of idle
+    } catch (e) {
+        console.warn("Auto-play failed:", e);
+    }
 }

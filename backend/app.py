@@ -20,6 +20,13 @@ faq_service = FAQService()
 comfy_service = ComfyService()
 transcription_service = TranscriptionService()
 
+# Auto-seed the rude collection on startup
+try:
+    count = faq_service.seed_rude_collection()
+    print(f"[STARTUP] Rude collection seeded with {count} phrases")
+except Exception as e:
+    print(f"[STARTUP] Failed to seed rude collection: {e}")
+
 # Global store for progress: { "uuid": { "status": "processing", "progress": 0, "eta": 0, "url": None, "error": None } }
 PROGRESS_STORE = {}
 
@@ -338,6 +345,14 @@ def get_videos_route():
     try:
         videos = faq_service.get_videos(title, category)
         return jsonify({'message': 'Fetched successfully', 'data': videos}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/seed-rude', methods=['POST'])
+def seed_rude_collection():
+    try:
+        count = faq_service.seed_rude_collection()
+        return jsonify({'message': f'Seeded rude collection with {count} phrases'}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

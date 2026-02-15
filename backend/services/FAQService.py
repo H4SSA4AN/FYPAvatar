@@ -93,75 +93,107 @@ class FAQService:
 
     def query_faq(self, query_text, title="none"):
         query_texts = [query_text] if isinstance(query_text, str) else query_text
+        print(f"\n[QUERY] Input: '{query_text}' | Title: '{title}'")
 
         # Step 1: Check rude collection first
         try:
-            rude_results = self.vector_db_service.query_rude(query_text, n_results=1)
-            if rude_results['distances'] and rude_results['distances'][0]:
-                rude_distance = rude_results['distances'][0][0]
-                rude_confidence = max(0, min(100, (1 - rude_distance) * 100))
-                if rude_confidence >= 60:
+            rude_count = self.vector_db_service.rude_collection.count()
+            print(f"[STEP 1 - RUDE] Collection has {rude_count} entries")
+
+            if rude_count > 0:
+                rude_results = self.vector_db_service.query_rude(query_text, n_results=1)
+                if rude_results['distances'] and rude_results['distances'][0]:
+                    rude_distance = rude_results['distances'][0][0]
+                    rude_confidence = max(0, min(100, (1 - rude_distance) * 100))
+                    rude_matched = rude_results['documents'][0][0]
+                    print(f"[STEP 1 - RUDE] Matched: '{rude_matched}' | Distance: {rude_distance:.4f} | Confidence: {rude_confidence:.1f}%")
+
+                    if rude_confidence >= 60:
+                        print(f"[STEP 1 - RUDE] >>> RUDE DETECTED, returning rude category")
+                        return {
+                            "answer": None,
+                            "question": rude_matched,
+                            "id": None,
+                            "score": rude_distance,
+                            "title": title,
+                            "category": "rude"
+                        }
+                    else:
+                        print(f"[STEP 1 - RUDE] Confidence below 60%, moving to step 2")
+            else:
+                print(f"[STEP 1 - RUDE] Collection is empty, skipping")
+        except Exception as e:
+            print(f"[STEP 1 - RUDE] Exception: {e}")
+
+        # Step 2: Check conversational
+        try:
+            conv_results = self.vector_db_service.collection.query(
+                query_texts=query_texts,
+                n_results=1,
+                where={"category": "conversational"}
+            )
+            if conv_results['distances'] and conv_results['distances'][0]:
+                conv_distance = conv_results['distances'][0][0]
+                conv_confidence = max(0, min(100, (1 - conv_distance) * 100))
+                conv_matched = conv_results['documents'][0][0]
+                print(f"[STEP 2 - CONV] Matched: '{conv_matched}' | Distance: {conv_distance:.4f} | Confidence: {conv_confidence:.1f}%")
+
+                if conv_confidence >= 60:
+                    conv_metadata = conv_results['metadatas'][0][0]
+                    print(f"[STEP 2 - CONV] >>> CONVERSATIONAL HIT, returning")
+                    return {
+                        "answer": conv_metadata['answer'],
+                        "question": conv_results['documents'][0][0],
+                        "id": conv_results['ids'][0][0],
+                        "score": conv_distance,
+                        "title": conv_metadata.get('Title', title),
+                        "category": "conversational"
+                    }
+                else:
+                    print(f"[STEP 2 - CONV] Confidence below 60%, moving to step 3")
+        except Exception as e:
+            print(f"[STEP 2 - CONV] Exception: {e}")
+
+        # Step 3: Check answers for this topic
+        try:
+            answer_results = self.vector_db_service.collection.query(
+                query_texts=query_texts,
+                n_results=1,
+                where={"Title": title}
+            )
+            if answer_results['distances'] and answer_results['distances'][0]:
+                ans_distance = answer_results['distances'][0][0]
+                ans_confidence = max(0, min(100, (1 - ans_distance) * 100))
+                ans_matched = answer_results['documents'][0][0]
+                print(f"[STEP 3 - ANSWER] Matched: '{ans_matched}' | Distance: {ans_distance:.4f} | Confidence: {ans_confidence:.1f}%")
+
+                if ans_confidence >= 60:
+                    ans_metadata = answer_results['metadatas'][0][0]
+                    print(f"[STEP 3 - ANSWER] >>> ANSWER HIT, returning")
+                    return {
+                        "answer": ans_metadata['answer'],
+                        "question": answer_results['documents'][0][0],
+                        "id": answer_results['ids'][0][0],
+                        "score": ans_distance,
+                        "title": ans_metadata.get('Title', title),
+                        "category": ans_metadata.get('category', 'answers')
+                    }
+                else:
+                    print(f"[STEP 3 - ANSWER] Confidence below 60%, falling through to no_answer")
                     return {
                         "answer": None,
-                        "question": rude_results['documents'][0][0],
+                        "question": answer_results['documents'][0][0],
                         "id": None,
-                        "score": rude_distance,
+                        "score": ans_distance,
                         "title": title,
-                        "category": "rude"
+                        "category": "no_answer"
                     }
         except Exception as e:
-            # Rude collection might be empty -- that's fine, skip
-            print(f"Rude check skipped: {e}")
+            print(f"[STEP 3 - ANSWER] Exception: {e}")
 
-        # Step 2: Query answers + conversational
-        where_filter = {"Title": title}
-        
-        # Search both selected title AND conversational entries
-        if title and title != "none":
-            where_filter = {
-                "$or": [
-                    {"Title": title},
-                    {"category": "conversational"}
-                ]
-            }
-
-        results = self.vector_db_service.collection.query(
-            query_texts=query_texts, 
-            n_results=1, 
-            where=where_filter
-        )
-        
-        if results['metadatas'] and results['metadatas'][0]:
-            metadata = results['metadatas'][0][0]
-            document_id = results['ids'][0][0]
-            distance = results['distances'][0][0] if 'distances' in results else None
-            matched_title = metadata.get('Title', title)
-            matched_category = metadata.get('category', 'answers')
-
-            # Calculate confidence
-            confidence = max(0, min(100, (1 - distance) * 100)) if distance is not None else 0
-
-            # Step 3: If confidence too low, return no_answer
-            if confidence < 60:
-                return {
-                    "answer": None,
-                    "question": results['documents'][0][0],
-                    "id": None,
-                    "score": distance,
-                    "title": title,
-                    "category": "no_answer"
-                }
-
-            return {
-                "answer": metadata['answer'],
-                "question": results['documents'][0][0],
-                "id": document_id,
-                "score": distance,
-                "title": matched_title,
-                "category": matched_category
-            }
-            
-        return {"answer": "No suitable answer found", "id": None, "category": "no_answer"}
+        # Step 4: No answer fallback
+        print(f"[STEP 4] No matches at all, returning no_answer")
+        return {"answer": None, "question": None, "id": None, "score": None, "title": title, "category": "no_answer"}
 
     def delete_topic(self, title):
         print(f"Deleting topic: {title}")
@@ -195,6 +227,34 @@ class FAQService:
                 print(f"Error accessing video directory: {e}")
                 
         return video_files
+
+    def seed_rude_collection(self):
+        """Read rudeWords.json and populate the rude ChromaDB collection"""
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        json_path = os.path.join(backend_dir, 'rudeWords.json')
+
+        try:
+            with open(json_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+
+            phrases = data.get('rude_phrases', [])
+            if not phrases:
+                print("No rude phrases found in rudeWords.json")
+                return 0
+
+            # Clear existing entries first to avoid duplicates on re-seed
+            self.vector_db_service.delete_rude_all()
+
+            ids = [f"rude_{i}" for i in range(len(phrases))]
+            metadatas = [{"source": "rudeWords.json"} for _ in phrases]
+
+            self.vector_db_service.add_rude_documents(ids, phrases, metadatas)
+            print(f"Seeded rude collection with {len(phrases)} phrases")
+            return len(phrases)
+
+        except Exception as e:
+            print(f"Error seeding rude collection: {e}")
+            raise e
 
     def get_default_responses(self):
         """Read defaultResponses.json and return the rude and no_answer text arrays"""
