@@ -442,6 +442,64 @@ def player_assets(filename):
         return send_from_directory('pagejs/player', filename)
     return send_from_directory('../web/player', filename)
 
+@app.route('/download-project', methods=['GET'])
+def download_project():
+    """Create a zip of all project data: videos, audio, ChromaDB, SQLite DB, and JSON configs"""
+    import zipfile
+    import io
+
+    memory_file = io.BytesIO()
+
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        # 1. Videos folder
+        videos_dir = os.path.join(app.root_path, 'static', 'videos')
+        if os.path.exists(videos_dir):
+            for root, dirs, files in os.walk(videos_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, app.root_path)
+                    zf.write(file_path, arcname)
+
+        # 2. Audio folder
+        audio_dir = os.path.join(app.root_path, 'static', 'audio')
+        if os.path.exists(audio_dir):
+            for root, dirs, files in os.walk(audio_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, app.root_path)
+                    zf.write(file_path, arcname)
+
+        # 3. ChromaDB directory
+        chroma_dir = os.path.join(os.getcwd(), 'db')
+        if os.path.exists(chroma_dir):
+            for root, dirs, files in os.walk(chroma_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.join('db', os.path.relpath(file_path, chroma_dir))
+                    zf.write(file_path, arcname)
+
+        # 4. SQLite database
+        db_path = os.path.join(os.getcwd(), 'app.db')
+        if os.path.exists(db_path):
+            zf.write(db_path, 'app.db')
+
+        # 5. defaultResponses.json
+        defaults_path = os.path.join(app.root_path, 'defaultResponses.json')
+        if os.path.exists(defaults_path):
+            zf.write(defaults_path, 'defaultResponses.json')
+
+        # 6. rudeWords.json
+        rude_path = os.path.join(app.root_path, 'rudeWords.json')
+        if os.path.exists(rude_path):
+            zf.write(rude_path, 'rudeWords.json')
+
+    memory_file.seek(0)
+
+    response = make_response(memory_file.read())
+    response.headers['Content-Type'] = 'application/zip'
+    response.headers['Content-Disposition'] = 'attachment; filename=InteractiveAvatar_Data.zip'
+    return response
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port)

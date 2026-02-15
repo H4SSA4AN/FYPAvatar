@@ -1218,4 +1218,35 @@ async function createFAQ() {
     console.log("FAQ Creation Complete");
 }
 
+async function downloadProjectData() {
+    const btn = document.querySelector('.download-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Preparing...';
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/download-project`);
+        if (!response.ok) {
+            throw new Error(`Download failed: ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'InteractiveAvatar_Data.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error('Download error:', e);
+        alert('Failed to download project data: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Download';
+        }
+    }
+}
 
