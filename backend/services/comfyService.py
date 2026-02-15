@@ -100,6 +100,7 @@ class ComfyService:
         response = requests.post(f"http://{self.server_addr}/upload/image", files=p)
         return response.json()
 
+    # THIS ENDPOINT IS OLD AND NOT USED
     def generate_video(self, source_image_data):
         workflow_path = "../backend/ComfyAPIs/hunyanVideoGen.json" # Adjust path if needed
         
@@ -261,12 +262,9 @@ class ComfyService:
         save_filename = f"{filename_id}.mp3"
         save_path = os.path.join(output_dir, save_filename)
 
-        # --- NEW CHECK: Return existing file if found ---
         if os.path.exists(save_path):
             print(f"Audio already exists for {filename_id}, skipping generation.")
-            # Return the web-accessible URL
             return f"/static/audio/{title}/{save_filename}"
-        # ------------------------------------------------
 
         with open(workflow_path, 'r', encoding="utf-8") as f:
             workflow = json.load(f)

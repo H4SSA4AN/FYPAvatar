@@ -1,0 +1,12 @@
+{
+    "rude": [
+      "That language is not appropriate. Please keep things respectful.",
+      "I'd prefer if we kept this conversation professional.",
+      "Let's keep things civil, shall we?"
+    ],
+    "no_answer": [
+      "I'm sorry, I don't have a confident answer for that.",
+      "I'm not sure about that one. Could you rephrase?",
+      "That's outside my knowledge area, I'm afraid."
+    ]
+  }

@@ -1,3 +1,5 @@
+const API_BASE_URL = window.location.origin;
+
 window.onload = async function() {
     const topics = await fetchTopics();
 }
@@ -6,7 +8,7 @@ async function fetchTopics() {
     const select = document.getElementById('titleSelect');
     
     try {
-        const response = await fetch('http://127.0.0.1:5000/topics');
+        const response = await fetch(`${API_BASE_URL}/topics`);
         const result = await response.json();
         if (response.ok) {
             titles = result.data;
@@ -41,7 +43,7 @@ async function uploadCSV() {
     status.textContent = 'Uploading file...';
 
     try {
-        const response = await fetch('http://127.0.0.1:5000/upload', {
+        const response = await fetch(`${API_BASE_URL}/upload`, {
             method: 'POST',
             body: formData
         });
@@ -69,8 +71,8 @@ async function fetchFAQ() {
     try {
 
         const url = title 
-        ? `http://127.0.0.1:5000/faqs?title=${title}`
-        : `http://127.0.0.1:5000/faqs`;
+        ? `${API_BASE_URL}/faqs?title=${title}`
+        : `${API_BASE_URL}/faqs`;
     
 
     const response = await fetch(url);
@@ -100,7 +102,7 @@ async function queryFAQ() {
     answer.textContent = 'Querying...';
 
     try {
-        const response = await fetch('http://127.0.0.1:5000/query', {
+        const response = await fetch(`${API_BASE_URL}/query`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'

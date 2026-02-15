@@ -12,6 +12,32 @@ let currentTitle = null; // Add this global variable
 let idleTimer = null;
 const IDLE_TIMEOUT_MS = 45000; // 45 seconds
 
+// Variant tracking: Map<questionId, Set<playedVariantNumbers>>
+const VARIANT_COUNT = 3;
+const playedVariants = new Map();
+
+function pickVariant(questionId) {
+    if (!playedVariants.has(questionId)) {
+        playedVariants.set(questionId, new Set());
+    }
+    let played = playedVariants.get(questionId);
+
+    // Reset if all variants have been played
+    if (played.size >= VARIANT_COUNT) {
+        played.clear();
+    }
+
+    // Pick a random unplayed variant
+    let available = [];
+    for (let v = 1; v <= VARIANT_COUNT; v++) {
+        if (!played.has(v)) available.push(v);
+    }
+    const chosen = available[Math.floor(Math.random() * available.length)];
+    played.add(chosen);
+    console.log(`Picked variant ${chosen} for ${questionId}`);
+    return chosen;
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     const chatInput = document.getElementById('chat-input');
     const micButton = document.getElementById('mic-button');
@@ -232,40 +258,32 @@ async function handleUserMessage(transcriptionTime = null) {
         if (loadingMsg) loadingMsg.remove();
 
         if (response.ok) {
-            // 1. Calculate confidence and show matched question
-            if (result.question) {
-                let infoText = `Matched: "${result.question}"`;
-                
-                if (result.score !== undefined && result.score !== null) {
-                    // Convert distance to confidence percentage (0 = 100%)
-                    const confidencePercent = Math.max(0, Math.min(100, (1 - result.score) * 100));
-                    infoText += `\nConfidence: ${confidencePercent.toFixed(1)}%`;
-                    
-                    // 2. Check if confidence is too low
-                    if (confidencePercent < 60) {
-                        addMessageToLog('system', infoText);
-                        addMessageToLog('bot', "I'm not confident about this answer. Let me get back to you.");
-                        
-                        // Play "No Answer" video
-                        const noAnswerUrl = `${API_BASE_URL}/static/videos/NoAnswer/NoAns.mp4`;
-                        playActiveVideo(noAnswerUrl, () => {
-                            console.log("NoAnswer video finished. Revealing Idle.");
-                            resetIdleTimer();
-                        });
-                        
-                        return; // Exit early, don't show the answer
-                    }
-                }
-                
+            const category = result.category || 'answers';
+
+            // Show matched question info
+            if (result.question && result.score !== undefined && result.score !== null) {
+                const confidencePercent = Math.max(0, Math.min(100, (1 - result.score) * 100));
+                let infoText = `Matched: "${result.question}"\nConfidence: ${confidencePercent.toFixed(1)}% | Category: ${category}`;
                 addMessageToLog('system', infoText);
             }
-            
-            // 3. Show Answer (only if confidence >= 60%)
-            addMessageToLog('bot', result.answer);
-        
-            // 4. Play Answer Video if ID exists
-            if (result.id) {
-                playAnswerVideo(result.id, result.title || currentTitle);
+
+            // Route based on category
+            if (category === 'rude') {
+                addMessageToLog('bot', "That language is not appropriate.");
+                playRandomCategoryVideo(currentTitle, 'rude');
+
+            } else if (category === 'no_answer') {
+                addMessageToLog('bot', "I'm not confident about this answer. Let me get back to you.");
+                playRandomCategoryVideo(currentTitle, 'no_answer');
+
+            } else {
+                // 'answers' or 'conversational'
+                if (result.answer) {
+                    addMessageToLog('bot', result.answer);
+                }
+                if (result.id) {
+                    playAnswerVideo(result.id, result.title || currentTitle, category);
+                }
             }
         } else {
             addMessageToLog('system', `Error: ${result.error || 'Unknown error'}`);
@@ -524,14 +542,42 @@ function setupToggle() {
     }
 }
 
-function playAnswerVideo(videoId, videoTitle) {
+function playAnswerVideo(videoId, videoTitle, category = 'answers') {
     const useTitle = videoTitle || currentTitle;
-    const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(useTitle)}/${videoId}.mp4`;
+    const variant = pickVariant(videoId);
+    const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(useTitle)}/${category}/${videoId}_${variant}.mp4`;
     
+    console.log(`Playing ${category} variant ${variant} for ${videoId}`);
     playActiveVideo(videoUrl, () => {
          console.log("Answer finished. Revealing Idle.");
          resetIdleTimer();
     });
+}
+
+async function playRandomCategoryVideo(title, category) {
+    try {
+        const response = await fetch(`${API_BASE_URL}/get-videos?title=${encodeURIComponent(title)}&category=${category}`);
+        const result = await response.json();
+        
+        if (result.data && result.data.length > 0) {
+            // Pick a random video from the list
+            const randomIndex = Math.floor(Math.random() * result.data.length);
+            const videoFile = result.data[randomIndex];
+            const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(title)}/${category}/${videoFile}`;
+            
+            console.log(`Playing random ${category} video: ${videoFile}`);
+            playActiveVideo(videoUrl, () => {
+                console.log(`${category} video finished. Revealing Idle.`);
+                resetIdleTimer();
+            });
+        } else {
+            console.warn(`No ${category} videos found for topic "${title}".`);
+            resetIdleTimer();
+        }
+    } catch (e) {
+        console.error(`Error fetching ${category} videos:`, e);
+        resetIdleTimer();
+    }
 }
 
 // --- NEW HELPER FUNCTION ---

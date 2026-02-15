@@ -15,10 +15,37 @@ body {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+.logo-area {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
 .logo {
     font-size: 1.5rem;
     font-weight: bold;
     letter-spacing: 1px;
+}
+
+.download-btn {
+    padding: 6px 16px;
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background-color 0.3s ease;
+}
+
+.download-btn:hover {
+    background-color: #219a52;
+}
+
+.download-btn:disabled {
+    background-color: #7f8c8d;
+    cursor: not-allowed;
 }
 
 .nav-links {

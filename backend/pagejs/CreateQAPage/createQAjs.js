@@ -1,3 +1,4 @@
+const API_BASE_URL = window.location.origin;
 const statusDiv = document.getElementById('statusMessage');
 let counter = 1;
 
@@ -616,7 +617,7 @@ async function generateVideo() {
 
 
         // 2. Update Video Player
-        videoPlayer.src = `http://127.0.0.1:5000${videoUrl}`;
+        videoPlayer.src = `${API_BASE_URL}${videoUrl}`;
         videoContainer.style.display = 'block';
         videoContainer.classList.add('open');
         videoPlayer.style.display = 'block';
@@ -749,7 +750,7 @@ async function uploadAvatarImage(title) {
     formData.append('title', title);
 
     try {
-        const response = await fetch('http://127.0.0.1:5000/upload-avatar', {
+        const response = await fetch(`${API_BASE_URL}/upload-avatar`, {
             method: 'POST',
             body: formData
         });
@@ -783,7 +784,7 @@ async function generateAudioTest() {
     speechSettings.push(document.getElementById('speechCalm').value);
     speechSettings.push(document.getElementById('speechMelancholic').value);
 
-    const response = await fetch('http://127.0.0.1:5000/generate-audio-test', {
+    const response = await fetch(`${API_BASE_URL}/generate-audio-test`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ speechSettings: speechSettings })
@@ -799,6 +800,8 @@ async function generateAudioTest() {
 async function generateAudioForFAQ(faqData) {
     const title = document.getElementById('title').value;
     const statusDiv = document.getElementById('statusMessage');
+    // This is a checkbox to use placeholder videos instead of generating audio and video for each answer
+    const usePlaceholders = document.getElementById('usePlaceholders').checked;
     let speechSettings = [];
 
     speechSettings.push(document.getElementById('speechHappy').value);
@@ -811,49 +814,62 @@ async function generateAudioForFAQ(faqData) {
     speechSettings.push(document.getElementById('speechMelancholic').value);
 
 
+    const VARIANT_COUNT = 3;
     let audioResults = [];
     let limit = faqData.length; // Can change this to limit the number of audios and videos generated
+    const totalGenerations = limit * VARIANT_COUNT;
+    let generationCount = 0;
 
     for (let i = 0; i < limit; i++) {
         const item = faqData[i];
         const answerText = item.answer; 
         const answerId = item.id; // Get the UUID from the response
 
-        statusDiv.innerHTML = `Generating audio for answer ${i + 1} of ${limit}...`;
-        statusDiv.className = 'status-message processing';
+        let variantUrls = [];
 
-        try {
-            // Call the new single audio endpoint
-            // Address should not be hardcoded in future
-            const response = await fetch('http://127.0.0.1:5000/generate-audio-single', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    text: answerText,
-                    title: title,
-                    filename_id: answerId, // Use the ID as the filename
-                    speechSettings: speechSettings
-                })
-            });
-            
-            const result = await response.json();
-            if (response.ok) {
-                console.log(`Audio generated for Q${i+1} (${answerId}):`, result.audio_url);
-                audioResults.push({
-                    id: answerId,
-                    audio_url: result.audio_url
+        for (let v = 1; v <= VARIANT_COUNT; v++) {
+            generationCount++;
+            const variantId = `${answerId}_${v}`;
+
+            statusDiv.innerHTML = `Generating audio ${generationCount} of ${totalGenerations} (Q${i+1}, variant ${v})...`;
+            statusDiv.className = 'status-message processing';
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/generate-audio-single`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        text: answerText,
+                        title: title,
+                        filename_id: variantId,
+                        category: 'answers',
+                        speechSettings: speechSettings,
+                        usePlaceholder: usePlaceholders
+                    })
                 });
-
-            } else {
-                console.error(`Failed to generate audio for Q${i+1}:`, result.error);
+                
+                const result = await response.json();
+                if (response.ok) {
+                    console.log(`Audio generated for Q${i+1} variant ${v} (${variantId}):`, result.audio_url);
+                    variantUrls.push({
+                        variant: v,
+                        audio_url: result.audio_url
+                    });
+                } else {
+                    console.error(`Failed to generate audio for Q${i+1} variant ${v}:`, result.error);
+                }
+            } catch (e) {
+                console.error(`Error processing answer ${i+1} variant ${v}:`, e);
             }
-
-        } catch (e) {
-             console.error(`Error processing answer ${i+1}:`, e);
         }
+
+        audioResults.push({
+            id: answerId,
+            variants: variantUrls
+        });
     }
 
-    statusDiv.innerHTML = `FAQ Created Successfully! Audio generated for ${faqData.length} items.`;
+    statusDiv.innerHTML = `Audio generated for ${faqData.length} items (${VARIANT_COUNT} variants each).`;
     statusDiv.className = 'status-message success';
 
     return audioResults;
@@ -864,6 +880,9 @@ async function generateVideoForFAQ(audioResults) {
     const statusDiv = document.getElementById('statusMessage');
     const imagePreview = document.getElementById('finalImagePreview') || document.getElementById('avatarPreview');
     const videoPrompt = document.getElementById('videoPrompt').value;
+
+    // This is a checkbox to use placeholder videos instead of generating audio and video for each answer
+    const usePlaceholders = document.getElementById('usePlaceholders').checked;
 
     let uploadedImagePath = await uploadAvatarImage(title);
     if (!uploadedImagePath) {
@@ -878,7 +897,8 @@ async function generateVideoForFAQ(audioResults) {
             image_path: uploadedImagePath,
             title: title,
             filename_id: `Idle`,
-            prompt: "Smiling and looking at the camera, blinking idly."
+            prompt: "Smiling and looking at the camera, blinking idly.",
+            usePlaceholder : usePlaceholders // If we want to generate video or skip 
         });
         const result = await response.json();
         if (response.ok) {
@@ -889,37 +909,271 @@ async function generateVideoForFAQ(audioResults) {
     }
     
 
+    const totalGenerations = audioResults.reduce((sum, item) => sum + item.variants.length, 0);
+    let generationCount = 0;
+
     for (let i = 0; i < audioResults.length; i++) {
         const item = audioResults[i];
-        const audioPath = item.audio_url; 
-        const filenameId = item.id;
+        const baseId = item.id;
 
-        statusDiv.innerHTML = `Generating video for answer ${i + 1} of ${audioResults.length}...`;
-        statusDiv.className = 'status-message processing';
+        for (let j = 0; j < item.variants.length; j++) {
+            const variant = item.variants[j];
+            const variantId = `${baseId}_${variant.variant}`;
+            generationCount++;
 
-        try {
-            // Use the new apiCall function
-            const response = await generateVideoSingleRequest({ 
-                audio_path: audioPath,
-                image_path: uploadedImagePath,
-                title: title,
-                filename_id: filenameId,
-                prompt: videoPrompt
-            });
+            statusDiv.innerHTML = `Generating video ${generationCount} of ${totalGenerations} (Q${i+1}, variant ${variant.variant})...`;
+            statusDiv.className = 'status-message processing';
 
-            const result = await response.json();
-            if (response.ok) {
-                console.log(`Video generated for (${filenameId}):`, result.video_url);
-            } else {
-                console.error(`Failed to generate video for (${filenameId}):`, result.error);
+            try {
+                const response = await generateVideoSingleRequest({ 
+                    audio_path: variant.audio_url,
+                    image_path: uploadedImagePath,
+                    title: title,
+                    filename_id: variantId,
+                    category: 'answers',
+                    prompt: videoPrompt,
+                    usePlaceholder: usePlaceholders
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    console.log(`Video generated for (${variantId}):`, result.video_url);
+                } else {
+                    console.error(`Failed to generate video for (${variantId}):`, result.error);
+                }
+            } catch (e) {
+                console.error(`Error generating video for ${variantId}:`, e);
             }
-
-        } catch (e) {
-            console.error(`Error generating video for ${filenameId}:`, e);
         }
     }
 
     statusDiv.innerHTML = `FAQ Creation & Video Generation Complete!`;
+    statusDiv.className = 'status-message success';
+}
+
+
+async function generateDefaultCategoryVideos(title) {
+    const statusDiv = document.getElementById('statusMessage');
+    const usePlaceholders = document.getElementById('usePlaceholders').checked;
+    const videoPrompt = document.getElementById('videoPrompt').value;
+    let speechSettings = [];
+    speechSettings.push(document.getElementById('speechHappy').value);
+    speechSettings.push(document.getElementById('speechAngry').value);
+    speechSettings.push(document.getElementById('speechSad').value);
+    speechSettings.push(document.getElementById('speechSurprised').value);
+    speechSettings.push(document.getElementById('speechAfraid').value);
+    speechSettings.push(document.getElementById('speechDisgusted').value);
+    speechSettings.push(document.getElementById('speechCalm').value);
+    speechSettings.push(document.getElementById('speechMelancholic').value);
+
+    const VARIANT_COUNT = 3;
+
+    // Fetch default responses from backend
+    let defaultResponses;
+    try {
+        const resp = await fetch(`${API_BASE_URL}/default-responses`);
+        defaultResponses = await resp.json();
+    } catch (e) {
+        console.error("Failed to fetch default responses:", e);
+        return;
+    }
+
+    // Get the uploaded image path for this topic
+    let uploadedImagePath = await uploadAvatarImage(title);
+    if (!uploadedImagePath) {
+        console.error("Failed to upload avatar image for default category video generation.");
+        return;
+    }
+
+    // Generate for each category: rude and no_answer
+    const categories = ['rude', 'no_answer'];
+    for (const category of categories) {
+        const texts = defaultResponses[category] || [];
+        const totalForCategory = texts.length * VARIANT_COUNT;
+        let count = 0;
+
+        for (let i = 0; i < texts.length; i++) {
+            const text = texts[i];
+            const baseId = `${category}_${i + 1}`;
+
+            for (let v = 1; v <= VARIANT_COUNT; v++) {
+                count++;
+                const variantId = `${baseId}_${v}`;
+
+                statusDiv.innerHTML = `Generating ${category} audio ${count} of ${totalForCategory}...`;
+                statusDiv.className = 'status-message processing';
+
+                // Generate audio
+                let audioUrl = null;
+                try {
+                    const audioResp = await fetch(`${API_BASE_URL}/generate-audio-single`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text: text,
+                            title: title,
+                            filename_id: variantId,
+                            category: category,
+                            speechSettings: speechSettings,
+                            usePlaceholder: usePlaceholders
+                        })
+                    });
+                    const audioResult = await audioResp.json();
+                    if (audioResp.ok) {
+                        audioUrl = audioResult.audio_url;
+                        console.log(`${category} audio ${variantId}:`, audioUrl);
+                    }
+                } catch (e) {
+                    console.error(`Error generating ${category} audio ${variantId}:`, e);
+                }
+
+                // Generate video
+                if (audioUrl) {
+                    statusDiv.innerHTML = `Generating ${category} video ${count} of ${totalForCategory}...`;
+
+                    try {
+                        const videoResp = await generateVideoSingleRequest({
+                            audio_path: audioUrl,
+                            image_path: uploadedImagePath,
+                            title: title,
+                            filename_id: variantId,
+                            category: category,
+                            prompt: videoPrompt,
+                            usePlaceholder: usePlaceholders
+                        });
+                        const videoResult = await videoResp.json();
+                        if (videoResp.ok) {
+                            console.log(`${category} video ${variantId}:`, videoResult);
+                        }
+                    } catch (e) {
+                        console.error(`Error generating ${category} video ${variantId}:`, e);
+                    }
+                }
+            }
+        }
+    }
+
+    statusDiv.innerHTML = `Default category videos generated!`;
+    statusDiv.className = 'status-message success';
+}
+
+
+async function generateConversationalVideos(title) {
+    const statusDiv = document.getElementById('statusMessage');
+    const usePlaceholders = document.getElementById('usePlaceholders').checked;
+    const videoPrompt = document.getElementById('videoPrompt').value;
+    let speechSettings = [];
+    speechSettings.push(document.getElementById('speechHappy').value);
+    speechSettings.push(document.getElementById('speechAngry').value);
+    speechSettings.push(document.getElementById('speechSad').value);
+    speechSettings.push(document.getElementById('speechSurprised').value);
+    speechSettings.push(document.getElementById('speechAfraid').value);
+    speechSettings.push(document.getElementById('speechDisgusted').value);
+    speechSettings.push(document.getElementById('speechCalm').value);
+    speechSettings.push(document.getElementById('speechMelancholic').value);
+
+    const VARIANT_COUNT = 3;
+
+    // 1. Load conversational CSV into vector DB for this title
+    statusDiv.innerHTML = 'Loading conversational data...';
+    statusDiv.className = 'status-message processing';
+
+    let convData;
+    try {
+        const resp = await fetch(`${API_BASE_URL}/load-conversational`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ title: title })
+        });
+        const result = await resp.json();
+        if (!resp.ok) {
+            console.error("Failed to load conversational data:", result.error);
+            return;
+        }
+        convData = result.data;
+    } catch (e) {
+        console.error("Failed to load conversational data:", e);
+        return;
+    }
+
+    if (!convData || convData.length === 0) {
+        console.warn("No conversational data found.");
+        return;
+    }
+
+    // Get the uploaded image path for this topic
+    let uploadedImagePath = await uploadAvatarImage(title);
+    if (!uploadedImagePath) {
+        console.error("Failed to upload avatar image for conversational video generation.");
+        return;
+    }
+
+    const category = 'conversational';
+    const totalGenerations = convData.length * VARIANT_COUNT;
+    let count = 0;
+
+    for (let i = 0; i < convData.length; i++) {
+        const item = convData[i];
+        const text = item.answer;
+        const answerId = item.id;
+
+        for (let v = 1; v <= VARIANT_COUNT; v++) {
+            count++;
+            const variantId = `${answerId}_${v}`;
+
+            statusDiv.innerHTML = `Generating conversational audio ${count} of ${totalGenerations}...`;
+            statusDiv.className = 'status-message processing';
+
+            // Generate audio
+            let audioUrl = null;
+            try {
+                const audioResp = await fetch(`${API_BASE_URL}/generate-audio-single`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: text,
+                        title: title,
+                        filename_id: variantId,
+                        category: category,
+                        speechSettings: speechSettings,
+                        usePlaceholder: usePlaceholders
+                    })
+                });
+                const audioResult = await audioResp.json();
+                if (audioResp.ok) {
+                    audioUrl = audioResult.audio_url;
+                    console.log(`Conversational audio ${variantId}:`, audioUrl);
+                }
+            } catch (e) {
+                console.error(`Error generating conversational audio ${variantId}:`, e);
+            }
+
+            // Generate video
+            if (audioUrl) {
+                statusDiv.innerHTML = `Generating conversational video ${count} of ${totalGenerations}...`;
+
+                try {
+                    const videoResp = await generateVideoSingleRequest({
+                        audio_path: audioUrl,
+                        image_path: uploadedImagePath,
+                        title: title,
+                        filename_id: variantId,
+                        category: category,
+                        prompt: videoPrompt,
+                        usePlaceholder: usePlaceholders
+                    });
+                    const videoResult = await videoResp.json();
+                    if (videoResp.ok) {
+                        console.log(`Conversational video ${variantId}:`, videoResult);
+                    }
+                } catch (e) {
+                    console.error(`Error generating conversational video ${variantId}:`, e);
+                }
+            }
+        }
+    }
+
+    statusDiv.innerHTML = 'Conversational videos generated!';
     statusDiv.className = 'status-message success';
 }
 
@@ -943,7 +1197,8 @@ async function createFAQ() {
         return;
     }
 
-    
+    const title = document.getElementById('title').value;
+
     // 3. Generate Audio for each Answer
     let audioResults = await generateAudioForFAQ(faqData);
     if (!audioResults || audioResults.length === 0) {
@@ -953,9 +1208,45 @@ async function createFAQ() {
 
     // 4. Generate Video for each Answer
     await generateVideoForFAQ(audioResults);
-    
+
+    // 5. Generate default category videos (rude + no_answer)
+    await generateDefaultCategoryVideos(title);
+
+    // 6. Generate conversational category videos
+    await generateConversationalVideos(title);
     
     console.log("FAQ Creation Complete");
 }
 
+async function downloadProjectData() {
+    const btn = document.querySelector('.download-btn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Preparing...';
+    }
+
+    try {
+        const response = await fetch(`${API_BASE_URL}/download-project`);
+        if (!response.ok) {
+            throw new Error(`Download failed: ${response.statusText}`);
+        }
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'InteractiveAvatar_Data.zip';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        window.URL.revokeObjectURL(url);
+    } catch (e) {
+        console.error('Download error:', e);
+        alert('Failed to download project data: ' + e.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = 'Download';
+        }
+    }
+}
 

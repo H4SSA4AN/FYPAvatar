@@ -9,12 +9,15 @@
 <body>
     <nav class="navbar">
         <ul class="nav-links">
-            <li><a href="#">Home</a></li>
-            <li><a href="#" class="active">Create FAQ</a></li>
-            <li><a href="../editQA/editQA.html">Edit FAQs</a></li>
-            <li><a href="../TestQA/testQA.html">Test FAQs</a></li>
+            <li><a href="/">Home</a></li>
+            <li><a href="/createQA" class="active">Create FAQ</a></li>
+            <li><a href="/editQA">Edit FAQs</a></li>
+            <li><a href="/testQA">Test FAQs</a></li>
         </ul>
-        <div class="logo">InteractiveAvatar</div>
+        <div class="logo-area">
+            <div class="logo">InteractiveAvatar</div>
+            <button type="button" class="download-btn" onclick="downloadProjectData()">Download</button>
+        </div>
     </nav>
 
     <div class="container">
@@ -59,6 +62,13 @@
 
                 <div id="statusMessage" class="status-message"></div>
                 
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="usePlaceholders" checked>
+                        Use placeholder videos (testing mode)
+                    </label>
+                </div>
+
                 <button type="button" class="submit-btn" onclick="createFAQ()">Create FAQ and Generate</button>
             </form>
         </div>
@@ -86,8 +96,9 @@
                         <div class="slider-item">Melancholic <input type="range" id="speechMelancholic" value="0" min="0.5" max="1.2" step="0.1"></div>
                     </div>
 
-                <!--  Test button for audio generation
-                    <button type="button" class="submit-btn" id="generateAudioTestBtn" onclick="generateAudioTest()">Generate Audio Test</button> -->
+                <!--  Test button for audio generation to test emotions
+                    <button type="button" class="submit-btn" id="generateAudioTestBtn" onclick="generateAudioTest()">Generate Audio Test</button> 
+                    -->
             
                 </div>
             </div>

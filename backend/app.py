@@ -8,6 +8,7 @@ import uuid
 import tempfile
 import threading
 import time
+import shutil
 
 app = Flask(__name__)
 CORS(app)
@@ -18,6 +19,13 @@ os.makedirs(VIDEO_FOLDER, exist_ok=True)
 faq_service = FAQService()
 comfy_service = ComfyService()
 transcription_service = TranscriptionService()
+
+# Auto-seed the rude collection on startup
+try:
+    count = faq_service.seed_rude_collection()
+    print(f"[STARTUP] Rude collection seeded with {count} phrases")
+except Exception as e:
+    print(f"[STARTUP] Failed to seed rude collection: {e}")
 
 # Global store for progress: { "uuid": { "status": "processing", "progress": 0, "eta": 0, "url": None, "error": None } }
 PROGRESS_STORE = {}
@@ -179,16 +187,30 @@ def generate_audio_single_route():
     text = data.get('text')
     title = data.get('title')
     filename_id = data.get('filename_id') # Get the UUID
+    category = data.get('category', 'answers')
+    use_placeholder = data.get('usePlaceholder', False)
+    speechSettings = data.get('speechSettings', [])
     
     if not text or not title or not filename_id:
         return jsonify({'error': 'Missing text, title, or filename_id'}), 400
 
     try:
-        audio_url = comfy_service.generate_audio_single(text, title, filename_id)
-        if audio_url:
-             return jsonify({'audio_url': audio_url}), 200
+        if use_placeholder:
+            # Skip ComfyUI -- copy placeholder file directly
+            output_dir = os.path.join(app.root_path, 'static', 'audio', title, category)
+            os.makedirs(output_dir, exist_ok=True)
+            save_filename = f"{filename_id}.mp3"
+            save_path = os.path.join(output_dir, save_filename)
+            placeholder_path = os.path.join(app.root_path, 'static', 'placeholder.mp3')
+            shutil.copy(placeholder_path, save_path)
+            audio_url = f"/static/audio/{title}/{category}/{save_filename}"
+            return jsonify({'audio_url': audio_url}), 200
         else:
-             return jsonify({'error': 'Failed to generate audio'}), 500
+            audio_url = comfy_service.generate_audio_single(text, title, filename_id, speechSettings)
+            if audio_url:
+                 return jsonify({'audio_url': audio_url}), 200
+            else:
+                 return jsonify({'error': 'Failed to generate audio'}), 500
     except Exception as e:
         print(f"Error generating audio: {e}")
         return jsonify({'error': str(e)}), 500
@@ -202,21 +224,38 @@ def generate_video_single_route():
     title = data.get('title')
     filename_id = data.get('filename_id')
     prompt = data.get('prompt') # Get prompt
+    use_placeholder = data.get('usePlaceholder', False)
     
     if not all([audio_path, image_path, title, filename_id]):
         return jsonify({'error': 'Missing required fields'}), 400
 
-    # Use the filename_id (UUID) as the job_id since it's unique per question
-    job_id = filename_id 
-    
-    # Initialize progress
-    PROGRESS_STORE[job_id] = { "status": "processing", "progress": 0, "eta": 0 }
+    category = data.get('category', 'answers')
 
-    # Start background thread
-    thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, job_id))
-    thread.start()
+    if use_placeholder:
+        # Skip ComfyUI -- copy placeholder file directly (no background thread needed)
+        output_dir = os.path.join(app.root_path, 'static', 'videos', title, category)
+        os.makedirs(output_dir, exist_ok=True)
+        save_filename = f"{filename_id}.mp4"
+        save_path = os.path.join(output_dir, save_filename)
+        placeholder_path = os.path.join(app.root_path, 'static', 'placeholder.mp4')
+        shutil.copy(placeholder_path, save_path)
+        video_url = f"/static/videos/{title}/{category}/{save_filename}"
+        # Still use job_id/progress pattern so frontend doesn't need separate handling
+        job_id = filename_id
+        PROGRESS_STORE[job_id] = { "status": "completed", "progress": 100, "eta": 0, "url": video_url }
+        return jsonify({'job_id': job_id, 'status': 'started'}), 202
+    else:
+        # Use the filename_id (UUID) as the job_id since it's unique per question
+        job_id = filename_id 
+        
+        # Initialize progress
+        PROGRESS_STORE[job_id] = { "status": "processing", "progress": 0, "eta": 0 }
 
-    return jsonify({'job_id': job_id, 'status': 'started'}), 202
+        # Start background thread
+        thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, job_id))
+        thread.start()
+
+        return jsonify({'job_id': job_id, 'status': 'started'}), 202
 
 
 @app.route('/upload-avatar', methods=['POST'])
@@ -284,14 +323,15 @@ def delete_title_route():
     try:
         faq_service.delete_topic(title)
         
-        # Also try to remove the directory of images if it exists
-        try:
-            image_dir = os.path.join(app.root_path, 'static', 'images', title)
-            if os.path.exists(image_dir):
-                import shutil
-                shutil.rmtree(image_dir)
-        except Exception as e:
-            print(f"Warning: Could not delete image directory: {e}")
+        # Remove all static directories for this topic (images, videos, audio)
+        for folder in ['images', 'videos', 'audio']:
+            try:
+                dir_path = os.path.join(app.root_path, 'static', folder, title)
+                if os.path.exists(dir_path):
+                    shutil.rmtree(dir_path)
+                    print(f"Deleted {folder} directory for '{title}'")
+            except Exception as e:
+                print(f"Warning: Could not delete {folder} directory: {e}")
 
         return jsonify({'message': f'Title "{title}" deleted successfully'}), 200
     except Exception as e:
@@ -301,10 +341,41 @@ def delete_title_route():
 @app.route('/get-videos', methods=['GET'])
 def get_videos_route():
     title = request.args.get('title')
+    category = request.args.get('category')
     try:
-        videos = faq_service.get_videos(title)
+        videos = faq_service.get_videos(title, category)
         return jsonify({'message': 'Fetched successfully', 'data': videos}), 200
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/seed-rude', methods=['POST'])
+def seed_rude_collection():
+    try:
+        count = faq_service.seed_rude_collection()
+        return jsonify({'message': f'Seeded rude collection with {count} phrases'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/default-responses', methods=['GET'])
+def get_default_responses():
+    try:
+        responses = faq_service.get_default_responses()
+        return jsonify(responses), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/load-conversational', methods=['POST'])
+def load_conversational():
+    """Load the conversational.csv into ChromaDB for a given title"""
+    data = request.get_json()
+    title = data.get('title')
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+    try:
+        result = faq_service.load_conversational(title)
+        return jsonify({'message': 'Conversational data loaded', 'data': result}), 200
+    except Exception as e:
+        print(f"Error loading conversational data: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/get-avatar', methods=['GET'])
@@ -324,8 +395,15 @@ def get_progress(job_id):
         return jsonify({'error': 'Job not found'}), 404
     return jsonify(info), 200
 
+# --- Shared asset route for all JS under pagejs ---
+@app.route('/backend/pagejs/<path:filename>')
+def serve_pagejs(filename):
+    return send_from_directory('pagejs', filename)
+
+# --- Create FAQ page ---
 @app.route('/')
 @app.route('/home')
+@app.route('/createQA')
 def createQAPage():
     return send_from_directory('../web/createQA', 'createQA.html')
 
@@ -333,28 +411,94 @@ def createQAPage():
 def createQA_css():
     return send_from_directory('../web/createQA', 'createQA.css')
 
-@app.route('/backend/pagejs/<path:filename>')
-def serve_pagejs(filename):
-    return send_from_directory('pagejs', filename)
-
+# --- Edit FAQ page ---
 @app.route('/editQA')
 def editQAPage():
     return send_from_directory('../web/editQA', 'editQA.html')
 
+@app.route('/editQA.css')
+def editQA_css():
+    return send_from_directory('../web/editQA', 'editQA.css')
 
+# --- Test FAQ page ---
+@app.route('/testQA')
+def testQAPage():
+    return send_from_directory('../web/TestQA', 'testQA.html')
+
+@app.route('/testQA.css')
+def testQA_css():
+    return send_from_directory('../web/TestQA', 'testQA.css')
+
+# --- Player page ---
 @app.route('/player')
 def player():
     return send_from_directory('../web/player', 'player.html')
 
 @app.route('/player/<path:filename>')
 def player_assets(filename):
-    # Serve CSS from web/player folder
     if filename.endswith('.css'):
         return send_from_directory('../web/player', filename)
-    # Serve JS from backend/pagejs/player folder
     elif filename.endswith('.js'):
         return send_from_directory('pagejs/player', filename)
     return send_from_directory('../web/player', filename)
+
+@app.route('/download-project', methods=['GET'])
+def download_project():
+    """Create a zip of all project data: videos, audio, ChromaDB, SQLite DB, and JSON configs"""
+    import zipfile
+    import io
+
+    memory_file = io.BytesIO()
+
+    with zipfile.ZipFile(memory_file, 'w', zipfile.ZIP_DEFLATED) as zf:
+        # 1. Videos folder
+        videos_dir = os.path.join(app.root_path, 'static', 'videos')
+        if os.path.exists(videos_dir):
+            for root, dirs, files in os.walk(videos_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, app.root_path)
+                    zf.write(file_path, arcname)
+
+        # 2. Audio folder
+        audio_dir = os.path.join(app.root_path, 'static', 'audio')
+        if os.path.exists(audio_dir):
+            for root, dirs, files in os.walk(audio_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.relpath(file_path, app.root_path)
+                    zf.write(file_path, arcname)
+
+        # 3. ChromaDB directory
+        chroma_dir = os.path.join(os.getcwd(), 'db')
+        if os.path.exists(chroma_dir):
+            for root, dirs, files in os.walk(chroma_dir):
+                for file in files:
+                    file_path = os.path.join(root, file)
+                    arcname = os.path.join('db', os.path.relpath(file_path, chroma_dir))
+                    zf.write(file_path, arcname)
+
+        # 4. SQLite database
+        db_path = os.path.join(os.getcwd(), 'app.db')
+        if os.path.exists(db_path):
+            zf.write(db_path, 'app.db')
+
+        # 5. defaultResponses.json
+        defaults_path = os.path.join(app.root_path, 'defaultResponses.json')
+        if os.path.exists(defaults_path):
+            zf.write(defaults_path, 'defaultResponses.json')
+
+        # 6. rudeWords.json
+        rude_path = os.path.join(app.root_path, 'rudeWords.json')
+        if os.path.exists(rude_path):
+            zf.write(rude_path, 'rudeWords.json')
+
+    memory_file.seek(0)
+
+    response = make_response(memory_file.read())
+    response.headers['Content-Type'] = 'application/zip'
+    response.headers['Content-Disposition'] = 'attachment; filename=InteractiveAvatar_Data.zip'
+    return response
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
