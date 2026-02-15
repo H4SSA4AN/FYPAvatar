@@ -282,7 +282,7 @@ async function handleUserMessage(transcriptionTime = null) {
                     addMessageToLog('bot', result.answer);
                 }
                 if (result.id) {
-                    playAnswerVideo(result.id, result.title || currentTitle, category);
+                    playAnswerVideo(result.id, currentTitle, category);
                 }
             }
         } else {

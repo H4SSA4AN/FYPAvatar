@@ -800,8 +800,9 @@ async function generateAudioTest() {
 async function generateAudioForFAQ(faqData) {
     const title = document.getElementById('title').value;
     const statusDiv = document.getElementById('statusMessage');
-    // This is a checkbox to use placeholder videos instead of generating audio and video for each answer
-    const usePlaceholders = document.getElementById('usePlaceholders').checked;
+    const audioOnly = document.getElementById('audioOnly').checked;
+    // When audioOnly is on, always generate real audio (never placeholder)
+    const usePlaceholders = audioOnly ? false : document.getElementById('usePlaceholders').checked;
     let speechSettings = [];
 
     speechSettings.push(document.getElementById('speechHappy').value);
@@ -880,9 +881,9 @@ async function generateVideoForFAQ(audioResults) {
     const statusDiv = document.getElementById('statusMessage');
     const imagePreview = document.getElementById('finalImagePreview') || document.getElementById('avatarPreview');
     const videoPrompt = document.getElementById('videoPrompt').value;
-
-    // This is a checkbox to use placeholder videos instead of generating audio and video for each answer
-    const usePlaceholders = document.getElementById('usePlaceholders').checked;
+    const audioOnly = document.getElementById('audioOnly').checked;
+    // When audioOnly is on, always use placeholder videos
+    const usePlaceholders = audioOnly ? true : document.getElementById('usePlaceholders').checked;
 
     let uploadedImagePath = await uploadAvatarImage(title);
     if (!uploadedImagePath) {
@@ -932,7 +933,8 @@ async function generateVideoForFAQ(audioResults) {
                     filename_id: variantId,
                     category: 'answers',
                     prompt: videoPrompt,
-                    usePlaceholder: usePlaceholders
+                    usePlaceholder: usePlaceholders,
+                    audioOnly: audioOnly
                 });
 
                 const result = await response.json();
@@ -954,7 +956,7 @@ async function generateVideoForFAQ(audioResults) {
 
 async function generateDefaultCategoryVideos(title) {
     const statusDiv = document.getElementById('statusMessage');
-    const usePlaceholders = document.getElementById('usePlaceholders').checked;
+    const audioOnly = document.getElementById('audioOnly').checked;
     const videoPrompt = document.getElementById('videoPrompt').value;
     let speechSettings = [];
     speechSettings.push(document.getElementById('speechHappy').value);
@@ -984,6 +986,10 @@ async function generateDefaultCategoryVideos(title) {
         console.error("Failed to upload avatar image for default category video generation.");
         return;
     }
+
+    // audioOnly: real audio, placeholder video. Otherwise respect the usePlaceholders checkbox.
+    const useAudioPlaceholder = audioOnly ? false : document.getElementById('usePlaceholders').checked;
+    const useVideoPlaceholder = audioOnly ? true : document.getElementById('usePlaceholders').checked;
 
     // Generate for each category: rude and no_answer
     const categories = ['rude', 'no_answer'];
@@ -1015,7 +1021,7 @@ async function generateDefaultCategoryVideos(title) {
                             filename_id: variantId,
                             category: category,
                             speechSettings: speechSettings,
-                            usePlaceholder: usePlaceholders
+                            usePlaceholder: useAudioPlaceholder
                         })
                     });
                     const audioResult = await audioResp.json();
@@ -1039,7 +1045,8 @@ async function generateDefaultCategoryVideos(title) {
                             filename_id: variantId,
                             category: category,
                             prompt: videoPrompt,
-                            usePlaceholder: usePlaceholders
+                            usePlaceholder: useVideoPlaceholder,
+                            audioOnly: audioOnly
                         });
                         const videoResult = await videoResp.json();
                         if (videoResp.ok) {
@@ -1060,7 +1067,7 @@ async function generateDefaultCategoryVideos(title) {
 
 async function generateConversationalVideos(title) {
     const statusDiv = document.getElementById('statusMessage');
-    const usePlaceholders = document.getElementById('usePlaceholders').checked;
+    const audioOnly = document.getElementById('audioOnly').checked;
     const videoPrompt = document.getElementById('videoPrompt').value;
     let speechSettings = [];
     speechSettings.push(document.getElementById('speechHappy').value);
@@ -1121,6 +1128,9 @@ async function generateConversationalVideos(title) {
             count++;
             const variantId = `${answerId}_${v}`;
 
+            const useAudioPlaceholder = audioOnly ? false : document.getElementById('usePlaceholders').checked;
+            const useVideoPlaceholder = audioOnly ? true : document.getElementById('usePlaceholders').checked;
+
             statusDiv.innerHTML = `Generating conversational audio ${count} of ${totalGenerations}...`;
             statusDiv.className = 'status-message processing';
 
@@ -1136,7 +1146,7 @@ async function generateConversationalVideos(title) {
                         filename_id: variantId,
                         category: category,
                         speechSettings: speechSettings,
-                        usePlaceholder: usePlaceholders
+                        usePlaceholder: useAudioPlaceholder
                     })
                 });
                 const audioResult = await audioResp.json();
@@ -1160,7 +1170,8 @@ async function generateConversationalVideos(title) {
                         filename_id: variantId,
                         category: category,
                         prompt: videoPrompt,
-                        usePlaceholder: usePlaceholders
+                        usePlaceholder: useVideoPlaceholder,
+                        audioOnly: audioOnly
                     });
                     const videoResult = await videoResp.json();
                     if (videoResp.ok) {

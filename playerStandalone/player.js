@@ -402,13 +402,13 @@ async function handleUserMessage(transcriptionTime = null) {
             } else if (category === 'conversational') {
                 if (result.answer) addMessageToLog('bot', result.answer);
                 if (result.id) {
-                    playAnswerVideo(result.id, result.title || currentTitle, 'conversational');
+                    playAnswerVideo(result.id, currentTitle, 'conversational');
                 }
 
             } else {
                 if (result.answer) addMessageToLog('bot', result.answer);
                 if (result.id) {
-                    playAnswerVideo(result.id, result.title || currentTitle, category);
+                    playAnswerVideo(result.id, currentTitle, category);
                 }
             }
         } else {

@@ -231,16 +231,46 @@ def generate_video_single_route():
 
     category = data.get('category', 'answers')
 
+    audio_only = data.get('audioOnly', False)
+
     if use_placeholder:
-        # Skip ComfyUI -- copy placeholder file directly (no background thread needed)
         output_dir = os.path.join(app.root_path, 'static', 'videos', title, category)
         os.makedirs(output_dir, exist_ok=True)
         save_filename = f"{filename_id}.mp4"
         save_path = os.path.join(output_dir, save_filename)
         placeholder_path = os.path.join(app.root_path, 'static', 'placeholder.mp4')
-        shutil.copy(placeholder_path, save_path)
+
+        if audio_only and audio_path:
+            # Mux real audio with placeholder video using ffmpeg
+            import subprocess
+            # Resolve the audio path relative to app root
+            abs_audio = os.path.join(app.root_path, audio_path.lstrip('/'))
+            if os.path.exists(abs_audio):
+                try:
+                    subprocess.run([
+                        'ffmpeg', '-y',
+                        '-stream_loop', '-1',
+                        '-i', placeholder_path,
+                        '-i', abs_audio,
+                        '-c:v', 'copy',
+                        '-c:a', 'aac',
+                        '-shortest',
+                        '-map', '0:v:0',
+                        '-map', '1:a:0',
+                        save_path
+                    ], check=True, capture_output=True)
+                    print(f"[AUDIO-ONLY] Muxed {abs_audio} into {save_path}")
+                except subprocess.CalledProcessError as e:
+                    print(f"[AUDIO-ONLY] ffmpeg failed: {e.stderr.decode()}")
+                    shutil.copy(placeholder_path, save_path)
+            else:
+                print(f"[AUDIO-ONLY] Audio file not found: {abs_audio}, using silent placeholder")
+                shutil.copy(placeholder_path, save_path)
+        else:
+            # Pure placeholder -- just copy the silent video
+            shutil.copy(placeholder_path, save_path)
+
         video_url = f"/static/videos/{title}/{category}/{save_filename}"
-        # Still use job_id/progress pattern so frontend doesn't need separate handling
         job_id = filename_id
         PROGRESS_STORE[job_id] = { "status": "completed", "progress": 100, "eta": 0, "url": video_url }
         return jsonify({'job_id': job_id, 'status': 'started'}), 202

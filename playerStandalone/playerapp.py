@@ -15,12 +15,28 @@ import zipfile
 import sqlite3
 import json
 import shutil
+import tempfile
 
 import chromadb
 from chromadb.utils import embedding_functions
 
+from faster_whisper import WhisperModel
+import torch
+
 app = Flask(__name__, static_folder=None)
 CORS(app)
+
+# Whisper transcription model
+model_size = "base.en"
+device = "cuda" if torch.cuda.is_available() else "cpu"
+compute_type = "float16" if device == "cuda" else "int8"
+print(f"[STARTUP] Loading Whisper model: {model_size} on {device}...")
+try:
+    whisper_model = WhisperModel(model_size, device=device, compute_type=compute_type)
+    print("[STARTUP] Whisper model loaded successfully.")
+except Exception as e:
+    print(f"[STARTUP] Error loading Whisper model: {e}, falling back to tiny.en")
+    whisper_model = WhisperModel("tiny.en", device=device, compute_type=compute_type)
 
 # Base directory for extracted data
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
@@ -205,7 +221,10 @@ def query_faq():
 
     print(f"\n[QUERY] Input: '{query_text}' | Title: '{title}'")
 
-    # Step 1: Check rude
+    # Gather confidence scores from all categories, then pick the best
+    candidates = []
+
+    # 1. Query rude collection
     try:
         if rude_collection and rude_collection.count() > 0:
             rude_results = rude_collection.query(query_texts=[query_text], n_results=1)
@@ -213,89 +232,108 @@ def query_faq():
                 rude_distance = rude_results['distances'][0][0]
                 rude_confidence = max(0, min(100, (1 - rude_distance) * 100))
                 rude_matched = rude_results['documents'][0][0]
-                print(f"[STEP 1 - RUDE] Matched: '{rude_matched}' | Distance: {rude_distance:.4f} | Confidence: {rude_confidence:.1f}%")
-
-                if rude_confidence >= 60:
-                    print("[STEP 1 - RUDE] >>> RUDE DETECTED")
-                    return jsonify({
+                print(f"[RUDE] Matched: '{rude_matched}' | Distance: {rude_distance:.4f} | Confidence: {rude_confidence:.1f}%")
+                candidates.append({
+                    "confidence": rude_confidence,
+                    "distance": rude_distance,
+                    "category": "rude",
+                    "matched": rude_matched,
+                    "result": {
                         "answer": None,
                         "question": rude_matched,
                         "id": None,
                         "score": rude_distance,
                         "title": title,
                         "category": "rude"
-                    }), 200
+                    }
+                })
     except Exception as e:
-        print(f"[STEP 1 - RUDE] Exception: {e}")
+        print(f"[RUDE] Exception: {e}")
 
-    # Step 2: Check conversational
+    # 2. Query conversational (filtered by topic)
     try:
         if faq_collection:
             conv_results = faq_collection.query(
                 query_texts=query_texts,
                 n_results=1,
-                where={"category": "conversational"}
+                where={"$and": [{"category": "conversational"}, {"Title": title}]}
             )
             if conv_results['distances'] and conv_results['distances'][0]:
                 conv_distance = conv_results['distances'][0][0]
                 conv_confidence = max(0, min(100, (1 - conv_distance) * 100))
                 conv_matched = conv_results['documents'][0][0]
-                print(f"[STEP 2 - CONV] Matched: '{conv_matched}' | Distance: {conv_distance:.4f} | Confidence: {conv_confidence:.1f}%")
-
-                if conv_confidence >= 60:
-                    conv_metadata = conv_results['metadatas'][0][0]
-                    print("[STEP 2 - CONV] >>> CONVERSATIONAL HIT")
-                    return jsonify({
+                conv_metadata = conv_results['metadatas'][0][0]
+                print(f"[CONV] Matched: '{conv_matched}' | Distance: {conv_distance:.4f} | Confidence: {conv_confidence:.1f}%")
+                candidates.append({
+                    "confidence": conv_confidence,
+                    "distance": conv_distance,
+                    "category": "conversational",
+                    "matched": conv_matched,
+                    "result": {
                         "answer": conv_metadata['answer'],
-                        "question": conv_results['documents'][0][0],
+                        "question": conv_matched,
                         "id": conv_results['ids'][0][0],
                         "score": conv_distance,
-                        "title": conv_metadata.get('Title', title),
+                        "title": title,
                         "category": "conversational"
-                    }), 200
+                    }
+                })
     except Exception as e:
-        print(f"[STEP 2 - CONV] Exception: {e}")
+        print(f"[CONV] Exception: {e}")
 
-    # Step 3: Check answers
+    # 3. Query answers for this topic
     try:
         if faq_collection:
             answer_results = faq_collection.query(
                 query_texts=query_texts,
                 n_results=1,
-                where={"Title": title}
+                where={"$and": [{"category": "answers"}, {"Title": title}]}
             )
             if answer_results['distances'] and answer_results['distances'][0]:
                 ans_distance = answer_results['distances'][0][0]
                 ans_confidence = max(0, min(100, (1 - ans_distance) * 100))
                 ans_matched = answer_results['documents'][0][0]
-                print(f"[STEP 3 - ANSWER] Matched: '{ans_matched}' | Distance: {ans_distance:.4f} | Confidence: {ans_confidence:.1f}%")
-
-                if ans_confidence >= 60:
-                    ans_metadata = answer_results['metadatas'][0][0]
-                    print("[STEP 3 - ANSWER] >>> ANSWER HIT")
-                    return jsonify({
+                ans_metadata = answer_results['metadatas'][0][0]
+                print(f"[ANSWER] Matched: '{ans_matched}' | Distance: {ans_distance:.4f} | Confidence: {ans_confidence:.1f}%")
+                candidates.append({
+                    "confidence": ans_confidence,
+                    "distance": ans_distance,
+                    "category": "answers",
+                    "matched": ans_matched,
+                    "result": {
                         "answer": ans_metadata['answer'],
-                        "question": answer_results['documents'][0][0],
+                        "question": ans_matched,
                         "id": answer_results['ids'][0][0],
                         "score": ans_distance,
-                        "title": ans_metadata.get('Title', title),
-                        "category": ans_metadata.get('category', 'answers')
-                    }), 200
-                else:
-                    print("[STEP 3 - ANSWER] Confidence below 60%, no_answer")
-                    return jsonify({
-                        "answer": None,
-                        "question": answer_results['documents'][0][0],
-                        "id": None,
-                        "score": ans_distance,
                         "title": title,
-                        "category": "no_answer"
-                    }), 200
+                        "category": "answers"
+                    }
+                })
     except Exception as e:
-        print(f"[STEP 3 - ANSWER] Exception: {e}")
+        print(f"[ANSWER] Exception: {e}")
 
-    # Step 4: Fallback
-    print("[STEP 4] No matches, returning no_answer")
+    # Pick the candidate with the highest confidence (minimum 60%)
+    valid = [c for c in candidates if c['confidence'] >= 60]
+
+    if valid:
+        best = max(valid, key=lambda c: c['confidence'])
+        print(f"[DECISION] Winner: {best['category']} at {best['confidence']:.1f}% — '{best['matched']}'")
+        return jsonify(best['result']), 200
+
+    # No candidate reached 60% — return no_answer with the best partial match info
+    if candidates:
+        best_partial = max(candidates, key=lambda c: c['confidence'])
+        print(f"[DECISION] No category reached 60%. Best was {best_partial['category']} at {best_partial['confidence']:.1f}%. Returning no_answer.")
+        return jsonify({
+            "answer": None,
+            "question": best_partial['matched'],
+            "id": None,
+            "score": best_partial['distance'],
+            "title": title,
+            "category": "no_answer"
+        }), 200
+
+    print(f"[DECISION] No matches at all, returning no_answer")
     return jsonify({
         "answer": None, "question": None, "id": None,
         "score": None, "title": title, "category": "no_answer"
@@ -340,11 +378,36 @@ def get_default_responses():
         return jsonify({'error': str(e)}), 500
 
 
-# === TRANSCRIPTION (uses Web Speech API on client, but keep endpoint for mic compatibility) ===
+# === TRANSCRIPTION ===
 
 @app.route('/transcribe', methods=['POST'])
 def transcribe():
-    return jsonify({'error': 'Transcription not available in standalone mode. Use the browser Web Speech API or type your message.'}), 501
+    if 'audio' not in request.files:
+        return jsonify({'error': 'No audio file provided'}), 400
+
+    audio_file = request.files['audio']
+    if audio_file.filename == '':
+        return jsonify({'error': 'No selected file'}), 400
+
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".webm") as temp_audio:
+        audio_file.save(temp_audio.name)
+        temp_path = temp_audio.name
+
+    try:
+        segments, info = whisper_model.transcribe(
+            temp_path,
+            beam_size=1,
+            vad_filter=True,
+            vad_parameters=dict(min_silence_duration_ms=500)
+        )
+        text = " ".join([segment.text for segment in segments])
+        return jsonify({'text': text.strip()}), 200
+    except Exception as e:
+        print(f"Transcription error: {e}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
 
 
 if __name__ == '__main__':

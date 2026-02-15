@@ -95,22 +95,25 @@ class FAQService:
         query_texts = [query_text] if isinstance(query_text, str) else query_text
         print(f"\n[QUERY] Input: '{query_text}' | Title: '{title}'")
 
-        # Step 1: Check rude collection first
+        # Gather confidence scores from all categories, then pick the best
+        candidates = []
+
+        # 1. Query rude collection
         try:
             rude_count = self.vector_db_service.rude_collection.count()
-            print(f"[STEP 1 - RUDE] Collection has {rude_count} entries")
-
             if rude_count > 0:
                 rude_results = self.vector_db_service.query_rude(query_text, n_results=1)
                 if rude_results['distances'] and rude_results['distances'][0]:
                     rude_distance = rude_results['distances'][0][0]
                     rude_confidence = max(0, min(100, (1 - rude_distance) * 100))
                     rude_matched = rude_results['documents'][0][0]
-                    print(f"[STEP 1 - RUDE] Matched: '{rude_matched}' | Distance: {rude_distance:.4f} | Confidence: {rude_confidence:.1f}%")
-
-                    if rude_confidence >= 60:
-                        print(f"[STEP 1 - RUDE] >>> RUDE DETECTED, returning rude category")
-                        return {
+                    print(f"[RUDE] Matched: '{rude_matched}' | Distance: {rude_distance:.4f} | Confidence: {rude_confidence:.1f}%")
+                    candidates.append({
+                        "confidence": rude_confidence,
+                        "distance": rude_distance,
+                        "category": "rude",
+                        "matched": rude_matched,
+                        "result": {
                             "answer": None,
                             "question": rude_matched,
                             "id": None,
@@ -118,81 +121,92 @@ class FAQService:
                             "title": title,
                             "category": "rude"
                         }
-                    else:
-                        print(f"[STEP 1 - RUDE] Confidence below 60%, moving to step 2")
-            else:
-                print(f"[STEP 1 - RUDE] Collection is empty, skipping")
+                    })
         except Exception as e:
-            print(f"[STEP 1 - RUDE] Exception: {e}")
+            print(f"[RUDE] Exception: {e}")
 
-        # Step 2: Check conversational
+        # 2. Query conversational (filtered by topic)
         try:
             conv_results = self.vector_db_service.collection.query(
                 query_texts=query_texts,
                 n_results=1,
-                where={"category": "conversational"}
+                where={"$and": [{"category": "conversational"}, {"Title": title}]}
             )
             if conv_results['distances'] and conv_results['distances'][0]:
                 conv_distance = conv_results['distances'][0][0]
                 conv_confidence = max(0, min(100, (1 - conv_distance) * 100))
                 conv_matched = conv_results['documents'][0][0]
-                print(f"[STEP 2 - CONV] Matched: '{conv_matched}' | Distance: {conv_distance:.4f} | Confidence: {conv_confidence:.1f}%")
-
-                if conv_confidence >= 60:
-                    conv_metadata = conv_results['metadatas'][0][0]
-                    print(f"[STEP 2 - CONV] >>> CONVERSATIONAL HIT, returning")
-                    return {
+                conv_metadata = conv_results['metadatas'][0][0]
+                print(f"[CONV] Matched: '{conv_matched}' | Distance: {conv_distance:.4f} | Confidence: {conv_confidence:.1f}%")
+                candidates.append({
+                    "confidence": conv_confidence,
+                    "distance": conv_distance,
+                    "category": "conversational",
+                    "matched": conv_matched,
+                    "result": {
                         "answer": conv_metadata['answer'],
-                        "question": conv_results['documents'][0][0],
+                        "question": conv_matched,
                         "id": conv_results['ids'][0][0],
                         "score": conv_distance,
-                        "title": conv_metadata.get('Title', title),
+                        "title": title,
                         "category": "conversational"
                     }
-                else:
-                    print(f"[STEP 2 - CONV] Confidence below 60%, moving to step 3")
+                })
         except Exception as e:
-            print(f"[STEP 2 - CONV] Exception: {e}")
+            print(f"[CONV] Exception: {e}")
 
-        # Step 3: Check answers for this topic
+        # 3. Query answers for this topic
         try:
             answer_results = self.vector_db_service.collection.query(
                 query_texts=query_texts,
                 n_results=1,
-                where={"Title": title}
+                where={"$and": [{"category": "answers"}, {"Title": title}]}
             )
             if answer_results['distances'] and answer_results['distances'][0]:
                 ans_distance = answer_results['distances'][0][0]
                 ans_confidence = max(0, min(100, (1 - ans_distance) * 100))
                 ans_matched = answer_results['documents'][0][0]
-                print(f"[STEP 3 - ANSWER] Matched: '{ans_matched}' | Distance: {ans_distance:.4f} | Confidence: {ans_confidence:.1f}%")
-
-                if ans_confidence >= 60:
-                    ans_metadata = answer_results['metadatas'][0][0]
-                    print(f"[STEP 3 - ANSWER] >>> ANSWER HIT, returning")
-                    return {
+                ans_metadata = answer_results['metadatas'][0][0]
+                print(f"[ANSWER] Matched: '{ans_matched}' | Distance: {ans_distance:.4f} | Confidence: {ans_confidence:.1f}%")
+                candidates.append({
+                    "confidence": ans_confidence,
+                    "distance": ans_distance,
+                    "category": "answers",
+                    "matched": ans_matched,
+                    "result": {
                         "answer": ans_metadata['answer'],
-                        "question": answer_results['documents'][0][0],
+                        "question": ans_matched,
                         "id": answer_results['ids'][0][0],
                         "score": ans_distance,
-                        "title": ans_metadata.get('Title', title),
-                        "category": ans_metadata.get('category', 'answers')
-                    }
-                else:
-                    print(f"[STEP 3 - ANSWER] Confidence below 60%, falling through to no_answer")
-                    return {
-                        "answer": None,
-                        "question": answer_results['documents'][0][0],
-                        "id": None,
-                        "score": ans_distance,
                         "title": title,
-                        "category": "no_answer"
+                        "category": "answers"
                     }
+                })
         except Exception as e:
-            print(f"[STEP 3 - ANSWER] Exception: {e}")
+            print(f"[ANSWER] Exception: {e}")
 
-        # Step 4: No answer fallback
-        print(f"[STEP 4] No matches at all, returning no_answer")
+        # Pick the candidate with the highest confidence (minimum 60%)
+        valid = [c for c in candidates if c['confidence'] >= 60]
+
+        if valid:
+            best = max(valid, key=lambda c: c['confidence'])
+            print(f"[DECISION] Winner: {best['category']} at {best['confidence']:.1f}% — '{best['matched']}'")
+            return best['result']
+
+        # No candidate reached 60% — return no_answer with the best partial match info
+        if candidates:
+            best_partial = max(candidates, key=lambda c: c['confidence'])
+            print(f"[DECISION] No category reached 60%. Best was {best_partial['category']} at {best_partial['confidence']:.1f}%. Returning no_answer.")
+            return {
+                "answer": None,
+                "question": best_partial['matched'],
+                "id": None,
+                "score": best_partial['distance'],
+                "title": title,
+                "category": "no_answer"
+            }
+
+        print(f"[DECISION] No matches at all, returning no_answer")
         return {"answer": None, "question": None, "id": None, "score": None, "title": title, "category": "no_answer"}
 
     def delete_topic(self, title):
