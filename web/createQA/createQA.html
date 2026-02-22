@@ -17,6 +17,7 @@
         <div class="logo-area">
             <div class="logo">InteractiveAvatar</div>
             <button type="button" class="download-btn" onclick="downloadProjectData()">Download</button>
+            <span class="info-icon" data-tooltip="Download all project data as a ZIP file"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
         </div>
     </nav>
 
@@ -30,7 +31,7 @@
                 </div>
                 
                 <div class="form-group">
-                    <label>Upload FAQ CSV</label>
+                    <label>Upload FAQ CSV <span class="info-icon" data-tooltip="Upload a .csv file with Question and Answer columns"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></label>
                     <div class="upload-container">
                         <label for="csvFile" class="upload-label" id="csvFileLabel">Upload CSV here</label>
                         <span class="remove-file" id="csvFileRemoveBtn" style="display: none;">&times;</span>
@@ -39,7 +40,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label for="manualEntryBtn">Manually enter FAQ</label>
+                    <label for="manualEntryBtn">Manually enter FAQ <span class="info-icon" data-tooltip="Open a form to type in questions and answers manually"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></label>
                     <div class="upload-container">
                         <button type="button" id="manualEntryBtn" class="upload-label">Click here to manually enter FAQ</button>
                         <span class="remove-file" id="manualRemoveBtn" style="display: none;">&times;</span>
@@ -47,16 +48,7 @@
                 </div>  
 
                 <div class="form-group">
-                    <label>Upload reference video</label>
-                    <div class="upload-container">
-                        <label for="mediaFile" class="upload-label" >Upload mp4 here</label>
-                        <span class="remove-file" id="mediaFileRemoveBtn" style="display: none;">&times;</span>
-                    </div>
-                    <input type="file" id="mediaFile" accept=".mp4" style="display: none;">
-                </div>
-
-                <div class="form-group">
-                    <label for="generateVideoBtn">Generate an avatar</label>
+                    <label for="generateVideoBtn">Generate an avatar <span class="info-icon" data-tooltip="Generate or upload an avatar image and create a video"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></label>
                     <button type="button" id="generateVideoBtn" class="upload-label">Open avatar generation window</button>   
                 </div>  
 
@@ -65,18 +57,21 @@
                 <div class="form-group">
                     <label>
                         <input type="checkbox" id="usePlaceholders" checked>
-                        Use placeholder videos (testing mode)
+                        Use placeholder videos (testing mode) <span class="info-icon" data-tooltip="Skip real video generation and use placeholder clips for faster testing"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
                     </label>
                 </div>
 
                 <div class="form-group">
                     <label>
                         <input type="checkbox" id="audioOnly">
-                        Audio only (generate real audio, placeholder videos)
+                        Audio only (generate real audio, placeholder videos) <span class="info-icon" data-tooltip="Generate real speech audio but use placeholder videos to save time"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
                     </label>
                 </div>
 
-                <button type="button" class="submit-btn" onclick="createFAQ()">Create FAQ and Generate</button>
+                <div class="submit-btn-wrapper">
+                    <button type="button" class="submit-btn" onclick="createFAQ()">Create FAQ and Generate</button>
+                    <span class="info-icon" data-tooltip="Save your FAQ and start generating audio/video for each answer"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+                </div>
             </form>
         </div>
             
@@ -91,7 +86,7 @@
                     <textarea id="videoPrompt" rows="3" placeholder="Describe how the video should look (movements, expression)..." style="width: 100%; font-family: inherit; padding: 8px; border-radius: 4px; border: 1px solid #ccc; box-sizing: border-box; resize: vertical;"></textarea>
                 </div>
                 <div id="speechSettingsContainer" style="width: 100%; margin-top: 15px; display: none;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #555;">Speech Settings</label>
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #555;">Speech Settings <span class="info-icon" data-tooltip="Adjust sliders to change the emotional tone of the avatar's speech"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span></label>
                     <div class="slider-grid">
                         <div class="slider-item">Happy <input type="range" id="speechHappy" value="0" min="0" max="1.2" step="0.1"></div>
                         <div class="slider-item">Angry <input type="range" id="speechAngry" value="0" min="0" max="1.2" step="0.1"></div>
