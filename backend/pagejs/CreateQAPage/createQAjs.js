@@ -2,6 +2,81 @@ const API_BASE_URL = window.location.origin;
 const statusDiv = document.getElementById('statusMessage');
 let counter = 1;
 
+const progress = {
+    totalOps: 0,
+    completedOps: 0,
+    opStartTime: null,
+    globalStartTime: null,
+    recentDurations: [],
+
+    reset() {
+        this.totalOps = 0;
+        this.completedOps = 0;
+        this.opStartTime = null;
+        this.globalStartTime = Date.now();
+        this.recentDurations = [];
+        const container = document.getElementById('progressContainer');
+        if (container) container.style.display = 'block';
+        this.render();
+    },
+
+    addOps(count) {
+        this.totalOps += count;
+        this.render();
+    },
+
+    startOp() {
+        this.opStartTime = Date.now();
+    },
+
+    completeOp() {
+        if (this.opStartTime) {
+            this.recentDurations.push(Date.now() - this.opStartTime);
+            if (this.recentDurations.length > 20) this.recentDurations.shift();
+        }
+        this.completedOps++;
+        this.opStartTime = null;
+        this.render();
+    },
+
+    getAvgMs() {
+        if (this.recentDurations.length === 0) return 0;
+        const sum = this.recentDurations.reduce((a, b) => a + b, 0);
+        return sum / this.recentDurations.length;
+    },
+
+    getETA() {
+        const remaining = this.totalOps - this.completedOps;
+        if (remaining <= 0 || this.recentDurations.length === 0) return '';
+        const ms = this.getAvgMs() * remaining;
+        const secs = Math.round(ms / 1000);
+        if (secs < 60) return `~${secs}s remaining`;
+        const mins = Math.floor(secs / 60);
+        const remSecs = secs % 60;
+        return `~${mins}m ${remSecs}s remaining`;
+    },
+
+    getPercent() {
+        if (this.totalOps === 0) return 0;
+        return Math.round((this.completedOps / this.totalOps) * 100);
+    },
+
+    render() {
+        const fill = document.getElementById('progressBarFill');
+        const text = document.getElementById('progressText');
+        const eta = document.getElementById('progressETA');
+        const pct = this.getPercent();
+        if (fill) fill.style.width = pct + '%';
+        if (text) text.textContent = `${pct}% (${this.completedOps}/${this.totalOps})`;
+        if (eta) eta.textContent = this.getETA();
+    },
+
+    hide() {
+        const container = document.getElementById('progressContainer');
+        if (container) container.style.display = 'none';
+    }
+};
+
 document.addEventListener('DOMContentLoaded', function () {
 
     initaliseModals();
@@ -695,7 +770,8 @@ async function confirmImage() {
 function checkMedia() {
     const videoPreview = document.getElementById('videoPreview');
     const imagePreview = document.getElementById('finalImagePreview');
-    const mediaFile = document.getElementById('mediaFile').files[0];
+    const mediaFileInput = document.getElementById('mediaFile');
+    const mediaFile = mediaFileInput ? mediaFileInput.files[0] : null;
 
     // 1. Check if user uploaded a video directly
     if (mediaFile) {
@@ -817,14 +893,14 @@ async function generateAudioForFAQ(faqData) {
 
     const VARIANT_COUNT = 3;
     let audioResults = [];
-    let limit = faqData.length; // Can change this to limit the number of audios and videos generated
+    let limit = faqData.length;
     const totalGenerations = limit * VARIANT_COUNT;
     let generationCount = 0;
 
     for (let i = 0; i < limit; i++) {
         const item = faqData[i];
         const answerText = item.answer; 
-        const answerId = item.id; // Get the UUID from the response
+        const answerId = item.id;
 
         let variantUrls = [];
 
@@ -835,6 +911,7 @@ async function generateAudioForFAQ(faqData) {
             statusDiv.innerHTML = `Generating audio ${generationCount} of ${totalGenerations} (Q${i+1}, variant ${v})...`;
             statusDiv.className = 'status-message processing';
 
+            progress.startOp();
             try {
                 const response = await fetch(`${API_BASE_URL}/generate-audio-single`, {
                     method: 'POST',
@@ -862,6 +939,7 @@ async function generateAudioForFAQ(faqData) {
             } catch (e) {
                 console.error(`Error processing answer ${i+1} variant ${v}:`, e);
             }
+            progress.completeOp();
         }
 
         audioResults.push({
@@ -892,6 +970,9 @@ async function generateVideoForFAQ(audioResults) {
     }
 
     // Generate an idle video first
+    statusDiv.innerHTML = `Generating idle video...`;
+    statusDiv.className = 'status-message processing';
+    progress.startOp();
     try {
         const response = await generateVideoSingleRequest({
             audio_path: '../backend/static/audio/IdleSound.mp3',
@@ -899,7 +980,7 @@ async function generateVideoForFAQ(audioResults) {
             title: title,
             filename_id: `Idle`,
             prompt: "Smiling and looking at the camera, blinking idly.",
-            usePlaceholder : usePlaceholders // If we want to generate video or skip 
+            usePlaceholder : usePlaceholders
         });
         const result = await response.json();
         if (response.ok) {
@@ -908,7 +989,7 @@ async function generateVideoForFAQ(audioResults) {
     } catch (e) {
         console.error(`Error generating idle video:`, e);
     }
-    
+    progress.completeOp();
 
     const totalGenerations = audioResults.reduce((sum, item) => sum + item.variants.length, 0);
     let generationCount = 0;
@@ -925,6 +1006,7 @@ async function generateVideoForFAQ(audioResults) {
             statusDiv.innerHTML = `Generating video ${generationCount} of ${totalGenerations} (Q${i+1}, variant ${variant.variant})...`;
             statusDiv.className = 'status-message processing';
 
+            progress.startOp();
             try {
                 const response = await generateVideoSingleRequest({ 
                     audio_path: variant.audio_url,
@@ -946,6 +1028,7 @@ async function generateVideoForFAQ(audioResults) {
             } catch (e) {
                 console.error(`Error generating video for ${variantId}:`, e);
             }
+            progress.completeOp();
         }
     }
 
@@ -993,6 +1076,13 @@ async function generateDefaultCategoryVideos(title) {
 
     // Generate for each category: rude and no_answer
     const categories = ['rude', 'no_answer'];
+
+    let defaultTotalOps = 0;
+    for (const cat of categories) {
+        defaultTotalOps += (defaultResponses[cat] || []).length * VARIANT_COUNT * 2;
+    }
+    progress.addOps(defaultTotalOps);
+
     for (const category of categories) {
         const texts = defaultResponses[category] || [];
         const totalForCategory = texts.length * VARIANT_COUNT;
@@ -1009,8 +1099,8 @@ async function generateDefaultCategoryVideos(title) {
                 statusDiv.innerHTML = `Generating ${category} audio ${count} of ${totalForCategory}...`;
                 statusDiv.className = 'status-message processing';
 
-                // Generate audio
                 let audioUrl = null;
+                progress.startOp();
                 try {
                     const audioResp = await fetch(`${API_BASE_URL}/generate-audio-single`, {
                         method: 'POST',
@@ -1032,11 +1122,12 @@ async function generateDefaultCategoryVideos(title) {
                 } catch (e) {
                     console.error(`Error generating ${category} audio ${variantId}:`, e);
                 }
+                progress.completeOp();
 
-                // Generate video
                 if (audioUrl) {
                     statusDiv.innerHTML = `Generating ${category} video ${count} of ${totalForCategory}...`;
 
+                    progress.startOp();
                     try {
                         const videoResp = await generateVideoSingleRequest({
                             audio_path: audioUrl,
@@ -1055,6 +1146,9 @@ async function generateDefaultCategoryVideos(title) {
                     } catch (e) {
                         console.error(`Error generating ${category} video ${variantId}:`, e);
                     }
+                    progress.completeOp();
+                } else {
+                    progress.completeOp();
                 }
             }
         }
@@ -1119,6 +1213,8 @@ async function generateConversationalVideos(title) {
     const totalGenerations = convData.length * VARIANT_COUNT;
     let count = 0;
 
+    progress.addOps(convData.length * VARIANT_COUNT * 2);
+
     for (let i = 0; i < convData.length; i++) {
         const item = convData[i];
         const text = item.answer;
@@ -1134,8 +1230,8 @@ async function generateConversationalVideos(title) {
             statusDiv.innerHTML = `Generating conversational audio ${count} of ${totalGenerations}...`;
             statusDiv.className = 'status-message processing';
 
-            // Generate audio
             let audioUrl = null;
+            progress.startOp();
             try {
                 const audioResp = await fetch(`${API_BASE_URL}/generate-audio-single`, {
                     method: 'POST',
@@ -1157,11 +1253,12 @@ async function generateConversationalVideos(title) {
             } catch (e) {
                 console.error(`Error generating conversational audio ${variantId}:`, e);
             }
+            progress.completeOp();
 
-            // Generate video
             if (audioUrl) {
                 statusDiv.innerHTML = `Generating conversational video ${count} of ${totalGenerations}...`;
 
+                progress.startOp();
                 try {
                     const videoResp = await generateVideoSingleRequest({
                         audio_path: audioUrl,
@@ -1180,6 +1277,9 @@ async function generateConversationalVideos(title) {
                 } catch (e) {
                     console.error(`Error generating conversational video ${variantId}:`, e);
                 }
+                progress.completeOp();
+            } else {
+                progress.completeOp();
             }
         }
     }
@@ -1190,17 +1290,11 @@ async function generateConversationalVideos(title) {
 
 
 async function createFAQ() {
-    //Check if user has uploaded a csv file, and does api request to create FAQ
-  //  await uploadCSV();
-
-    //Reference media 
-    
     if (!checkMedia()) {
         alert("Please upload a video or generate an avatar image/video.");
         return; 
     }
     
-    // Get FAQ data from csv
     const faqData = await uploadCSV();
     
     if (!faqData || faqData.length === 0) {
@@ -1209,23 +1303,28 @@ async function createFAQ() {
     }
 
     const title = document.getElementById('title').value;
+    const VARIANT_COUNT = 3;
 
-    // 3. Generate Audio for each Answer
+    progress.reset();
+    const faqAudioOps = faqData.length * VARIANT_COUNT;
+    const faqVideoOps = faqData.length * VARIANT_COUNT + 1;
+    progress.addOps(faqAudioOps + faqVideoOps);
+
     let audioResults = await generateAudioForFAQ(faqData);
     if (!audioResults || audioResults.length === 0) {
         console.error("No audio results returned or generation failed.");
+        progress.hide();
         return;
     }
 
-    // 4. Generate Video for each Answer
     await generateVideoForFAQ(audioResults);
 
-    // 5. Generate default category videos (rude + no_answer)
     await generateDefaultCategoryVideos(title);
 
-    // 6. Generate conversational category videos
     await generateConversationalVideos(title);
-    
+
+    statusDiv.innerHTML = 'All generation complete!';
+    statusDiv.className = 'status-message success';
     console.log("FAQ Creation Complete");
 }
 

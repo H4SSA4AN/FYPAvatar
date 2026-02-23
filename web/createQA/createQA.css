@@ -79,10 +79,12 @@ body {
     display: flex;
     margin: 2rem auto;
     gap: 2rem;
-    padding: 0 20px;
+    padding: 0 2rem;
     justify-content: center;
     flex-direction: row;
-    
+    max-width: 1400px;
+    width: 100%;
+    box-sizing: border-box;
 }
 
 .left-panel {
@@ -93,7 +95,6 @@ body {
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     height: auto;
     min-height: 0;
-    max-width: 30%;
 }
 
 .middle-panel {
@@ -156,7 +157,6 @@ body {
     padding: 2rem;
     border-radius: 8px;
     box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    max-width: 30%;
 }
 
 h2 {
@@ -239,10 +239,10 @@ textarea:focus {
 .upload-container {
     position: relative;
     width: 100%;
-    /* Ensure no extra spacing comes from the container itself */
     margin: 0; 
     padding: 0;
-    display: block; /* Explicitly block */
+    display: block;
+    overflow: visible;
 }
 
 .remove-file {
@@ -264,12 +264,47 @@ textarea:focus {
     color: #c0392b;
 }
 
+/* Progress bar */
+.progress-container {
+    margin-bottom: 12px;
+}
+
+.progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    color: #555;
+    font-weight: 500;
+}
+
+#progressETA {
+    color: #888;
+}
+
+.progress-bar-track {
+    width: 100%;
+    height: 10px;
+    background-color: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    width: 0%;
+    background: linear-gradient(90deg, #3498db, #2ecc71);
+    border-radius: 5px;
+    transition: width 0.4s ease;
+}
+
 .status-message {
     margin-bottom: 15px;
     padding: 10px;
     border-radius: 4px;
     font-size: 0.95rem;
-    display: none; /* Hidden by default */
+    display: none;
     text-align: center;
 }
 
@@ -449,4 +484,116 @@ input[type="range"] {
     gap: 8px;
     font-size: 0.9rem;
     color: #555;
+}
+
+/* Info icon */
+.info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    cursor: help;
+    vertical-align: middle;
+    margin-left: 5px;
+    position: relative;
+    flex-shrink: 0;
+    opacity: 0.45;
+    transition: opacity 0.2s ease;
+}
+
+.info-icon:hover {
+    opacity: 0.85;
+}
+
+.info-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.navbar .info-icon {
+    color: #fff;
+    opacity: 0.6;
+}
+
+.navbar .info-icon:hover {
+    opacity: 1;
+}
+
+.navbar .info-icon[data-tooltip]::after {
+    bottom: auto;
+    top: calc(100% + 8px);
+    left: auto;
+    right: 0;
+    transform: translateY(-4px);
+}
+
+.navbar .info-icon[data-tooltip]::before {
+    bottom: auto;
+    top: calc(100% + 2px);
+    left: auto;
+    right: 4px;
+    transform: none;
+    border-top-color: transparent;
+    border-bottom-color: #2c3e50;
+}
+
+.navbar .info-icon[data-tooltip]:hover::after {
+    transform: translateY(0);
+}
+
+.navbar .info-icon[data-tooltip]:hover::before {
+    transform: none;
+}
+
+/* Tooltips */
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background-color: #2c3e50;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 999;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+[data-tooltip]::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #2c3e50;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 999;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+/* Submit button wrapper for inline info icon */
+.submit-btn-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.submit-btn-wrapper .submit-btn {
+    flex: 1;
 }
