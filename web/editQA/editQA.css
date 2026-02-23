@@ -238,6 +238,67 @@ body {
     text-align: center;
     padding-top: 1.5rem;
     border-top: 1px dashed #eee;
+    display: flex;
+    justify-content: center;
+    gap: 12px;
+}
+
+/* Resume Button Styles */
+.resume-btn {
+    background-color: #27ae60;
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.1s;
+    box-shadow: 0 4px 6px rgba(39, 174, 96, 0.2);
+    display: inline-block;
+}
+
+.resume-btn:hover {
+    background-color: #219a52;
+}
+
+.resume-btn:active {
+    transform: translateY(1px);
+}
+
+.resume-btn:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
+.resume-status {
+    margin-top: 1rem;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.resume-status.processing {
+    background-color: #e8f4fc;
+    color: #1976d2;
+    border: 1px solid #bbdefb;
+    display: block;
+}
+
+.resume-status.success {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #c8e6c9;
+    display: block;
+}
+
+.resume-status.error {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid #ffcdd2;
+    display: block;
 }
 
 /* Delete Button Styles */

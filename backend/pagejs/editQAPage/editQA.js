@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchTitles();
     setupSearch();
     setupDelete();
+    setupResume();
 });
 
 function setupSearch() {
@@ -428,13 +429,174 @@ function updateQueueBubble(isProcessing = false, progress = 0) {
 
     bubble.style.display = 'flex';
     if (isProcessing) {
-        // e.g. "Processing... (2 pending)"
-        // Since we removed the item *after* processing, count includes the current one
         bubble.innerHTML = `
             <div class="spinner"></div>
             <span>Generating video (Queue: ${count})</span>
         `;
     } else {
         bubble.textContent = `Queue: ${count} videos`;
+    }
+}
+
+
+function setupResume() {
+    const resumeBtn = document.getElementById('resumeAllBtn');
+    if (!resumeBtn) return;
+
+    resumeBtn.addEventListener('click', () => {
+        const title = document.getElementById('topicSearch').value;
+        if (!title) {
+            alert('Please select a topic first.');
+            return;
+        }
+        resumeAllMissing(title);
+    });
+}
+
+async function checkComfyHealth() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/comfy-health`, { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) return false;
+        const data = await res.json();
+        return data.status === 'ok';
+    } catch {
+        return false;
+    }
+}
+
+async function resumeAllMissing(title) {
+    const resumeBtn = document.getElementById('resumeAllBtn');
+    const statusEl = document.getElementById('resumeStatus');
+    resumeBtn.disabled = true;
+
+    statusEl.style.display = 'block';
+    statusEl.className = 'resume-status processing';
+    statusEl.textContent = 'Checking for missing media...';
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/get-missing-media?title=${encodeURIComponent(title)}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+            statusEl.className = 'resume-status error';
+            statusEl.textContent = `Error: ${data.error}`;
+            resumeBtn.disabled = false;
+            return;
+        }
+
+        const missing = data.missing || [];
+        if (missing.length === 0) {
+            statusEl.className = 'resume-status success';
+            statusEl.textContent = 'All audio and video variants are already generated!';
+            resumeBtn.disabled = false;
+            return;
+        }
+
+        statusEl.textContent = `Found ${missing.length} missing items. Starting generation...`;
+
+        if (!currentAvatarPath) {
+            statusEl.className = 'resume-status error';
+            statusEl.textContent = 'No avatar image found for this topic.';
+            resumeBtn.disabled = false;
+            return;
+        }
+
+        const promptText = document.getElementById('videoPrompt').value.trim() || 'talking head';
+        let completed = 0;
+
+        for (const item of missing) {
+            let audioUrl = null;
+
+            if (item.needs_audio) {
+                statusEl.textContent = `Generating audio ${completed + 1}/${missing.length}: ${item.question.substring(0, 40)}...`;
+                try {
+                    const audioResp = await fetch(`${API_BASE_URL}/generate-audio-single`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            text: item.answer,
+                            title: title,
+                            filename_id: item.variant_id,
+                            category: 'answers',
+                            speechSettings: [],
+                            usePlaceholder: false
+                        })
+                    });
+                    const audioResult = await audioResp.json();
+                    if (audioResp.ok) {
+                        audioUrl = audioResult.audio_url;
+                    } else {
+                        console.error(`Audio failed for ${item.variant_id}:`, audioResult.error);
+                        if (!(await checkComfyHealth())) {
+                            statusEl.className = 'resume-status error';
+                            statusEl.textContent = `ComfyUI crashed. Stopped at ${completed}/${missing.length}. Resume again later.`;
+                            resumeBtn.disabled = false;
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.error(`Audio error for ${item.variant_id}:`, e);
+                    if (!(await checkComfyHealth())) {
+                        statusEl.className = 'resume-status error';
+                        statusEl.textContent = `ComfyUI crashed. Stopped at ${completed}/${missing.length}. Resume again later.`;
+                        resumeBtn.disabled = false;
+                        return;
+                    }
+                }
+            } else {
+                audioUrl = `/static/audio/${title}/answers/${item.variant_id}.mp3`;
+            }
+
+            if (item.needs_video && audioUrl) {
+                statusEl.textContent = `Generating video ${completed + 1}/${missing.length}: ${item.question.substring(0, 40)}...`;
+                try {
+                    const videoResp = await fetch(`${API_BASE_URL}/generate-video-single`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            audio_path: audioUrl,
+                            image_path: currentAvatarPath,
+                            title: title,
+                            filename_id: item.variant_id,
+                            category: 'answers',
+                            prompt: promptText,
+                            usePlaceholder: false
+                        })
+                    });
+                    const videoResult = await videoResp.json();
+                    if (!videoResp.ok) {
+                        console.error(`Video failed for ${item.variant_id}:`, videoResult.error);
+                        if (!(await checkComfyHealth())) {
+                            statusEl.className = 'resume-status error';
+                            statusEl.textContent = `ComfyUI crashed. Stopped at ${completed}/${missing.length}. Resume again later.`;
+                            resumeBtn.disabled = false;
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.error(`Video error for ${item.variant_id}:`, e);
+                    if (!(await checkComfyHealth())) {
+                        statusEl.className = 'resume-status error';
+                        statusEl.textContent = `ComfyUI crashed. Stopped at ${completed}/${missing.length}. Resume again later.`;
+                        resumeBtn.disabled = false;
+                        return;
+                    }
+                }
+            }
+
+            completed++;
+            statusEl.textContent = `Progress: ${completed}/${missing.length} completed`;
+        }
+
+        statusEl.className = 'resume-status success';
+        statusEl.textContent = `Done! Generated ${completed} missing items. Refreshing...`;
+        resumeBtn.disabled = false;
+        await loadFAQs(title);
+
+    } catch (e) {
+        console.error('Resume error:', e);
+        statusEl.className = 'resume-status error';
+        statusEl.textContent = `Error: ${e.message}`;
+        resumeBtn.disabled = false;
     }
 }

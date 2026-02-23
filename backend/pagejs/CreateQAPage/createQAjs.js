@@ -77,6 +77,27 @@ const progress = {
     }
 };
 
+let generationHalted = false;
+
+async function checkComfyHealth() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/comfy-health`, { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) return false;
+        const data = await res.json();
+        return data.status === 'ok';
+    } catch {
+        return false;
+    }
+}
+
+function haltGeneration(reason) {
+    generationHalted = true;
+    statusDiv.innerHTML = `Generation stopped: ${reason}. Your topic has been saved — use Edit FAQs to resume later.`;
+    statusDiv.className = 'status-message error';
+    const fill = document.getElementById('progressBarFill');
+    if (fill) fill.style.background = '#e74c3c';
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 
     initaliseModals();
@@ -905,6 +926,7 @@ async function generateAudioForFAQ(faqData) {
         let variantUrls = [];
 
         for (let v = 1; v <= VARIANT_COUNT; v++) {
+            if (generationHalted) return audioResults;
             generationCount++;
             const variantId = `${answerId}_${v}`;
 
@@ -935,9 +957,11 @@ async function generateAudioForFAQ(faqData) {
                     });
                 } else {
                     console.error(`Failed to generate audio for Q${i+1} variant ${v}:`, result.error);
+                    if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return audioResults; }
                 }
             } catch (e) {
                 console.error(`Error processing answer ${i+1} variant ${v}:`, e);
+                if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return audioResults; }
             }
             progress.completeOp();
         }
@@ -970,6 +994,7 @@ async function generateVideoForFAQ(audioResults) {
     }
 
     // Generate an idle video first
+    if (generationHalted) return;
     statusDiv.innerHTML = `Generating idle video...`;
     statusDiv.className = 'status-message processing';
     progress.startOp();
@@ -985,9 +1010,12 @@ async function generateVideoForFAQ(audioResults) {
         const result = await response.json();
         if (response.ok) {
             console.log(`Idle video generated:`, result.video_url);
+        } else {
+            if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
         }
     } catch (e) {
         console.error(`Error generating idle video:`, e);
+        if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
     }
     progress.completeOp();
 
@@ -999,6 +1027,7 @@ async function generateVideoForFAQ(audioResults) {
         const baseId = item.id;
 
         for (let j = 0; j < item.variants.length; j++) {
+            if (generationHalted) return;
             const variant = item.variants[j];
             const variantId = `${baseId}_${variant.variant}`;
             generationCount++;
@@ -1024,9 +1053,11 @@ async function generateVideoForFAQ(audioResults) {
                     console.log(`Video generated for (${variantId}):`, result.video_url);
                 } else {
                     console.error(`Failed to generate video for (${variantId}):`, result.error);
+                    if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
                 }
             } catch (e) {
                 console.error(`Error generating video for ${variantId}:`, e);
+                if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
             }
             progress.completeOp();
         }
@@ -1093,6 +1124,7 @@ async function generateDefaultCategoryVideos(title) {
             const baseId = `${category}_${i + 1}`;
 
             for (let v = 1; v <= VARIANT_COUNT; v++) {
+                if (generationHalted) return;
                 count++;
                 const variantId = `${baseId}_${v}`;
 
@@ -1118,12 +1150,16 @@ async function generateDefaultCategoryVideos(title) {
                     if (audioResp.ok) {
                         audioUrl = audioResult.audio_url;
                         console.log(`${category} audio ${variantId}:`, audioUrl);
+                    } else {
+                        if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
                     }
                 } catch (e) {
                     console.error(`Error generating ${category} audio ${variantId}:`, e);
+                    if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
                 }
                 progress.completeOp();
 
+                if (generationHalted) return;
                 if (audioUrl) {
                     statusDiv.innerHTML = `Generating ${category} video ${count} of ${totalForCategory}...`;
 
@@ -1142,9 +1178,12 @@ async function generateDefaultCategoryVideos(title) {
                         const videoResult = await videoResp.json();
                         if (videoResp.ok) {
                             console.log(`${category} video ${variantId}:`, videoResult);
+                        } else {
+                            if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
                         }
                     } catch (e) {
                         console.error(`Error generating ${category} video ${variantId}:`, e);
+                        if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
                     }
                     progress.completeOp();
                 } else {
@@ -1221,6 +1260,7 @@ async function generateConversationalVideos(title) {
         const answerId = item.id;
 
         for (let v = 1; v <= VARIANT_COUNT; v++) {
+            if (generationHalted) return;
             count++;
             const variantId = `${answerId}_${v}`;
 
@@ -1249,12 +1289,16 @@ async function generateConversationalVideos(title) {
                 if (audioResp.ok) {
                     audioUrl = audioResult.audio_url;
                     console.log(`Conversational audio ${variantId}:`, audioUrl);
+                } else {
+                    if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
                 }
             } catch (e) {
                 console.error(`Error generating conversational audio ${variantId}:`, e);
+                if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
             }
             progress.completeOp();
 
+            if (generationHalted) return;
             if (audioUrl) {
                 statusDiv.innerHTML = `Generating conversational video ${count} of ${totalGenerations}...`;
 
@@ -1273,9 +1317,12 @@ async function generateConversationalVideos(title) {
                     const videoResult = await videoResp.json();
                     if (videoResp.ok) {
                         console.log(`Conversational video ${variantId}:`, videoResult);
+                    } else {
+                        if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
                     }
                 } catch (e) {
                     console.error(`Error generating conversational video ${variantId}:`, e);
+                    if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
                 }
                 progress.completeOp();
             } else {
@@ -1305,12 +1352,14 @@ async function createFAQ() {
     const title = document.getElementById('title').value;
     const VARIANT_COUNT = 3;
 
+    generationHalted = false;
     progress.reset();
     const faqAudioOps = faqData.length * VARIANT_COUNT;
     const faqVideoOps = faqData.length * VARIANT_COUNT + 1;
     progress.addOps(faqAudioOps + faqVideoOps);
 
     let audioResults = await generateAudioForFAQ(faqData);
+    if (generationHalted) return;
     if (!audioResults || audioResults.length === 0) {
         console.error("No audio results returned or generation failed.");
         progress.hide();
@@ -1318,10 +1367,13 @@ async function createFAQ() {
     }
 
     await generateVideoForFAQ(audioResults);
+    if (generationHalted) return;
 
     await generateDefaultCategoryVideos(title);
+    if (generationHalted) return;
 
     await generateConversationalVideos(title);
+    if (generationHalted) return;
 
     statusDiv.innerHTML = 'All generation complete!';
     statusDiv.className = 'status-message success';

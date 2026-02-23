@@ -30,6 +30,19 @@ except Exception as e:
 # Global store for progress: { "uuid": { "status": "processing", "progress": 0, "eta": 0, "url": None, "error": None } }
 PROGRESS_STORE = {}
 
+
+@app.route('/comfy-health', methods=['GET'])
+def comfy_health():
+    """Quick check if ComfyUI is reachable."""
+    try:
+        import urllib.request
+        url = f"http://{comfy_service.server_addr}/system_stats"
+        req = urllib.request.Request(url, method='GET')
+        urllib.request.urlopen(req, timeout=5)
+        return jsonify({'status': 'ok'}), 200
+    except Exception as e:
+        return jsonify({'status': 'down', 'error': str(e)}), 503
+
 def video_worker(audio_path, image_path, title, filename_id, prompt, job_id):
     def update_progress(current, total, eta):
         PROGRESS_STORE[job_id]['progress'] = int((current / total) * 100)
@@ -364,6 +377,49 @@ def delete_title_route():
                 print(f"Warning: Could not delete {folder} directory: {e}")
 
         return jsonify({'message': f'Title "{title}" deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/get-missing-media', methods=['GET'])
+def get_missing_media():
+    """Return FAQ items that are missing audio or video variants."""
+    title = request.args.get('title')
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+
+    try:
+        faqs = faq_service.get_faqs(title)
+        if not faqs:
+            return jsonify({'missing': [], 'total': 0}), 200
+
+        base_dir = app.root_path
+        variant_count = 3
+        categories = ['answers']
+        missing = []
+
+        for faq in faqs:
+            faq_id = faq.get('id')
+            for v in range(1, variant_count + 1):
+                variant_id = f"{faq_id}_{v}"
+                audio_path = os.path.join(base_dir, 'static', 'audio', title, 'answers', f"{variant_id}.mp3")
+                video_path = os.path.join(base_dir, 'static', 'videos', title, 'answers', f"{variant_id}.mp4")
+
+                needs_audio = not os.path.exists(audio_path)
+                needs_video = not os.path.exists(video_path)
+
+                if needs_audio or needs_video:
+                    missing.append({
+                        'id': faq_id,
+                        'variant': v,
+                        'variant_id': variant_id,
+                        'question': faq.get('question', ''),
+                        'answer': faq.get('answer', ''),
+                        'needs_audio': needs_audio,
+                        'needs_video': needs_video
+                    })
+
+        return jsonify({'missing': missing, 'total': len(missing)}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
