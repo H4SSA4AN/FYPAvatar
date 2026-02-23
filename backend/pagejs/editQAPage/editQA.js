@@ -141,33 +141,28 @@ async function loadFAQs(title) {
     try {
         const encodedTitle = encodeURIComponent(title);
         
-        // Fetch in parallel
         const responses = await Promise.all([
             fetch(`${API_BASE_URL}/faqs?title=${encodedTitle}`),
-            fetch(`${API_BASE_URL}/get-videos?title=${encodedTitle}`),
+            fetch(`${API_BASE_URL}/get-videos?title=${encodedTitle}&category=answers`),
             fetch(`${API_BASE_URL}/get-avatar?title=${encodedTitle}`)
         ]);
 
-        // Check for HTTP errors first
         for (const res of responses) {
             if (!res.ok) {
                 console.error(`Fetch failed for ${res.url}: ${res.status} ${res.statusText}`);
-                const text = await res.text(); // Read text to see error message (or HTML)
+                const text = await res.text();
                 console.error("Response body:", text);
                 throw new Error(`API Error: ${res.status} from ${res.url}`);
             }
         }
 
-        // Parse JSON only if OK
         const faqResult = await responses[0].json();
         const videoResult = await responses[1].json();
         const avatarResult = await responses[2].json();
         
         if (faqResult.message === 'Fetched successfully' || faqResult.data) {
-             // Update global avatar path
             currentAvatarPath = avatarResult.avatar_path || null;
             
-            // Update the UI image
             const avatarImg = document.getElementById('topicAvatar');
             if (currentAvatarPath) {
                 avatarImg.src = `${API_BASE_URL}/${currentAvatarPath}`;
@@ -179,8 +174,14 @@ async function loadFAQs(title) {
             const existingVideos = videoResult.data || [];
 
             faqs.forEach(faq => {
-                const expectedFilename = `${faq.id}.mp4`;
-                faq.has_video = existingVideos.includes(expectedFilename);
+                const variants = [];
+                for (let v = 1; v <= 3; v++) {
+                    if (existingVideos.includes(`${faq.id}_${v}.mp4`)) {
+                        variants.push(v);
+                    }
+                }
+                faq.variants = variants;
+                faq.has_video = variants.length > 0;
             });
 
             populateFAQTable(faqs);
@@ -206,34 +207,72 @@ function populateFAQTable(faqs) {
     faqs.forEach(faq => {
         const row = document.createElement('tr');
         
-        // Question
         const qCell = document.createElement('td');
         qCell.textContent = faq.question;
         
-        // Answer
         const aCell = document.createElement('td');
         aCell.textContent = faq.answer;
         
-        // Video Column
         const vCell = document.createElement('td');
         
-        if (faq.has_video) {
-            // Display Video Player
+        if (faq.has_video && faq.variants.length > 0) {
+            const carousel = document.createElement('div');
+            carousel.className = 'video-carousel';
+
             const video = document.createElement('video');
-            video.src = `${API_BASE_URL}/static/videos/${encodeURIComponent(faq.title)}/${faq.id}.mp4`;
+            const encodedTitle = encodeURIComponent(faq.title);
+            video.src = `${API_BASE_URL}/static/videos/${encodedTitle}/answers/${faq.id}_${faq.variants[0]}.mp4`;
             video.controls = true;
-            video.style.width = "150px"; 
-            video.style.borderRadius = "8px"; // Slightly rounded corners
-            video.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)"; // Subtle shadow
-            vCell.appendChild(video);
+            video.className = 'carousel-video';
+            carousel.appendChild(video);
+
+            if (faq.variants.length > 1) {
+                const controls = document.createElement('div');
+                controls.className = 'carousel-controls';
+
+                const prevBtn = document.createElement('button');
+                prevBtn.className = 'carousel-arrow';
+                prevBtn.innerHTML = '&#8249;';
+
+                const label = document.createElement('span');
+                label.className = 'carousel-label';
+                label.textContent = `1 of ${faq.variants.length}`;
+
+                const nextBtn = document.createElement('button');
+                nextBtn.className = 'carousel-arrow';
+                nextBtn.innerHTML = '&#8250;';
+
+                let currentIdx = 0;
+
+                function updateVariant() {
+                    const v = faq.variants[currentIdx];
+                    video.src = `${API_BASE_URL}/static/videos/${encodedTitle}/answers/${faq.id}_${v}.mp4`;
+                    label.textContent = `${currentIdx + 1} of ${faq.variants.length}`;
+                }
+
+                prevBtn.onclick = () => {
+                    currentIdx = (currentIdx - 1 + faq.variants.length) % faq.variants.length;
+                    updateVariant();
+                };
+
+                nextBtn.onclick = () => {
+                    currentIdx = (currentIdx + 1) % faq.variants.length;
+                    updateVariant();
+                };
+
+                controls.appendChild(prevBtn);
+                controls.appendChild(label);
+                controls.appendChild(nextBtn);
+                carousel.appendChild(controls);
+            }
+
+            vCell.appendChild(carousel);
         } else {
             const btn = document.createElement('button');
             btn.textContent = "Generate Video";
             btn.className = "generate-btn";
             
-            // Call addToQueue instead of generateVideo
             btn.onclick = () => {
-                // Read the prompt from the textarea
                 const promptText = document.getElementById('videoPrompt').value.trim() || "talking head";
                 addToQueue(btn, faq.id, faq.title, faq.answer, promptText);
             };
