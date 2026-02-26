@@ -50,8 +50,7 @@ class ComfyService:
         Returns (prompt_id, history) on success, or None on failure.
         """
         ws = websocket.WebSocket()
-        ws.settimeout(timeout)
-        ws.connect(f"ws://{self.server_addr}/ws?clientId={self.client_id}")
+        ws.connect(f"ws://{self.server_addr}/ws?clientId={self.client_id}", timeout=timeout)
 
         prompt_response = self.queue_prompt(workflow)
         prompt_id = prompt_response['prompt_id']
