@@ -98,6 +98,31 @@ function haltGeneration(reason) {
     if (fill) fill.style.background = '#e74c3c';
 }
 
+async function waitForVideo(jobId, pollInterval = 3000, maxWait = 600000) {
+    const start = Date.now();
+    while (Date.now() - start < maxWait) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/progress/${jobId}`);
+            if (!res.ok) {
+                return { ok: false, error: `Progress endpoint returned ${res.status}` };
+            }
+            const info = await res.json();
+
+            if (info.status === 'completed') {
+                return { ok: true, video_url: info.url };
+            }
+            if (info.status === 'failed') {
+                return { ok: false, error: info.error || 'Video generation failed' };
+            }
+        } catch (e) {
+            console.error(`Error polling progress for ${jobId}:`, e);
+        }
+
+        await new Promise(r => setTimeout(r, pollInterval));
+    }
+    return { ok: false, error: 'Timed out waiting for video generation' };
+}
+
 document.addEventListener('DOMContentLoaded', function () {
 
     initaliseModals();
@@ -1008,8 +1033,14 @@ async function generateVideoForFAQ(audioResults) {
             usePlaceholder : usePlaceholders
         });
         const result = await response.json();
-        if (response.ok) {
-            console.log(`Idle video generated:`, result.video_url);
+        if (response.ok && result.job_id) {
+            const videoResult = await waitForVideo(result.job_id);
+            if (videoResult.ok) {
+                console.log(`Idle video generated:`, videoResult.video_url);
+            } else {
+                console.error(`Idle video failed:`, videoResult.error);
+                if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
+            }
         } else {
             if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
         }
@@ -1049,10 +1080,16 @@ async function generateVideoForFAQ(audioResults) {
                 });
 
                 const result = await response.json();
-                if (response.ok) {
-                    console.log(`Video generated for (${variantId}):`, result.video_url);
+                if (response.ok && result.job_id) {
+                    const videoResult = await waitForVideo(result.job_id);
+                    if (videoResult.ok) {
+                        console.log(`Video generated for (${variantId}):`, videoResult.video_url);
+                    } else {
+                        console.error(`Failed to generate video for (${variantId}):`, videoResult.error);
+                        if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
+                    }
                 } else {
-                    console.error(`Failed to generate video for (${variantId}):`, result.error);
+                    console.error(`Failed to start video for (${variantId}):`, result.error);
                     if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
                 }
             } catch (e) {
@@ -1176,8 +1213,14 @@ async function generateDefaultCategoryVideos(title) {
                             audioOnly: audioOnly
                         });
                         const videoResult = await videoResp.json();
-                        if (videoResp.ok) {
-                            console.log(`${category} video ${variantId}:`, videoResult);
+                        if (videoResp.ok && videoResult.job_id) {
+                            const pollResult = await waitForVideo(videoResult.job_id);
+                            if (pollResult.ok) {
+                                console.log(`${category} video ${variantId}:`, pollResult.video_url);
+                            } else {
+                                console.error(`${category} video ${variantId} failed:`, pollResult.error);
+                                if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
+                            }
                         } else {
                             if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
                         }
@@ -1315,8 +1358,14 @@ async function generateConversationalVideos(title) {
                         audioOnly: audioOnly
                     });
                     const videoResult = await videoResp.json();
-                    if (videoResp.ok) {
-                        console.log(`Conversational video ${variantId}:`, videoResult);
+                    if (videoResp.ok && videoResult.job_id) {
+                        const pollResult = await waitForVideo(videoResult.job_id);
+                        if (pollResult.ok) {
+                            console.log(`Conversational video ${variantId}:`, pollResult.video_url);
+                        } else {
+                            console.error(`Conversational video ${variantId} failed:`, pollResult.error);
+                            if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
+                        }
                     } else {
                         if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
                     }

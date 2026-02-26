@@ -464,6 +464,31 @@ async function checkComfyHealth() {
     }
 }
 
+async function waitForVideo(jobId, pollInterval = 3000, maxWait = 600000) {
+    const start = Date.now();
+    while (Date.now() - start < maxWait) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/progress/${jobId}`);
+            if (!res.ok) {
+                return { ok: false, error: `Progress endpoint returned ${res.status}` };
+            }
+            const info = await res.json();
+
+            if (info.status === 'completed') {
+                return { ok: true, video_url: info.url };
+            }
+            if (info.status === 'failed') {
+                return { ok: false, error: info.error || 'Video generation failed' };
+            }
+        } catch (e) {
+            console.error(`Error polling progress for ${jobId}:`, e);
+        }
+
+        await new Promise(r => setTimeout(r, pollInterval));
+    }
+    return { ok: false, error: 'Timed out waiting for video generation' };
+}
+
 async function resumeAllMissing(title) {
     const resumeBtn = document.getElementById('resumeAllBtn');
     const statusEl = document.getElementById('resumeStatus');
@@ -564,8 +589,19 @@ async function resumeAllMissing(title) {
                         })
                     });
                     const videoResult = await videoResp.json();
-                    if (!videoResp.ok) {
-                        console.error(`Video failed for ${item.variant_id}:`, videoResult.error);
+                    if (videoResp.ok && videoResult.job_id) {
+                        const pollResult = await waitForVideo(videoResult.job_id);
+                        if (!pollResult.ok) {
+                            console.error(`Video failed for ${item.variant_id}:`, pollResult.error);
+                            if (!(await checkComfyHealth())) {
+                                statusEl.className = 'resume-status error';
+                                statusEl.textContent = `ComfyUI crashed. Stopped at ${completed}/${missing.length}. Resume again later.`;
+                                resumeBtn.disabled = false;
+                                return;
+                            }
+                        }
+                    } else {
+                        console.error(`Video failed to start for ${item.variant_id}:`, videoResult.error);
                         if (!(await checkComfyHealth())) {
                             statusEl.className = 'resume-status error';
                             statusEl.textContent = `ComfyUI crashed. Stopped at ${completed}/${missing.length}. Resume again later.`;
