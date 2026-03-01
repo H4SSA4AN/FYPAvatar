@@ -35,3 +35,13 @@ async function generateVideoSingleRequest(data) {
     });
 }
 
+async function generateVideoExtendedRequest(data) {
+    return await fetch(`${API_BASE_URL}/generate-video-extended`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(data)
+    });
+}
+

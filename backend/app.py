@@ -43,15 +43,15 @@ def comfy_health():
     except Exception as e:
         return jsonify({'status': 'down', 'error': str(e)}), 503
 
-def video_worker(audio_path, image_path, title, filename_id, prompt, job_id):
+def video_worker(audio_path, image_path, title, filename_id, prompt, category, job_id):
     def update_progress(current, total, eta):
         PROGRESS_STORE[job_id]['progress'] = int((current / total) * 100)
         PROGRESS_STORE[job_id]['eta'] = int(eta)
 
     try:
-        # Call service with callback
         video_url = comfy_service.generate_video_talking_head(
-            audio_path, image_path, title, filename_id, prompt, progress_callback=update_progress
+            audio_path, image_path, title, filename_id, prompt,
+            category=category, progress_callback=update_progress
         )
         
         if video_url:
@@ -294,8 +294,101 @@ def generate_video_single_route():
         # Initialize progress
         PROGRESS_STORE[job_id] = { "status": "processing", "progress": 0, "eta": 0 }
 
-        # Start background thread
-        thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, job_id))
+        thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, category, job_id))
+        thread.start()
+
+        return jsonify({'job_id': job_id, 'status': 'started'}), 202
+
+
+def video_worker_extended(audio_path, image_path, title, filename_id, prompt, num_chunks, category, job_id):
+    def update_progress(current, total, eta):
+        PROGRESS_STORE[job_id]['progress'] = int((current / total) * 100)
+        PROGRESS_STORE[job_id]['eta'] = int(eta)
+
+    try:
+        video_url = comfy_service.generate_video_extended(
+            audio_path, image_path, title, filename_id, prompt,
+            category=category, num_chunks=num_chunks,
+            progress_callback=update_progress
+        )
+
+        if video_url:
+            PROGRESS_STORE[job_id]['status'] = 'completed'
+            PROGRESS_STORE[job_id]['progress'] = 100
+            PROGRESS_STORE[job_id]['url'] = video_url
+        else:
+            PROGRESS_STORE[job_id]['status'] = 'failed'
+            PROGRESS_STORE[job_id]['error'] = "Generation returned no URL"
+
+    except Exception as e:
+        PROGRESS_STORE[job_id]['status'] = 'failed'
+        PROGRESS_STORE[job_id]['error'] = str(e)
+
+
+@app.route('/generate-video-extended', methods=['POST'])
+def generate_video_extended_route():
+    """
+    Extended video generation using InfiniteTalk chunked workflow.
+    Accepts the same fields as /generate-video-single plus an optional
+    num_chunks (auto-calculated from audio duration when omitted).
+    Uses the same /progress/<job_id> polling endpoint for status.
+    """
+    data = request.get_json()
+    audio_path = data.get('audio_path')
+    image_path = data.get('image_path')
+    title = data.get('title')
+    filename_id = data.get('filename_id')
+    prompt = data.get('prompt')
+    num_chunks = data.get('num_chunks')
+    use_placeholder = data.get('usePlaceholder', False)
+
+    if not all([audio_path, image_path, title, filename_id]):
+        return jsonify({'error': 'Missing required fields (audio_path, image_path, title, filename_id)'}), 400
+
+    category = data.get('category', 'answers')
+    audio_only = data.get('audioOnly', False)
+
+    if use_placeholder:
+        output_dir = os.path.join(app.root_path, 'static', 'videos', title, category)
+        os.makedirs(output_dir, exist_ok=True)
+        save_filename = f"{filename_id}.mp4"
+        save_path = os.path.join(output_dir, save_filename)
+        placeholder_path = os.path.join(app.root_path, 'static', 'placeholder.mp4')
+
+        if audio_only and audio_path:
+            import subprocess
+            abs_audio = os.path.join(app.root_path, audio_path.lstrip('/'))
+            if os.path.exists(abs_audio):
+                try:
+                    subprocess.run([
+                        'ffmpeg', '-y',
+                        '-stream_loop', '-1',
+                        '-i', placeholder_path,
+                        '-i', abs_audio,
+                        '-c:v', 'copy', '-c:a', 'aac',
+                        '-shortest',
+                        '-map', '0:v:0', '-map', '1:a:0',
+                        save_path
+                    ], check=True, capture_output=True)
+                except subprocess.CalledProcessError:
+                    shutil.copy(placeholder_path, save_path)
+            else:
+                shutil.copy(placeholder_path, save_path)
+        else:
+            shutil.copy(placeholder_path, save_path)
+
+        video_url = f"/static/videos/{title}/{category}/{save_filename}"
+        job_id = filename_id
+        PROGRESS_STORE[job_id] = {"status": "completed", "progress": 100, "eta": 0, "url": video_url}
+        return jsonify({'job_id': job_id, 'status': 'started'}), 202
+    else:
+        job_id = filename_id
+        PROGRESS_STORE[job_id] = {"status": "processing", "progress": 0, "eta": 0}
+
+        thread = threading.Thread(
+            target=video_worker_extended,
+            args=(audio_path, image_path, title, filename_id, prompt, num_chunks, category, job_id)
+        )
         thread.start()
 
         return jsonify({'job_id': job_id, 'status': 'started'}), 202
