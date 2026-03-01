@@ -19,8 +19,8 @@
     </nav>
 
     <div class="container">
-        
-        <div class="faq-panel">
+        <!-- Left panel: FAQ (answers) management -->
+        <div class="faq-panel left-panel">
             <div class="faq-header">
                 <h2>Manage Topics</h2>
                 <!-- Search Box -->
@@ -50,26 +50,53 @@
                     </div>
                 </div>
 
-                <!-- Bottom: Delete Button -->
+                <!-- Bottom: Actions -->
                 <div class="actions-section">
+                    <button id="resumeAllBtn" class="resume-btn">Resume All Missing</button>
                     <button id="deleteBtn" class="delete-btn">Delete Entire Topic</button>
+                </div>
+                <div id="resumeStatus" class="resume-status" style="display: none;"></div>
+                <div id="resumeProgressContainer" class="progress-container" style="display: none;">
+                    <div class="progress-header">
+                        <span id="resumeProgressText">0%</span>
+                        <span id="resumeProgressETA"></span>
+                    </div>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill" id="resumeProgressBarFill"></div>
+                    </div>
                 </div>
             </div>
 
-            <!-- Preview Table -->
+            <!-- FAQ (answers) Table only -->
             <div class="table-container">
                 <table id="faqTable">
                     <thead>
                         <tr>
                             <th>Question</th>
                             <th>Answer</th>
-                            <th>Video</th> <!-- Added Video Column -->
+                            <th>Video</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr><td colspan="3">Select a topic to view or delete...</td></tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Right panel: Other categories (e.g. conversational) -->
+        <div id="otherCategoriesPanel" class="other-categories-panel">
+            <div class="other-categories-header">
+                <div class="other-categories-header-row">
+                    <h2>Other Categories</h2>
+                    <select id="otherCategoryFilter" class="other-category-select" style="display: none;">
+                        <option value="all">All</option>
+                    </select>
+                </div>
+                <p class="other-categories-hint">Conversational and other non-FAQ videos</p>
+            </div>
+            <div id="otherCategoriesContent" class="other-categories-content">
+                <p class="other-categories-placeholder">Select a topic to view other category videos.</p>
             </div>
         </div>
     </div>

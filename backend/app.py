@@ -30,15 +30,28 @@ except Exception as e:
 # Global store for progress: { "uuid": { "status": "processing", "progress": 0, "eta": 0, "url": None, "error": None } }
 PROGRESS_STORE = {}
 
-def video_worker(audio_path, image_path, title, filename_id, prompt, job_id):
+
+@app.route('/comfy-health', methods=['GET'])
+def comfy_health():
+    """Quick check if ComfyUI is reachable."""
+    try:
+        import urllib.request
+        url = f"http://{comfy_service.server_addr}/system_stats"
+        req = urllib.request.Request(url, method='GET')
+        urllib.request.urlopen(req, timeout=5)
+        return jsonify({'status': 'ok'}), 200
+    except Exception as e:
+        return jsonify({'status': 'down', 'error': str(e)}), 503
+
+def video_worker(audio_path, image_path, title, filename_id, prompt, category, job_id):
     def update_progress(current, total, eta):
         PROGRESS_STORE[job_id]['progress'] = int((current / total) * 100)
         PROGRESS_STORE[job_id]['eta'] = int(eta)
 
     try:
-        # Call service with callback
         video_url = comfy_service.generate_video_talking_head(
-            audio_path, image_path, title, filename_id, prompt, progress_callback=update_progress
+            audio_path, image_path, title, filename_id, prompt,
+            category=category, progress_callback=update_progress
         )
         
         if video_url:
@@ -281,8 +294,101 @@ def generate_video_single_route():
         # Initialize progress
         PROGRESS_STORE[job_id] = { "status": "processing", "progress": 0, "eta": 0 }
 
-        # Start background thread
-        thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, job_id))
+        thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, category, job_id))
+        thread.start()
+
+        return jsonify({'job_id': job_id, 'status': 'started'}), 202
+
+
+def video_worker_extended(audio_path, image_path, title, filename_id, prompt, num_chunks, category, job_id):
+    def update_progress(current, total, eta):
+        PROGRESS_STORE[job_id]['progress'] = int((current / total) * 100)
+        PROGRESS_STORE[job_id]['eta'] = int(eta)
+
+    try:
+        video_url = comfy_service.generate_video_extended(
+            audio_path, image_path, title, filename_id, prompt,
+            category=category, num_chunks=num_chunks,
+            progress_callback=update_progress
+        )
+
+        if video_url:
+            PROGRESS_STORE[job_id]['status'] = 'completed'
+            PROGRESS_STORE[job_id]['progress'] = 100
+            PROGRESS_STORE[job_id]['url'] = video_url
+        else:
+            PROGRESS_STORE[job_id]['status'] = 'failed'
+            PROGRESS_STORE[job_id]['error'] = "Generation returned no URL"
+
+    except Exception as e:
+        PROGRESS_STORE[job_id]['status'] = 'failed'
+        PROGRESS_STORE[job_id]['error'] = str(e)
+
+
+@app.route('/generate-video-extended', methods=['POST'])
+def generate_video_extended_route():
+    """
+    Extended video generation using InfiniteTalk chunked workflow.
+    Accepts the same fields as /generate-video-single plus an optional
+    num_chunks (auto-calculated from audio duration when omitted).
+    Uses the same /progress/<job_id> polling endpoint for status.
+    """
+    data = request.get_json()
+    audio_path = data.get('audio_path')
+    image_path = data.get('image_path')
+    title = data.get('title')
+    filename_id = data.get('filename_id')
+    prompt = data.get('prompt')
+    num_chunks = data.get('num_chunks')
+    use_placeholder = data.get('usePlaceholder', False)
+
+    if not all([audio_path, image_path, title, filename_id]):
+        return jsonify({'error': 'Missing required fields (audio_path, image_path, title, filename_id)'}), 400
+
+    category = data.get('category', 'answers')
+    audio_only = data.get('audioOnly', False)
+
+    if use_placeholder:
+        output_dir = os.path.join(app.root_path, 'static', 'videos', title, category)
+        os.makedirs(output_dir, exist_ok=True)
+        save_filename = f"{filename_id}.mp4"
+        save_path = os.path.join(output_dir, save_filename)
+        placeholder_path = os.path.join(app.root_path, 'static', 'placeholder.mp4')
+
+        if audio_only and audio_path:
+            import subprocess
+            abs_audio = os.path.join(app.root_path, audio_path.lstrip('/'))
+            if os.path.exists(abs_audio):
+                try:
+                    subprocess.run([
+                        'ffmpeg', '-y',
+                        '-stream_loop', '-1',
+                        '-i', placeholder_path,
+                        '-i', abs_audio,
+                        '-c:v', 'copy', '-c:a', 'aac',
+                        '-shortest',
+                        '-map', '0:v:0', '-map', '1:a:0',
+                        save_path
+                    ], check=True, capture_output=True)
+                except subprocess.CalledProcessError:
+                    shutil.copy(placeholder_path, save_path)
+            else:
+                shutil.copy(placeholder_path, save_path)
+        else:
+            shutil.copy(placeholder_path, save_path)
+
+        video_url = f"/static/videos/{title}/{category}/{save_filename}"
+        job_id = filename_id
+        PROGRESS_STORE[job_id] = {"status": "completed", "progress": 100, "eta": 0, "url": video_url}
+        return jsonify({'job_id': job_id, 'status': 'started'}), 202
+    else:
+        job_id = filename_id
+        PROGRESS_STORE[job_id] = {"status": "processing", "progress": 0, "eta": 0}
+
+        thread = threading.Thread(
+            target=video_worker_extended,
+            args=(audio_path, image_path, title, filename_id, prompt, num_chunks, category, job_id)
+        )
         thread.start()
 
         return jsonify({'job_id': job_id, 'status': 'started'}), 202
@@ -364,6 +470,56 @@ def delete_title_route():
                 print(f"Warning: Could not delete {folder} directory: {e}")
 
         return jsonify({'message': f'Title "{title}" deleted successfully'}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/get-missing-media', methods=['GET'])
+def get_missing_media():
+    """Return items across all categories that are missing audio or video variants."""
+    title = request.args.get('title')
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+
+    try:
+        base_dir = app.root_path
+        variant_count = 3
+        missing = []
+
+        def check_variants(item_id, text, category, label=''):
+            for v in range(1, variant_count + 1):
+                vid = f"{item_id}_{v}"
+                audio_path = os.path.join(base_dir, 'static', 'audio', title, category, f"{vid}.mp3")
+                video_path = os.path.join(base_dir, 'static', 'videos', title, category, f"{vid}.mp4")
+                needs_audio = not os.path.exists(audio_path)
+                needs_video = not os.path.exists(video_path)
+                if needs_audio or needs_video:
+                    missing.append({
+                        'variant_id': vid,
+                        'variant': v,
+                        'answer': text,
+                        'category': category,
+                        'label': label,
+                        'needs_audio': needs_audio,
+                        'needs_video': needs_video
+                    })
+
+        # 1. FAQ answers + conversational (both stored in SQL)
+        faqs = faq_service.get_faqs(title) or []
+        for faq in faqs:
+            faq_id = faq.get('id', '')
+            cat = 'conversational' if str(faq_id).startswith('conv_') else 'answers'
+            check_variants(faq_id, faq.get('answer', ''), cat, faq.get('question', ''))
+
+        # 2. Rude & no_answer (from defaultResponses.json)
+        default_responses = faq_service.get_default_responses()
+        for category in ['rude', 'no_answer']:
+            texts = default_responses.get(category, [])
+            for i, text in enumerate(texts):
+                base_id = f"{category}_{i + 1}"
+                check_variants(base_id, text, category, f"{category} #{i + 1}")
+
+        return jsonify({'missing': missing, 'total': len(missing)}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

@@ -1,10 +1,17 @@
 const API_BASE_URL = window.location.origin;
 let allTitles = [];
+let currentOtherCategoryItems = [];
+let currentOtherCategoryTitle = '';
+
+const OTHER_CATEGORY_LABELS = { conversational: 'Conversational', rude: 'Rude', no_answer: 'No answer' };
 
 document.addEventListener('DOMContentLoaded', () => {
     fetchTitles();
     setupSearch();
     setupDelete();
+    setupResume();
+    setupOtherCategoryFilter();
+    resumeProgress.restore();
 });
 
 function setupSearch() {
@@ -63,22 +70,27 @@ function renderDropdown(titles) {
 async function selectTopic(title) {
     document.getElementById('selectedTitle').textContent = title;
     
-    // Show the controls container
     document.getElementById('managementControls').style.display = 'block';
-    
-    // Reset Prompt
-    document.getElementById('videoPrompt').value = "talking head"; // Or keep empty
-    
-    // Load FAQs (this will also find the avatar path)
+    document.getElementById('videoPrompt').value = "talking head";
+
+    if (resumeProgress.activeTitle === title) {
+        resumeProgress.show();
+    } else {
+        // Different topic -- hide progress bar and reset UI
+        resumeProgress.hide();
+        const statusEl = document.getElementById('resumeStatus');
+        if (statusEl) { statusEl.style.display = 'none'; statusEl.textContent = ''; }
+        const resumeBtn = document.getElementById('resumeAllBtn');
+        if (resumeBtn) resumeBtn.disabled = false;
+    }
+
     await loadFAQs(title);
     
-    // Update Avatar Image in the UI
     const avatarImg = document.getElementById('topicAvatar');
     if (currentAvatarPath) {
-        // currentAvatarPath is like "static/images/Title/img.png"
         avatarImg.src = `${API_BASE_URL}/${currentAvatarPath}`;
     } else {
-        avatarImg.src = ""; // Or a placeholder image URL
+        avatarImg.src = "";
     }
 }
 
@@ -104,6 +116,9 @@ function setupDelete() {
                 document.getElementById('selectedTitle').textContent = '';
                 document.getElementById('managementControls').style.display = 'none';
                 document.querySelector('#faqTable tbody').innerHTML = '<tr><td colspan="3">Select a topic to view or delete...</td></tr>';
+                setOtherCategoriesPlaceholder('Select a topic to view other category videos.');
+                currentOtherCategoryItems = [];
+                hideOtherCategoryFilter();
                 currentAvatarPath = null;
                 // Refresh titles
                 fetchTitles();
@@ -134,9 +149,15 @@ async function fetchTitles() {
     }
 }
 
+function setOtherCategoriesPlaceholder(text) {
+    const el = document.getElementById('otherCategoriesContent');
+    if (el) el.innerHTML = `<p class="other-categories-placeholder">${text}</p>`;
+}
+
 async function loadFAQs(title) {
     const tbody = document.querySelector('#faqTable tbody');
     tbody.innerHTML = '<tr><td colspan="3">Loading...</td></tr>';
+    setOtherCategoriesPlaceholder('Loading...');
 
     try {
         const encodedTitle = encodeURIComponent(title);
@@ -144,10 +165,15 @@ async function loadFAQs(title) {
         const responses = await Promise.all([
             fetch(`${API_BASE_URL}/faqs?title=${encodedTitle}`),
             fetch(`${API_BASE_URL}/get-videos?title=${encodedTitle}&category=answers`),
-            fetch(`${API_BASE_URL}/get-avatar?title=${encodedTitle}`)
+            fetch(`${API_BASE_URL}/get-videos?title=${encodedTitle}&category=conversational`),
+            fetch(`${API_BASE_URL}/get-avatar?title=${encodedTitle}`),
+            fetch(`${API_BASE_URL}/default-responses`),
+            fetch(`${API_BASE_URL}/get-videos?title=${encodedTitle}&category=rude`),
+            fetch(`${API_BASE_URL}/get-videos?title=${encodedTitle}&category=no_answer`)
         ]);
 
-        for (const res of responses) {
+        for (let i = 0; i < 4; i++) {
+            const res = responses[i];
             if (!res.ok) {
                 console.error(`Fetch failed for ${res.url}: ${res.status} ${res.statusText}`);
                 const text = await res.text();
@@ -157,9 +183,17 @@ async function loadFAQs(title) {
         }
 
         const faqResult = await responses[0].json();
-        const videoResult = await responses[1].json();
-        const avatarResult = await responses[2].json();
-        
+        const answersVideos = (await responses[1].json()).data || [];
+        const conversationalVideos = (await responses[2].json()).data || [];
+        const avatarResult = await responses[3].json();
+        let defaultResponses = { rude: [], no_answer: [] };
+        try {
+            const drRes = await responses[4].json();
+            if (responses[4].ok && drRes) defaultResponses = drRes;
+        } catch (_) { /* use empty */ }
+        const rudeVideos = (await responses[5].json()).data || [];
+        const noAnswerVideos = (await responses[6].json()).data || [];
+
         if (faqResult.message === 'Fetched successfully' || faqResult.data) {
             currentAvatarPath = avatarResult.avatar_path || null;
             
@@ -170,29 +204,127 @@ async function loadFAQs(title) {
                 avatarImg.src = ""; 
             }
 
-            const faqs = faqResult.data;
-            const existingVideos = videoResult.data || [];
+            const faqs = faqResult.data || [];
+            const videosByCategory = {
+                answers: answersVideos,
+                conversational: conversationalVideos,
+                rude: rudeVideos,
+                no_answer: noAnswerVideos
+            };
 
+            const answersFaqs = [];
+            const otherFaqs = [];
             faqs.forEach(faq => {
+                const category = faq.category || 'answers';
+                const videoList = videosByCategory[category] || [];
                 const variants = [];
                 for (let v = 1; v <= 3; v++) {
-                    if (existingVideos.includes(`${faq.id}_${v}.mp4`)) {
+                    if (videoList.includes(`${faq.id}_${v}.mp4`)) {
                         variants.push(v);
                     }
                 }
                 faq.variants = variants;
                 faq.has_video = variants.length > 0;
+                if (category === 'answers') {
+                    answersFaqs.push(faq);
+                } else {
+                    otherFaqs.push(faq);
+                }
             });
 
-            populateFAQTable(faqs);
+            // Build rude items from defaultResponses (id format: rude_1, rude_2, ...; videos: rude_1_1.mp4, ...)
+            (defaultResponses.rude || []).forEach((text, i) => {
+                const baseId = `rude_${i + 1}`;
+                const variants = [];
+                for (let v = 1; v <= 3; v++) {
+                    if (rudeVideos.includes(`${baseId}_${v}.mp4`)) variants.push(v);
+                }
+                otherFaqs.push({
+                    id: baseId,
+                    question: `Rude #${i + 1}`,
+                    answer: text,
+                    title,
+                    category: 'rude',
+                    variants,
+                    has_video: variants.length > 0
+                });
+            });
+
+            // Build no_answer items (id format: no_answer_1, ...; videos: no_answer_1_1.mp4, ...)
+            (defaultResponses.no_answer || []).forEach((text, i) => {
+                const baseId = `no_answer_${i + 1}`;
+                const variants = [];
+                for (let v = 1; v <= 3; v++) {
+                    if (noAnswerVideos.includes(`${baseId}_${v}.mp4`)) variants.push(v);
+                }
+                otherFaqs.push({
+                    id: baseId,
+                    question: `No answer #${i + 1}`,
+                    answer: text,
+                    title,
+                    category: 'no_answer',
+                    variants,
+                    has_video: variants.length > 0
+                });
+            });
+
+            populateFAQTable(answersFaqs);
+            currentOtherCategoryItems = otherFaqs;
+            currentOtherCategoryTitle = title;
+            populateOtherCategoryFilter(otherFaqs);
+            applyOtherCategoryFilter();
         } else {
             tbody.innerHTML = '<tr><td colspan="3">No FAQs found.</td></tr>';
+            setOtherCategoriesPlaceholder('No other category items for this topic.');
+            currentOtherCategoryItems = [];
+            hideOtherCategoryFilter();
         }
 
     } catch (error) {
         console.error("Critical error loading FAQs:", error);
         tbody.innerHTML = `<tr><td colspan="3" style="color: red;">Error: ${error.message}</td></tr>`;
+        setOtherCategoriesPlaceholder('Select a topic to view other category videos.');
+        currentOtherCategoryItems = [];
+        hideOtherCategoryFilter();
     }
+}
+
+function setupOtherCategoryFilter() {
+    const sel = document.getElementById('otherCategoryFilter');
+    if (!sel) return;
+    sel.addEventListener('change', () => applyOtherCategoryFilter());
+}
+
+function populateOtherCategoryFilter(items) {
+    const sel = document.getElementById('otherCategoryFilter');
+    if (!sel) return;
+    const categories = [...new Set((items || []).map(item => item.category).filter(Boolean))].sort();
+    sel.innerHTML = '<option value="all">All</option>';
+    categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = OTHER_CATEGORY_LABELS[cat] || cat;
+        sel.appendChild(opt);
+    });
+    sel.value = 'all';
+    sel.style.display = categories.length > 0 ? 'block' : 'none';
+}
+
+function hideOtherCategoryFilter() {
+    const sel = document.getElementById('otherCategoryFilter');
+    if (sel) {
+        sel.style.display = 'none';
+        sel.innerHTML = '<option value="all">All</option>';
+    }
+}
+
+function applyOtherCategoryFilter() {
+    const sel = document.getElementById('otherCategoryFilter');
+    const value = sel ? sel.value : 'all';
+    const filtered = value === 'all'
+        ? currentOtherCategoryItems
+        : currentOtherCategoryItems.filter(item => item.category === value);
+    populateOtherCategoriesPanel(filtered, currentOtherCategoryTitle);
 }
 
 function populateFAQTable(faqs) {
@@ -287,11 +419,110 @@ function populateFAQTable(faqs) {
     });
 }
 
+function populateOtherCategoriesPanel(items, title) {
+    const container = document.getElementById('otherCategoriesContent');
+    if (!container) return;
+
+    if (!items || items.length === 0) {
+        container.innerHTML = '<p class="other-categories-placeholder">No other category items for this topic.</p>';
+        return;
+    }
+
+    const encodedTitle = encodeURIComponent(title);
+    container.innerHTML = '';
+
+    items.forEach(faq => {
+        const card = document.createElement('div');
+        card.className = 'other-category-card';
+
+        const categoryLabel = document.createElement('div');
+        categoryLabel.className = 'card-category';
+        categoryLabel.textContent = faq.category || 'other';
+
+        const questionEl = document.createElement('div');
+        questionEl.className = 'card-question';
+        questionEl.textContent = faq.question;
+
+        const answerEl = document.createElement('div');
+        answerEl.className = 'card-answer';
+        answerEl.textContent = faq.answer;
+
+        const videosWrap = document.createElement('div');
+        videosWrap.className = 'card-videos';
+
+        const variants = faq.variants || [];
+        const nextVariant = [1, 2, 3].find(v => !variants.includes(v));
+
+        if (faq.has_video && variants.length > 0) {
+            const carousel = document.createElement('div');
+            carousel.className = 'video-carousel';
+
+            const video = document.createElement('video');
+            const cat = faq.category || 'conversational';
+            video.src = `${API_BASE_URL}/static/videos/${encodedTitle}/${cat}/${faq.id}_${variants[0]}.mp4`;
+            video.controls = true;
+            video.className = 'carousel-video';
+            carousel.appendChild(video);
+
+            if (variants.length > 1) {
+                const controls = document.createElement('div');
+                controls.className = 'carousel-controls';
+                const prevBtn = document.createElement('button');
+                prevBtn.className = 'carousel-arrow';
+                prevBtn.innerHTML = '&#8249;';
+                const label = document.createElement('span');
+                label.className = 'carousel-label';
+                label.textContent = `1 of ${variants.length}`;
+                const nextBtn = document.createElement('button');
+                nextBtn.className = 'carousel-arrow';
+                nextBtn.innerHTML = '&#8250;';
+                let currentIdx = 0;
+                function updateVariant() {
+                    const v = variants[currentIdx];
+                    video.src = `${API_BASE_URL}/static/videos/${encodedTitle}/${cat}/${faq.id}_${v}.mp4`;
+                    label.textContent = `${currentIdx + 1} of ${variants.length}`;
+                }
+                prevBtn.onclick = () => {
+                    currentIdx = (currentIdx - 1 + variants.length) % variants.length;
+                    updateVariant();
+                };
+                nextBtn.onclick = () => {
+                    currentIdx = (currentIdx + 1) % variants.length;
+                    updateVariant();
+                };
+                controls.appendChild(prevBtn);
+                controls.appendChild(label);
+                controls.appendChild(nextBtn);
+                carousel.appendChild(controls);
+            }
+            videosWrap.appendChild(carousel);
+        }
+
+        if (nextVariant !== undefined) {
+            const filenameId = `${faq.id}_${nextVariant}`;
+            const btn = document.createElement('button');
+            btn.textContent = variants.length > 0 ? `Generate variant ${nextVariant}` : 'Generate Video';
+            btn.className = 'generate-btn';
+            btn.onclick = () => {
+                const promptText = document.getElementById('videoPrompt').value.trim() || 'talking head';
+                addToQueue(btn, filenameId, faq.title, faq.answer, promptText, faq.category);
+            };
+            videosWrap.appendChild(btn);
+        }
+
+        card.appendChild(categoryLabel);
+        card.appendChild(questionEl);
+        card.appendChild(answerEl);
+        card.appendChild(videosWrap);
+        container.appendChild(card);
+    });
+}
+
 let currentAvatarPath = null;
 const videoQueue = []; // Queue to store pending requests
 let isProcessingQueue = false; // Flag to check if we are currently generating
 
-function addToQueue(btnElement, id, title, text, prompt) {
+function addToQueue(btnElement, id, title, text, prompt, category) {
     if (!currentAvatarPath) {
         alert("No avatar image found for this topic. Please upload one first.");
         return;
@@ -309,7 +540,8 @@ function addToQueue(btnElement, id, title, text, prompt) {
         id,
         title,
         text,
-        prompt // Store it
+        prompt,
+        category: category || 'answers'
     });
 
     // 3. Update Bubble
@@ -332,7 +564,7 @@ async function processQueue() {
     const currentTask = videoQueue[0]; // Peek at first item
     
     // Update button status to "Generating..."
-    const { btnElement, id, title, text, prompt } = currentTask; // Extract prompt
+    const { btnElement, id, title, text, prompt, category } = currentTask;
     btnElement.textContent = "Generating...";
     btnElement.style.background = "#3498db"; // Blue for processing
 
@@ -350,15 +582,16 @@ async function processQueue() {
         if (!audioResponse.ok) throw new Error(audioResult.error || "Audio failed");
 
         // 2. Start Video Generation
-        const videoResponse = await fetch(`${API_BASE_URL}/generate-video-single`, {
+        const videoResponse = await fetch(`${API_BASE_URL}/generate-video-extended`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 audio_path: audioResult.audio_url,
-                image_path: currentAvatarPath, // This comes from loadFAQs logic
+                image_path: currentAvatarPath,
                 title: title,
                 filename_id: id,
-                prompt: prompt // Pass the custom prompt here
+                category: category || 'answers',
+                prompt: prompt
             })
         });
         const videoResult = await videoResponse.json();
@@ -394,9 +627,10 @@ async function processQueue() {
             }, 1000); // Poll every second
         });
 
-        // Success (loop continues)
+        // Success: refresh both panels so new video appears
         const cell = btnElement.parentNode;
         cell.innerHTML = '<span class="status-ready">Ready</span>';
+        await loadFAQs(title);
 
     } catch (error) {
         console.error("Queue task failed:", error);
@@ -404,8 +638,7 @@ async function processQueue() {
         btnElement.disabled = false;
         btnElement.style.background = "#e74c3c";
         
-        // Optional: Re-bind click to addToQueue if they want to try again
-        btnElement.onclick = () => addToQueue(btnElement, id, title, text, prompt);
+        btnElement.onclick = () => addToQueue(btnElement, id, title, text, prompt, category);
     } finally {
         // Remove processed item (success or fail)
         videoQueue.shift();
@@ -428,13 +661,417 @@ function updateQueueBubble(isProcessing = false, progress = 0) {
 
     bubble.style.display = 'flex';
     if (isProcessing) {
-        // e.g. "Processing... (2 pending)"
-        // Since we removed the item *after* processing, count includes the current one
         bubble.innerHTML = `
             <div class="spinner"></div>
             <span>Generating video (Queue: ${count})</span>
         `;
     } else {
         bubble.textContent = `Queue: ${count} videos`;
+    }
+}
+
+
+function setupResume() {
+    const resumeBtn = document.getElementById('resumeAllBtn');
+    if (!resumeBtn) return;
+
+    resumeBtn.addEventListener('click', () => {
+        const title = document.getElementById('topicSearch').value;
+        if (!title) {
+            alert('Please select a topic first.');
+            return;
+        }
+        resumeAllMissing(title);
+    });
+}
+
+async function checkComfyHealth() {
+    try {
+        const res = await fetch(`${API_BASE_URL}/comfy-health`, { signal: AbortSignal.timeout(8000) });
+        if (!res.ok) return false;
+        const data = await res.json();
+        return data.status === 'ok';
+    } catch {
+        return false;
+    }
+}
+
+async function waitForVideo(jobId, pollInterval = 3000, maxWait = 600000) {
+    const start = Date.now();
+    while (Date.now() - start < maxWait) {
+        try {
+            const res = await fetch(`${API_BASE_URL}/progress/${jobId}`);
+            if (!res.ok) {
+                return { ok: false, error: `Progress endpoint returned ${res.status}` };
+            }
+            const info = await res.json();
+
+            if (info.status === 'completed') {
+                return { ok: true, video_url: info.url };
+            }
+            if (info.status === 'failed') {
+                return { ok: false, error: info.error || 'Video generation failed' };
+            }
+        } catch (e) {
+            console.error(`Error polling progress for ${jobId}:`, e);
+        }
+
+        await new Promise(r => setTimeout(r, pollInterval));
+    }
+    return { ok: false, error: 'Timed out waiting for video generation' };
+}
+
+const PROGRESS_STORAGE_KEY = 'editQA_resumeProgress';
+
+const resumeProgress = {
+    totalOps: 0,
+    completedOps: 0,
+    opStartTime: null,
+    globalStartTime: null,
+    recentDurations: [],
+    currentLabel: '',
+    activeTitle: null,
+    statusText: '',
+    statusClass: '',
+    isError: false,
+
+    reset(title) {
+        this.totalOps = 0;
+        this.completedOps = 0;
+        this.opStartTime = null;
+        this.globalStartTime = Date.now();
+        this.recentDurations = [];
+        this.currentLabel = '';
+        this.activeTitle = title;
+        this.statusText = '';
+        this.statusClass = 'resume-status processing';
+        this.isError = false;
+        const container = document.getElementById('resumeProgressContainer');
+        if (container) container.style.display = 'block';
+        const fill = document.getElementById('resumeProgressBarFill');
+        if (fill) fill.style.background = 'linear-gradient(90deg, #3498db, #2ecc71)';
+        this.render();
+    },
+
+    addOps(count) {
+        this.totalOps += count;
+        this.render();
+    },
+
+    startOp(label) {
+        this.opStartTime = Date.now();
+        this.currentLabel = label || '';
+        this.render();
+    },
+
+    completeOp() {
+        if (this.opStartTime) {
+            this.recentDurations.push(Date.now() - this.opStartTime);
+            if (this.recentDurations.length > 20) this.recentDurations.shift();
+        }
+        this.completedOps++;
+        this.opStartTime = null;
+        this.render();
+    },
+
+    setStatus(text, className) {
+        this.statusText = text;
+        this.statusClass = className || 'resume-status processing';
+        const statusEl = document.getElementById('resumeStatus');
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.textContent = text;
+            statusEl.className = this.statusClass;
+        }
+        this.save();
+    },
+
+    getETA() {
+        const remaining = this.totalOps - this.completedOps;
+        if (remaining <= 0 || this.recentDurations.length === 0) return '';
+        const avg = this.recentDurations.reduce((a, b) => a + b, 0) / this.recentDurations.length;
+        const secs = Math.round((avg * remaining) / 1000);
+        if (secs < 60) return `~${secs}s remaining`;
+        const mins = Math.floor(secs / 60);
+        const rem = secs % 60;
+        if (mins < 60) return `~${mins}m ${rem}s remaining`;
+        const hrs = Math.floor(mins / 60);
+        return `~${hrs}h ${mins % 60}m remaining`;
+    },
+
+    getElapsed() {
+        if (!this.globalStartTime) return '';
+        const secs = Math.round((Date.now() - this.globalStartTime) / 1000);
+        if (secs < 60) return `${secs}s elapsed`;
+        const mins = Math.floor(secs / 60);
+        const rem = secs % 60;
+        if (mins < 60) return `${mins}m ${rem}s elapsed`;
+        const hrs = Math.floor(mins / 60);
+        return `${hrs}h ${mins % 60}m elapsed`;
+    },
+
+    getPercent() {
+        if (this.totalOps === 0) return 0;
+        return Math.round((this.completedOps / this.totalOps) * 100);
+    },
+
+    render() {
+        const fill = document.getElementById('resumeProgressBarFill');
+        const text = document.getElementById('resumeProgressText');
+        const eta = document.getElementById('resumeProgressETA');
+        const pct = this.getPercent();
+        if (fill) fill.style.width = pct + '%';
+        let info = `${pct}% (${this.completedOps}/${this.totalOps})`;
+        if (this.currentLabel) info += ` — ${this.currentLabel}`;
+        if (text) text.textContent = info;
+        const etaParts = [];
+        const etaStr = this.getETA();
+        const elapsedStr = this.getElapsed();
+        if (etaStr) etaParts.push(etaStr);
+        if (elapsedStr) etaParts.push(elapsedStr);
+        if (eta) eta.textContent = etaParts.join(' | ');
+        this.save();
+    },
+
+    hide() {
+        const container = document.getElementById('resumeProgressContainer');
+        if (container) container.style.display = 'none';
+    },
+
+    show() {
+        const container = document.getElementById('resumeProgressContainer');
+        if (container) container.style.display = 'block';
+        if (this.isError) {
+            const fill = document.getElementById('resumeProgressBarFill');
+            if (fill) fill.style.background = '#e74c3c';
+        }
+        this.render();
+        const statusEl = document.getElementById('resumeStatus');
+        if (statusEl && this.statusText) {
+            statusEl.style.display = 'block';
+            statusEl.textContent = this.statusText;
+            statusEl.className = this.statusClass;
+        }
+    },
+
+    isActive() {
+        return this.activeTitle !== null;
+    },
+
+    finish() {
+        this.activeTitle = null;
+        localStorage.removeItem(PROGRESS_STORAGE_KEY);
+    },
+
+    markError() {
+        this.isError = true;
+        const fill = document.getElementById('resumeProgressBarFill');
+        if (fill) fill.style.background = '#e74c3c';
+        this.save();
+    },
+
+    save() {
+        if (!this.activeTitle) return;
+        try {
+            localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify({
+                activeTitle: this.activeTitle,
+                totalOps: this.totalOps,
+                completedOps: this.completedOps,
+                globalStartTime: this.globalStartTime,
+                recentDurations: this.recentDurations,
+                currentLabel: this.currentLabel,
+                statusText: this.statusText,
+                statusClass: this.statusClass,
+                isError: this.isError
+            }));
+        } catch (e) { /* quota exceeded or private mode */ }
+    },
+
+    restore() {
+        try {
+            const raw = localStorage.getItem(PROGRESS_STORAGE_KEY);
+            if (!raw) return false;
+            const s = JSON.parse(raw);
+            if (!s.activeTitle) return false;
+            this.activeTitle = s.activeTitle;
+            this.totalOps = s.totalOps || 0;
+            this.completedOps = s.completedOps || 0;
+            this.globalStartTime = s.globalStartTime || null;
+            this.recentDurations = s.recentDurations || [];
+            this.currentLabel = s.currentLabel || '';
+            this.statusText = s.statusText || '';
+            this.statusClass = s.statusClass || 'resume-status processing';
+            this.isError = s.isError || false;
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+};
+
+async function resumeAllMissing(title) {
+    const resumeBtn = document.getElementById('resumeAllBtn');
+    resumeBtn.disabled = true;
+
+    resumeProgress.setStatus('Checking for missing media...', 'resume-status processing');
+
+    try {
+        const res = await fetch(`${API_BASE_URL}/get-missing-media?title=${encodeURIComponent(title)}`);
+        const data = await res.json();
+
+        if (!res.ok) {
+            resumeProgress.setStatus(`Error: ${data.error}`, 'resume-status error');
+            resumeBtn.disabled = false;
+            return;
+        }
+
+        const missing = data.missing || [];
+        if (missing.length === 0) {
+            resumeProgress.setStatus('All audio and video variants are already generated!', 'resume-status success');
+            resumeBtn.disabled = false;
+            return;
+        }
+
+        if (!currentAvatarPath) {
+            resumeProgress.setStatus('No avatar image found for this topic.', 'resume-status error');
+            resumeBtn.disabled = false;
+            return;
+        }
+
+        const promptText = document.getElementById('videoPrompt').value.trim() || 'talking head';
+        const needsAudio = missing.filter(m => m.needs_audio);
+        const needsVideo = missing.filter(m => m.needs_video);
+
+        resumeProgress.reset(title);
+        resumeProgress.addOps(needsAudio.length + needsVideo.length);
+        resumeProgress.setStatus(
+            `Found ${missing.length} missing items (${needsAudio.length} audio, ${needsVideo.length} video). Generating audio...`,
+            'resume-status processing'
+        );
+
+        // Phase 1: Generate all missing audio
+        const audioResults = [];
+
+        for (let i = 0; i < needsAudio.length; i++) {
+            const item = needsAudio[i];
+            const itemDesc = `${item.category} "${item.label}" variant ${item.variant}`;
+            resumeProgress.setStatus(`Generating audio ${i + 1}/${needsAudio.length}: ${itemDesc}`, 'resume-status processing');
+
+            resumeProgress.startOp(`Audio: ${itemDesc}`);
+            try {
+                const audioResp = await fetch(`${API_BASE_URL}/generate-audio-single`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: item.answer,
+                        title: title,
+                        filename_id: item.variant_id,
+                        category: item.category,
+                        speechSettings: [],
+                        usePlaceholder: false
+                    })
+                });
+                const audioResult = await audioResp.json();
+                if (audioResp.ok) {
+                    audioResults.push({ variant_id: item.variant_id, category: item.category, audioUrl: audioResult.audio_url });
+                } else {
+                    console.error(`Audio failed for ${item.variant_id}:`, audioResult.error);
+                    if (!(await checkComfyHealth())) {
+                        resumeProgress.setStatus('ComfyUI crashed during audio. Resume again later.', 'resume-status error');
+                        resumeProgress.markError();
+                        resumeProgress.finish();
+                        resumeBtn.disabled = false;
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error(`Audio error for ${item.variant_id}:`, e);
+                if (!(await checkComfyHealth())) {
+                    resumeProgress.setStatus('ComfyUI crashed during audio. Resume again later.', 'resume-status error');
+                    resumeProgress.markError();
+                    resumeProgress.finish();
+                    resumeBtn.disabled = false;
+                    return;
+                }
+            }
+            resumeProgress.completeOp();
+        }
+
+        // Phase 2: Generate all missing video
+        const freshAudioMap = {};
+        for (const a of audioResults) {
+            freshAudioMap[a.variant_id] = a.audioUrl;
+        }
+
+        resumeProgress.setStatus(`Audio done. Generating ${needsVideo.length} videos...`, 'resume-status processing');
+
+        for (let i = 0; i < needsVideo.length; i++) {
+            const item = needsVideo[i];
+            const audioUrl = freshAudioMap[item.variant_id] || `/static/audio/${title}/${item.category}/${item.variant_id}.mp3`;
+            const itemDesc = `${item.category} "${item.label}" variant ${item.variant}`;
+            resumeProgress.setStatus(`Generating video ${i + 1}/${needsVideo.length}: ${itemDesc}`, 'resume-status processing');
+
+            resumeProgress.startOp(`Video: ${itemDesc}`);
+            try {
+                const videoResp = await fetch(`${API_BASE_URL}/generate-video-extended`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        audio_path: audioUrl,
+                        image_path: currentAvatarPath,
+                        title: title,
+                        filename_id: item.variant_id,
+                        category: item.category,
+                        prompt: promptText,
+                        usePlaceholder: false
+                    })
+                });
+                const videoResult = await videoResp.json();
+                if (videoResp.ok && videoResult.job_id) {
+                    const pollResult = await waitForVideo(videoResult.job_id);
+                    if (!pollResult.ok) {
+                        console.error(`Video failed for ${item.variant_id}:`, pollResult.error);
+                        if (!(await checkComfyHealth())) {
+                            resumeProgress.setStatus('ComfyUI crashed during video. Resume again later.', 'resume-status error');
+                            resumeProgress.markError();
+                            resumeProgress.finish();
+                            resumeBtn.disabled = false;
+                            return;
+                        }
+                    }
+                } else {
+                    console.error(`Video start failed for ${item.variant_id}:`, videoResult?.error);
+                    if (!(await checkComfyHealth())) {
+                        resumeProgress.setStatus('ComfyUI crashed during video. Resume again later.', 'resume-status error');
+                        resumeProgress.markError();
+                        resumeProgress.finish();
+                        resumeBtn.disabled = false;
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error(`Video error for ${item.variant_id}:`, e);
+                if (!(await checkComfyHealth())) {
+                    resumeProgress.setStatus('ComfyUI crashed during video. Resume again later.', 'resume-status error');
+                    resumeProgress.markError();
+                    resumeProgress.finish();
+                    resumeBtn.disabled = false;
+                    return;
+                }
+            }
+            resumeProgress.completeOp();
+        }
+
+        resumeProgress.setStatus('Done! All missing media generated. Refreshing...', 'resume-status success');
+        resumeProgress.finish();
+        resumeBtn.disabled = false;
+        await loadFAQs(title);
+
+    } catch (e) {
+        console.error('Resume error:', e);
+        resumeProgress.setStatus(`Error: ${e.message}`, 'resume-status error');
+        resumeProgress.markError();
+        resumeProgress.finish();
+        resumeBtn.disabled = false;
     }
 }
