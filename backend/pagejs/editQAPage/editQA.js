@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSearch();
     setupDelete();
     setupResume();
+    resumeProgress.restore();
 });
 
 function setupSearch() {
@@ -64,22 +65,27 @@ function renderDropdown(titles) {
 async function selectTopic(title) {
     document.getElementById('selectedTitle').textContent = title;
     
-    // Show the controls container
     document.getElementById('managementControls').style.display = 'block';
-    
-    // Reset Prompt
-    document.getElementById('videoPrompt').value = "talking head"; // Or keep empty
-    
-    // Load FAQs (this will also find the avatar path)
+    document.getElementById('videoPrompt').value = "talking head";
+
+    if (resumeProgress.activeTitle === title) {
+        resumeProgress.show();
+    } else {
+        // Different topic -- hide progress bar and reset UI
+        resumeProgress.hide();
+        const statusEl = document.getElementById('resumeStatus');
+        if (statusEl) { statusEl.style.display = 'none'; statusEl.textContent = ''; }
+        const resumeBtn = document.getElementById('resumeAllBtn');
+        if (resumeBtn) resumeBtn.disabled = false;
+    }
+
     await loadFAQs(title);
     
-    // Update Avatar Image in the UI
     const avatarImg = document.getElementById('topicAvatar');
     if (currentAvatarPath) {
-        // currentAvatarPath is like "static/images/Title/img.png"
         avatarImg.src = `${API_BASE_URL}/${currentAvatarPath}`;
     } else {
-        avatarImg.src = ""; // Or a placeholder image URL
+        avatarImg.src = "";
     }
 }
 
@@ -351,15 +357,16 @@ async function processQueue() {
         if (!audioResponse.ok) throw new Error(audioResult.error || "Audio failed");
 
         // 2. Start Video Generation
-        const videoResponse = await fetch(`${API_BASE_URL}/generate-video-single`, {
+        const videoResponse = await fetch(`${API_BASE_URL}/generate-video-extended`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 audio_path: audioResult.audio_url,
-                image_path: currentAvatarPath, // This comes from loadFAQs logic
+                image_path: currentAvatarPath,
                 title: title,
                 filename_id: id,
-                prompt: prompt // Pass the custom prompt here
+                category: 'answers',
+                prompt: prompt
             })
         });
         const videoResult = await videoResponse.json();
@@ -489,150 +496,357 @@ async function waitForVideo(jobId, pollInterval = 3000, maxWait = 600000) {
     return { ok: false, error: 'Timed out waiting for video generation' };
 }
 
+const PROGRESS_STORAGE_KEY = 'editQA_resumeProgress';
+
+const resumeProgress = {
+    totalOps: 0,
+    completedOps: 0,
+    opStartTime: null,
+    globalStartTime: null,
+    recentDurations: [],
+    currentLabel: '',
+    activeTitle: null,
+    statusText: '',
+    statusClass: '',
+    isError: false,
+
+    reset(title) {
+        this.totalOps = 0;
+        this.completedOps = 0;
+        this.opStartTime = null;
+        this.globalStartTime = Date.now();
+        this.recentDurations = [];
+        this.currentLabel = '';
+        this.activeTitle = title;
+        this.statusText = '';
+        this.statusClass = 'resume-status processing';
+        this.isError = false;
+        const container = document.getElementById('resumeProgressContainer');
+        if (container) container.style.display = 'block';
+        const fill = document.getElementById('resumeProgressBarFill');
+        if (fill) fill.style.background = 'linear-gradient(90deg, #3498db, #2ecc71)';
+        this.render();
+    },
+
+    addOps(count) {
+        this.totalOps += count;
+        this.render();
+    },
+
+    startOp(label) {
+        this.opStartTime = Date.now();
+        this.currentLabel = label || '';
+        this.render();
+    },
+
+    completeOp() {
+        if (this.opStartTime) {
+            this.recentDurations.push(Date.now() - this.opStartTime);
+            if (this.recentDurations.length > 20) this.recentDurations.shift();
+        }
+        this.completedOps++;
+        this.opStartTime = null;
+        this.render();
+    },
+
+    setStatus(text, className) {
+        this.statusText = text;
+        this.statusClass = className || 'resume-status processing';
+        const statusEl = document.getElementById('resumeStatus');
+        if (statusEl) {
+            statusEl.style.display = 'block';
+            statusEl.textContent = text;
+            statusEl.className = this.statusClass;
+        }
+        this.save();
+    },
+
+    getETA() {
+        const remaining = this.totalOps - this.completedOps;
+        if (remaining <= 0 || this.recentDurations.length === 0) return '';
+        const avg = this.recentDurations.reduce((a, b) => a + b, 0) / this.recentDurations.length;
+        const secs = Math.round((avg * remaining) / 1000);
+        if (secs < 60) return `~${secs}s remaining`;
+        const mins = Math.floor(secs / 60);
+        const rem = secs % 60;
+        if (mins < 60) return `~${mins}m ${rem}s remaining`;
+        const hrs = Math.floor(mins / 60);
+        return `~${hrs}h ${mins % 60}m remaining`;
+    },
+
+    getElapsed() {
+        if (!this.globalStartTime) return '';
+        const secs = Math.round((Date.now() - this.globalStartTime) / 1000);
+        if (secs < 60) return `${secs}s elapsed`;
+        const mins = Math.floor(secs / 60);
+        const rem = secs % 60;
+        if (mins < 60) return `${mins}m ${rem}s elapsed`;
+        const hrs = Math.floor(mins / 60);
+        return `${hrs}h ${mins % 60}m elapsed`;
+    },
+
+    getPercent() {
+        if (this.totalOps === 0) return 0;
+        return Math.round((this.completedOps / this.totalOps) * 100);
+    },
+
+    render() {
+        const fill = document.getElementById('resumeProgressBarFill');
+        const text = document.getElementById('resumeProgressText');
+        const eta = document.getElementById('resumeProgressETA');
+        const pct = this.getPercent();
+        if (fill) fill.style.width = pct + '%';
+        let info = `${pct}% (${this.completedOps}/${this.totalOps})`;
+        if (this.currentLabel) info += ` — ${this.currentLabel}`;
+        if (text) text.textContent = info;
+        const etaParts = [];
+        const etaStr = this.getETA();
+        const elapsedStr = this.getElapsed();
+        if (etaStr) etaParts.push(etaStr);
+        if (elapsedStr) etaParts.push(elapsedStr);
+        if (eta) eta.textContent = etaParts.join(' | ');
+        this.save();
+    },
+
+    hide() {
+        const container = document.getElementById('resumeProgressContainer');
+        if (container) container.style.display = 'none';
+    },
+
+    show() {
+        const container = document.getElementById('resumeProgressContainer');
+        if (container) container.style.display = 'block';
+        if (this.isError) {
+            const fill = document.getElementById('resumeProgressBarFill');
+            if (fill) fill.style.background = '#e74c3c';
+        }
+        this.render();
+        const statusEl = document.getElementById('resumeStatus');
+        if (statusEl && this.statusText) {
+            statusEl.style.display = 'block';
+            statusEl.textContent = this.statusText;
+            statusEl.className = this.statusClass;
+        }
+    },
+
+    isActive() {
+        return this.activeTitle !== null;
+    },
+
+    finish() {
+        this.activeTitle = null;
+        localStorage.removeItem(PROGRESS_STORAGE_KEY);
+    },
+
+    markError() {
+        this.isError = true;
+        const fill = document.getElementById('resumeProgressBarFill');
+        if (fill) fill.style.background = '#e74c3c';
+        this.save();
+    },
+
+    save() {
+        if (!this.activeTitle) return;
+        try {
+            localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify({
+                activeTitle: this.activeTitle,
+                totalOps: this.totalOps,
+                completedOps: this.completedOps,
+                globalStartTime: this.globalStartTime,
+                recentDurations: this.recentDurations,
+                currentLabel: this.currentLabel,
+                statusText: this.statusText,
+                statusClass: this.statusClass,
+                isError: this.isError
+            }));
+        } catch (e) { /* quota exceeded or private mode */ }
+    },
+
+    restore() {
+        try {
+            const raw = localStorage.getItem(PROGRESS_STORAGE_KEY);
+            if (!raw) return false;
+            const s = JSON.parse(raw);
+            if (!s.activeTitle) return false;
+            this.activeTitle = s.activeTitle;
+            this.totalOps = s.totalOps || 0;
+            this.completedOps = s.completedOps || 0;
+            this.globalStartTime = s.globalStartTime || null;
+            this.recentDurations = s.recentDurations || [];
+            this.currentLabel = s.currentLabel || '';
+            this.statusText = s.statusText || '';
+            this.statusClass = s.statusClass || 'resume-status processing';
+            this.isError = s.isError || false;
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+};
+
 async function resumeAllMissing(title) {
     const resumeBtn = document.getElementById('resumeAllBtn');
-    const statusEl = document.getElementById('resumeStatus');
     resumeBtn.disabled = true;
 
-    statusEl.style.display = 'block';
-    statusEl.className = 'resume-status processing';
-    statusEl.textContent = 'Checking for missing media...';
+    resumeProgress.setStatus('Checking for missing media...', 'resume-status processing');
 
     try {
         const res = await fetch(`${API_BASE_URL}/get-missing-media?title=${encodeURIComponent(title)}`);
         const data = await res.json();
 
         if (!res.ok) {
-            statusEl.className = 'resume-status error';
-            statusEl.textContent = `Error: ${data.error}`;
+            resumeProgress.setStatus(`Error: ${data.error}`, 'resume-status error');
             resumeBtn.disabled = false;
             return;
         }
 
         const missing = data.missing || [];
         if (missing.length === 0) {
-            statusEl.className = 'resume-status success';
-            statusEl.textContent = 'All audio and video variants are already generated!';
+            resumeProgress.setStatus('All audio and video variants are already generated!', 'resume-status success');
             resumeBtn.disabled = false;
             return;
         }
 
-        statusEl.textContent = `Found ${missing.length} missing items. Starting generation...`;
-
         if (!currentAvatarPath) {
-            statusEl.className = 'resume-status error';
-            statusEl.textContent = 'No avatar image found for this topic.';
+            resumeProgress.setStatus('No avatar image found for this topic.', 'resume-status error');
             resumeBtn.disabled = false;
             return;
         }
 
         const promptText = document.getElementById('videoPrompt').value.trim() || 'talking head';
-        let completed = 0;
+        const needsAudio = missing.filter(m => m.needs_audio);
+        const needsVideo = missing.filter(m => m.needs_video);
 
-        for (const item of missing) {
-            let audioUrl = null;
+        resumeProgress.reset(title);
+        resumeProgress.addOps(needsAudio.length + needsVideo.length);
+        resumeProgress.setStatus(
+            `Found ${missing.length} missing items (${needsAudio.length} audio, ${needsVideo.length} video). Generating audio...`,
+            'resume-status processing'
+        );
 
-            if (item.needs_audio) {
-                statusEl.textContent = `Generating audio ${completed + 1}/${missing.length}: ${item.question.substring(0, 40)}...`;
-                try {
-                    const audioResp = await fetch(`${API_BASE_URL}/generate-audio-single`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            text: item.answer,
-                            title: title,
-                            filename_id: item.variant_id,
-                            category: 'answers',
-                            speechSettings: [],
-                            usePlaceholder: false
-                        })
-                    });
-                    const audioResult = await audioResp.json();
-                    if (audioResp.ok) {
-                        audioUrl = audioResult.audio_url;
-                    } else {
-                        console.error(`Audio failed for ${item.variant_id}:`, audioResult.error);
-                        if (!(await checkComfyHealth())) {
-                            statusEl.className = 'resume-status error';
-                            statusEl.textContent = `ComfyUI crashed. Stopped at ${completed}/${missing.length}. Resume again later.`;
-                            resumeBtn.disabled = false;
-                            return;
-                        }
-                    }
-                } catch (e) {
-                    console.error(`Audio error for ${item.variant_id}:`, e);
+        // Phase 1: Generate all missing audio
+        const audioResults = [];
+
+        for (let i = 0; i < needsAudio.length; i++) {
+            const item = needsAudio[i];
+            const itemDesc = `${item.category} "${item.label}" variant ${item.variant}`;
+            resumeProgress.setStatus(`Generating audio ${i + 1}/${needsAudio.length}: ${itemDesc}`, 'resume-status processing');
+
+            resumeProgress.startOp(`Audio: ${itemDesc}`);
+            try {
+                const audioResp = await fetch(`${API_BASE_URL}/generate-audio-single`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: item.answer,
+                        title: title,
+                        filename_id: item.variant_id,
+                        category: item.category,
+                        speechSettings: [],
+                        usePlaceholder: false
+                    })
+                });
+                const audioResult = await audioResp.json();
+                if (audioResp.ok) {
+                    audioResults.push({ variant_id: item.variant_id, category: item.category, audioUrl: audioResult.audio_url });
+                } else {
+                    console.error(`Audio failed for ${item.variant_id}:`, audioResult.error);
                     if (!(await checkComfyHealth())) {
-                        statusEl.className = 'resume-status error';
-                        statusEl.textContent = `ComfyUI crashed. Stopped at ${completed}/${missing.length}. Resume again later.`;
+                        resumeProgress.setStatus('ComfyUI crashed during audio. Resume again later.', 'resume-status error');
+                        resumeProgress.markError();
+                        resumeProgress.finish();
                         resumeBtn.disabled = false;
                         return;
                     }
                 }
-            } else {
-                audioUrl = `/static/audio/${title}/answers/${item.variant_id}.mp3`;
-            }
-
-            if (item.needs_video && audioUrl) {
-                statusEl.textContent = `Generating video ${completed + 1}/${missing.length}: ${item.question.substring(0, 40)}...`;
-                try {
-                    const videoResp = await fetch(`${API_BASE_URL}/generate-video-single`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            audio_path: audioUrl,
-                            image_path: currentAvatarPath,
-                            title: title,
-                            filename_id: item.variant_id,
-                            category: 'answers',
-                            prompt: promptText,
-                            usePlaceholder: false
-                        })
-                    });
-                    const videoResult = await videoResp.json();
-                    if (videoResp.ok && videoResult.job_id) {
-                        const pollResult = await waitForVideo(videoResult.job_id);
-                        if (!pollResult.ok) {
-                            console.error(`Video failed for ${item.variant_id}:`, pollResult.error);
-                            if (!(await checkComfyHealth())) {
-                                statusEl.className = 'resume-status error';
-                                statusEl.textContent = `ComfyUI crashed. Stopped at ${completed}/${missing.length}. Resume again later.`;
-                                resumeBtn.disabled = false;
-                                return;
-                            }
-                        }
-                    } else {
-                        console.error(`Video failed to start for ${item.variant_id}:`, videoResult.error);
-                        if (!(await checkComfyHealth())) {
-                            statusEl.className = 'resume-status error';
-                            statusEl.textContent = `ComfyUI crashed. Stopped at ${completed}/${missing.length}. Resume again later.`;
-                            resumeBtn.disabled = false;
-                            return;
-                        }
-                    }
-                } catch (e) {
-                    console.error(`Video error for ${item.variant_id}:`, e);
-                    if (!(await checkComfyHealth())) {
-                        statusEl.className = 'resume-status error';
-                        statusEl.textContent = `ComfyUI crashed. Stopped at ${completed}/${missing.length}. Resume again later.`;
-                        resumeBtn.disabled = false;
-                        return;
-                    }
+            } catch (e) {
+                console.error(`Audio error for ${item.variant_id}:`, e);
+                if (!(await checkComfyHealth())) {
+                    resumeProgress.setStatus('ComfyUI crashed during audio. Resume again later.', 'resume-status error');
+                    resumeProgress.markError();
+                    resumeProgress.finish();
+                    resumeBtn.disabled = false;
+                    return;
                 }
             }
-
-            completed++;
-            statusEl.textContent = `Progress: ${completed}/${missing.length} completed`;
+            resumeProgress.completeOp();
         }
 
-        statusEl.className = 'resume-status success';
-        statusEl.textContent = `Done! Generated ${completed} missing items. Refreshing...`;
+        // Phase 2: Generate all missing video
+        const freshAudioMap = {};
+        for (const a of audioResults) {
+            freshAudioMap[a.variant_id] = a.audioUrl;
+        }
+
+        resumeProgress.setStatus(`Audio done. Generating ${needsVideo.length} videos...`, 'resume-status processing');
+
+        for (let i = 0; i < needsVideo.length; i++) {
+            const item = needsVideo[i];
+            const audioUrl = freshAudioMap[item.variant_id] || `/static/audio/${title}/${item.category}/${item.variant_id}.mp3`;
+            const itemDesc = `${item.category} "${item.label}" variant ${item.variant}`;
+            resumeProgress.setStatus(`Generating video ${i + 1}/${needsVideo.length}: ${itemDesc}`, 'resume-status processing');
+
+            resumeProgress.startOp(`Video: ${itemDesc}`);
+            try {
+                const videoResp = await fetch(`${API_BASE_URL}/generate-video-extended`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        audio_path: audioUrl,
+                        image_path: currentAvatarPath,
+                        title: title,
+                        filename_id: item.variant_id,
+                        category: item.category,
+                        prompt: promptText,
+                        usePlaceholder: false
+                    })
+                });
+                const videoResult = await videoResp.json();
+                if (videoResp.ok && videoResult.job_id) {
+                    const pollResult = await waitForVideo(videoResult.job_id);
+                    if (!pollResult.ok) {
+                        console.error(`Video failed for ${item.variant_id}:`, pollResult.error);
+                        if (!(await checkComfyHealth())) {
+                            resumeProgress.setStatus('ComfyUI crashed during video. Resume again later.', 'resume-status error');
+                            resumeProgress.markError();
+                            resumeProgress.finish();
+                            resumeBtn.disabled = false;
+                            return;
+                        }
+                    }
+                } else {
+                    console.error(`Video start failed for ${item.variant_id}:`, videoResult?.error);
+                    if (!(await checkComfyHealth())) {
+                        resumeProgress.setStatus('ComfyUI crashed during video. Resume again later.', 'resume-status error');
+                        resumeProgress.markError();
+                        resumeProgress.finish();
+                        resumeBtn.disabled = false;
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error(`Video error for ${item.variant_id}:`, e);
+                if (!(await checkComfyHealth())) {
+                    resumeProgress.setStatus('ComfyUI crashed during video. Resume again later.', 'resume-status error');
+                    resumeProgress.markError();
+                    resumeProgress.finish();
+                    resumeBtn.disabled = false;
+                    return;
+                }
+            }
+            resumeProgress.completeOp();
+        }
+
+        resumeProgress.setStatus('Done! All missing media generated. Refreshing...', 'resume-status success');
+        resumeProgress.finish();
         resumeBtn.disabled = false;
         await loadFAQs(title);
 
     } catch (e) {
         console.error('Resume error:', e);
-        statusEl.className = 'resume-status error';
-        statusEl.textContent = `Error: ${e.message}`;
+        resumeProgress.setStatus(`Error: ${e.message}`, 'resume-status error');
+        resumeProgress.markError();
+        resumeProgress.finish();
         resumeBtn.disabled = false;
     }
 }

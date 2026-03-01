@@ -476,41 +476,48 @@ def delete_title_route():
 
 @app.route('/get-missing-media', methods=['GET'])
 def get_missing_media():
-    """Return FAQ items that are missing audio or video variants."""
+    """Return items across all categories that are missing audio or video variants."""
     title = request.args.get('title')
     if not title:
         return jsonify({'error': 'Title is required'}), 400
 
     try:
-        faqs = faq_service.get_faqs(title)
-        if not faqs:
-            return jsonify({'missing': [], 'total': 0}), 200
-
         base_dir = app.root_path
         variant_count = 3
-        categories = ['answers']
         missing = []
 
-        for faq in faqs:
-            faq_id = faq.get('id')
+        def check_variants(item_id, text, category, label=''):
             for v in range(1, variant_count + 1):
-                variant_id = f"{faq_id}_{v}"
-                audio_path = os.path.join(base_dir, 'static', 'audio', title, 'answers', f"{variant_id}.mp3")
-                video_path = os.path.join(base_dir, 'static', 'videos', title, 'answers', f"{variant_id}.mp4")
-
+                vid = f"{item_id}_{v}"
+                audio_path = os.path.join(base_dir, 'static', 'audio', title, category, f"{vid}.mp3")
+                video_path = os.path.join(base_dir, 'static', 'videos', title, category, f"{vid}.mp4")
                 needs_audio = not os.path.exists(audio_path)
                 needs_video = not os.path.exists(video_path)
-
                 if needs_audio or needs_video:
                     missing.append({
-                        'id': faq_id,
+                        'variant_id': vid,
                         'variant': v,
-                        'variant_id': variant_id,
-                        'question': faq.get('question', ''),
-                        'answer': faq.get('answer', ''),
+                        'answer': text,
+                        'category': category,
+                        'label': label,
                         'needs_audio': needs_audio,
                         'needs_video': needs_video
                     })
+
+        # 1. FAQ answers + conversational (both stored in SQL)
+        faqs = faq_service.get_faqs(title) or []
+        for faq in faqs:
+            faq_id = faq.get('id', '')
+            cat = 'conversational' if str(faq_id).startswith('conv_') else 'answers'
+            check_variants(faq_id, faq.get('answer', ''), cat, faq.get('question', ''))
+
+        # 2. Rude & no_answer (from defaultResponses.json)
+        default_responses = faq_service.get_default_responses()
+        for category in ['rude', 'no_answer']:
+            texts = default_responses.get(category, [])
+            for i, text in enumerate(texts):
+                base_id = f"{category}_{i + 1}"
+                check_variants(base_id, text, category, f"{category} #{i + 1}")
 
         return jsonify({'missing': missing, 'total': len(missing)}), 200
     except Exception as e:
