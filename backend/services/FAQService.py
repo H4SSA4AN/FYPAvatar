@@ -86,7 +86,8 @@ class FAQService:
                     "id": doc_id,
                     "question": results['documents'][i],
                     "answer": results['metadatas'][i].get('answer', ''),
-                    "title": results['metadatas'][i].get('Title', '')
+                    "title": results['metadatas'][i].get('Title', ''),
+                    "category": results['metadatas'][i].get('category', 'answers')
                 })
 
         return formatted_results

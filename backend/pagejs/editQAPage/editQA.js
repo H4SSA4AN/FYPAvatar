@@ -1,11 +1,16 @@
 const API_BASE_URL = window.location.origin;
 let allTitles = [];
+let currentOtherCategoryItems = [];
+let currentOtherCategoryTitle = '';
+
+const OTHER_CATEGORY_LABELS = { conversational: 'Conversational', rude: 'Rude', no_answer: 'No answer' };
 
 document.addEventListener('DOMContentLoaded', () => {
     fetchTitles();
     setupSearch();
     setupDelete();
     setupResume();
+    setupOtherCategoryFilter();
     resumeProgress.restore();
 });
 
@@ -111,6 +116,9 @@ function setupDelete() {
                 document.getElementById('selectedTitle').textContent = '';
                 document.getElementById('managementControls').style.display = 'none';
                 document.querySelector('#faqTable tbody').innerHTML = '<tr><td colspan="3">Select a topic to view or delete...</td></tr>';
+                setOtherCategoriesPlaceholder('Select a topic to view other category videos.');
+                currentOtherCategoryItems = [];
+                hideOtherCategoryFilter();
                 currentAvatarPath = null;
                 // Refresh titles
                 fetchTitles();
@@ -141,9 +149,15 @@ async function fetchTitles() {
     }
 }
 
+function setOtherCategoriesPlaceholder(text) {
+    const el = document.getElementById('otherCategoriesContent');
+    if (el) el.innerHTML = `<p class="other-categories-placeholder">${text}</p>`;
+}
+
 async function loadFAQs(title) {
     const tbody = document.querySelector('#faqTable tbody');
     tbody.innerHTML = '<tr><td colspan="3">Loading...</td></tr>';
+    setOtherCategoriesPlaceholder('Loading...');
 
     try {
         const encodedTitle = encodeURIComponent(title);
@@ -151,10 +165,15 @@ async function loadFAQs(title) {
         const responses = await Promise.all([
             fetch(`${API_BASE_URL}/faqs?title=${encodedTitle}`),
             fetch(`${API_BASE_URL}/get-videos?title=${encodedTitle}&category=answers`),
-            fetch(`${API_BASE_URL}/get-avatar?title=${encodedTitle}`)
+            fetch(`${API_BASE_URL}/get-videos?title=${encodedTitle}&category=conversational`),
+            fetch(`${API_BASE_URL}/get-avatar?title=${encodedTitle}`),
+            fetch(`${API_BASE_URL}/default-responses`),
+            fetch(`${API_BASE_URL}/get-videos?title=${encodedTitle}&category=rude`),
+            fetch(`${API_BASE_URL}/get-videos?title=${encodedTitle}&category=no_answer`)
         ]);
 
-        for (const res of responses) {
+        for (let i = 0; i < 4; i++) {
+            const res = responses[i];
             if (!res.ok) {
                 console.error(`Fetch failed for ${res.url}: ${res.status} ${res.statusText}`);
                 const text = await res.text();
@@ -164,9 +183,17 @@ async function loadFAQs(title) {
         }
 
         const faqResult = await responses[0].json();
-        const videoResult = await responses[1].json();
-        const avatarResult = await responses[2].json();
-        
+        const answersVideos = (await responses[1].json()).data || [];
+        const conversationalVideos = (await responses[2].json()).data || [];
+        const avatarResult = await responses[3].json();
+        let defaultResponses = { rude: [], no_answer: [] };
+        try {
+            const drRes = await responses[4].json();
+            if (responses[4].ok && drRes) defaultResponses = drRes;
+        } catch (_) { /* use empty */ }
+        const rudeVideos = (await responses[5].json()).data || [];
+        const noAnswerVideos = (await responses[6].json()).data || [];
+
         if (faqResult.message === 'Fetched successfully' || faqResult.data) {
             currentAvatarPath = avatarResult.avatar_path || null;
             
@@ -177,29 +204,127 @@ async function loadFAQs(title) {
                 avatarImg.src = ""; 
             }
 
-            const faqs = faqResult.data;
-            const existingVideos = videoResult.data || [];
+            const faqs = faqResult.data || [];
+            const videosByCategory = {
+                answers: answersVideos,
+                conversational: conversationalVideos,
+                rude: rudeVideos,
+                no_answer: noAnswerVideos
+            };
 
+            const answersFaqs = [];
+            const otherFaqs = [];
             faqs.forEach(faq => {
+                const category = faq.category || 'answers';
+                const videoList = videosByCategory[category] || [];
                 const variants = [];
                 for (let v = 1; v <= 3; v++) {
-                    if (existingVideos.includes(`${faq.id}_${v}.mp4`)) {
+                    if (videoList.includes(`${faq.id}_${v}.mp4`)) {
                         variants.push(v);
                     }
                 }
                 faq.variants = variants;
                 faq.has_video = variants.length > 0;
+                if (category === 'answers') {
+                    answersFaqs.push(faq);
+                } else {
+                    otherFaqs.push(faq);
+                }
             });
 
-            populateFAQTable(faqs);
+            // Build rude items from defaultResponses (id format: rude_1, rude_2, ...; videos: rude_1_1.mp4, ...)
+            (defaultResponses.rude || []).forEach((text, i) => {
+                const baseId = `rude_${i + 1}`;
+                const variants = [];
+                for (let v = 1; v <= 3; v++) {
+                    if (rudeVideos.includes(`${baseId}_${v}.mp4`)) variants.push(v);
+                }
+                otherFaqs.push({
+                    id: baseId,
+                    question: `Rude #${i + 1}`,
+                    answer: text,
+                    title,
+                    category: 'rude',
+                    variants,
+                    has_video: variants.length > 0
+                });
+            });
+
+            // Build no_answer items (id format: no_answer_1, ...; videos: no_answer_1_1.mp4, ...)
+            (defaultResponses.no_answer || []).forEach((text, i) => {
+                const baseId = `no_answer_${i + 1}`;
+                const variants = [];
+                for (let v = 1; v <= 3; v++) {
+                    if (noAnswerVideos.includes(`${baseId}_${v}.mp4`)) variants.push(v);
+                }
+                otherFaqs.push({
+                    id: baseId,
+                    question: `No answer #${i + 1}`,
+                    answer: text,
+                    title,
+                    category: 'no_answer',
+                    variants,
+                    has_video: variants.length > 0
+                });
+            });
+
+            populateFAQTable(answersFaqs);
+            currentOtherCategoryItems = otherFaqs;
+            currentOtherCategoryTitle = title;
+            populateOtherCategoryFilter(otherFaqs);
+            applyOtherCategoryFilter();
         } else {
             tbody.innerHTML = '<tr><td colspan="3">No FAQs found.</td></tr>';
+            setOtherCategoriesPlaceholder('No other category items for this topic.');
+            currentOtherCategoryItems = [];
+            hideOtherCategoryFilter();
         }
 
     } catch (error) {
         console.error("Critical error loading FAQs:", error);
         tbody.innerHTML = `<tr><td colspan="3" style="color: red;">Error: ${error.message}</td></tr>`;
+        setOtherCategoriesPlaceholder('Select a topic to view other category videos.');
+        currentOtherCategoryItems = [];
+        hideOtherCategoryFilter();
     }
+}
+
+function setupOtherCategoryFilter() {
+    const sel = document.getElementById('otherCategoryFilter');
+    if (!sel) return;
+    sel.addEventListener('change', () => applyOtherCategoryFilter());
+}
+
+function populateOtherCategoryFilter(items) {
+    const sel = document.getElementById('otherCategoryFilter');
+    if (!sel) return;
+    const categories = [...new Set((items || []).map(item => item.category).filter(Boolean))].sort();
+    sel.innerHTML = '<option value="all">All</option>';
+    categories.forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        opt.textContent = OTHER_CATEGORY_LABELS[cat] || cat;
+        sel.appendChild(opt);
+    });
+    sel.value = 'all';
+    sel.style.display = categories.length > 0 ? 'block' : 'none';
+}
+
+function hideOtherCategoryFilter() {
+    const sel = document.getElementById('otherCategoryFilter');
+    if (sel) {
+        sel.style.display = 'none';
+        sel.innerHTML = '<option value="all">All</option>';
+    }
+}
+
+function applyOtherCategoryFilter() {
+    const sel = document.getElementById('otherCategoryFilter');
+    const value = sel ? sel.value : 'all';
+    const filtered = value === 'all'
+        ? currentOtherCategoryItems
+        : currentOtherCategoryItems.filter(item => item.category === value);
+    populateOtherCategoriesPanel(filtered, currentOtherCategoryTitle);
 }
 
 function populateFAQTable(faqs) {
@@ -294,11 +419,110 @@ function populateFAQTable(faqs) {
     });
 }
 
+function populateOtherCategoriesPanel(items, title) {
+    const container = document.getElementById('otherCategoriesContent');
+    if (!container) return;
+
+    if (!items || items.length === 0) {
+        container.innerHTML = '<p class="other-categories-placeholder">No other category items for this topic.</p>';
+        return;
+    }
+
+    const encodedTitle = encodeURIComponent(title);
+    container.innerHTML = '';
+
+    items.forEach(faq => {
+        const card = document.createElement('div');
+        card.className = 'other-category-card';
+
+        const categoryLabel = document.createElement('div');
+        categoryLabel.className = 'card-category';
+        categoryLabel.textContent = faq.category || 'other';
+
+        const questionEl = document.createElement('div');
+        questionEl.className = 'card-question';
+        questionEl.textContent = faq.question;
+
+        const answerEl = document.createElement('div');
+        answerEl.className = 'card-answer';
+        answerEl.textContent = faq.answer;
+
+        const videosWrap = document.createElement('div');
+        videosWrap.className = 'card-videos';
+
+        const variants = faq.variants || [];
+        const nextVariant = [1, 2, 3].find(v => !variants.includes(v));
+
+        if (faq.has_video && variants.length > 0) {
+            const carousel = document.createElement('div');
+            carousel.className = 'video-carousel';
+
+            const video = document.createElement('video');
+            const cat = faq.category || 'conversational';
+            video.src = `${API_BASE_URL}/static/videos/${encodedTitle}/${cat}/${faq.id}_${variants[0]}.mp4`;
+            video.controls = true;
+            video.className = 'carousel-video';
+            carousel.appendChild(video);
+
+            if (variants.length > 1) {
+                const controls = document.createElement('div');
+                controls.className = 'carousel-controls';
+                const prevBtn = document.createElement('button');
+                prevBtn.className = 'carousel-arrow';
+                prevBtn.innerHTML = '&#8249;';
+                const label = document.createElement('span');
+                label.className = 'carousel-label';
+                label.textContent = `1 of ${variants.length}`;
+                const nextBtn = document.createElement('button');
+                nextBtn.className = 'carousel-arrow';
+                nextBtn.innerHTML = '&#8250;';
+                let currentIdx = 0;
+                function updateVariant() {
+                    const v = variants[currentIdx];
+                    video.src = `${API_BASE_URL}/static/videos/${encodedTitle}/${cat}/${faq.id}_${v}.mp4`;
+                    label.textContent = `${currentIdx + 1} of ${variants.length}`;
+                }
+                prevBtn.onclick = () => {
+                    currentIdx = (currentIdx - 1 + variants.length) % variants.length;
+                    updateVariant();
+                };
+                nextBtn.onclick = () => {
+                    currentIdx = (currentIdx + 1) % variants.length;
+                    updateVariant();
+                };
+                controls.appendChild(prevBtn);
+                controls.appendChild(label);
+                controls.appendChild(nextBtn);
+                carousel.appendChild(controls);
+            }
+            videosWrap.appendChild(carousel);
+        }
+
+        if (nextVariant !== undefined) {
+            const filenameId = `${faq.id}_${nextVariant}`;
+            const btn = document.createElement('button');
+            btn.textContent = variants.length > 0 ? `Generate variant ${nextVariant}` : 'Generate Video';
+            btn.className = 'generate-btn';
+            btn.onclick = () => {
+                const promptText = document.getElementById('videoPrompt').value.trim() || 'talking head';
+                addToQueue(btn, filenameId, faq.title, faq.answer, promptText, faq.category);
+            };
+            videosWrap.appendChild(btn);
+        }
+
+        card.appendChild(categoryLabel);
+        card.appendChild(questionEl);
+        card.appendChild(answerEl);
+        card.appendChild(videosWrap);
+        container.appendChild(card);
+    });
+}
+
 let currentAvatarPath = null;
 const videoQueue = []; // Queue to store pending requests
 let isProcessingQueue = false; // Flag to check if we are currently generating
 
-function addToQueue(btnElement, id, title, text, prompt) {
+function addToQueue(btnElement, id, title, text, prompt, category) {
     if (!currentAvatarPath) {
         alert("No avatar image found for this topic. Please upload one first.");
         return;
@@ -316,7 +540,8 @@ function addToQueue(btnElement, id, title, text, prompt) {
         id,
         title,
         text,
-        prompt // Store it
+        prompt,
+        category: category || 'answers'
     });
 
     // 3. Update Bubble
@@ -339,7 +564,7 @@ async function processQueue() {
     const currentTask = videoQueue[0]; // Peek at first item
     
     // Update button status to "Generating..."
-    const { btnElement, id, title, text, prompt } = currentTask; // Extract prompt
+    const { btnElement, id, title, text, prompt, category } = currentTask;
     btnElement.textContent = "Generating...";
     btnElement.style.background = "#3498db"; // Blue for processing
 
@@ -365,7 +590,7 @@ async function processQueue() {
                 image_path: currentAvatarPath,
                 title: title,
                 filename_id: id,
-                category: 'answers',
+                category: category || 'answers',
                 prompt: prompt
             })
         });
@@ -402,9 +627,10 @@ async function processQueue() {
             }, 1000); // Poll every second
         });
 
-        // Success (loop continues)
+        // Success: refresh both panels so new video appears
         const cell = btnElement.parentNode;
         cell.innerHTML = '<span class="status-ready">Ready</span>';
+        await loadFAQs(title);
 
     } catch (error) {
         console.error("Queue task failed:", error);
@@ -412,8 +638,7 @@ async function processQueue() {
         btnElement.disabled = false;
         btnElement.style.background = "#e74c3c";
         
-        // Optional: Re-bind click to addToQueue if they want to try again
-        btnElement.onclick = () => addToQueue(btnElement, id, title, text, prompt);
+        btnElement.onclick = () => addToQueue(btnElement, id, title, text, prompt, category);
     } finally {
         // Remove processed item (success or fail)
         videoQueue.shift();

@@ -1800,6 +1800,8 @@ async function createFAQ() {
         return;
     }
 
+
+
    // await generateVideoForFAQ(audioResults);
 
     await generateVideoForFAQExtended(audioResults);
@@ -1810,9 +1812,10 @@ async function createFAQ() {
     await generateDefaultCategoryVideosExtended(title);
     if (generationHalted) return;
 
-   // await generateConversationalVideos(title);
     await generateConversationalVideosExtended(title);
     if (generationHalted) return;
+
+   // await generateConversationalVideos(title);
 
     statusDiv.innerHTML = 'All generation complete!';
     statusDiv.className = 'status-message success';
