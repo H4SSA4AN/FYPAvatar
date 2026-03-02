@@ -79,6 +79,28 @@ class DatabaseService:
         finally:
             conn.close()
 
+    def update_question_answer(self, question_id, title_id, question, answer):
+        conn = self.get_conn()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('''
+                UPDATE questionAnswers SET question = ?, answer = ? WHERE UUID = ? AND title_id = ?
+            ''', (question, answer, question_id, title_id))
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    def delete_question_answer(self, question_id, title_id):
+        conn = self.get_conn()
+        cursor = conn.cursor()
+        try:
+            cursor.execute('DELETE FROM questionAnswers WHERE UUID = ? AND title_id = ?', (question_id, title_id))
+            conn.commit()
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
     def get_titles(self):
         conn = self.get_conn()
         cursor = conn.cursor()

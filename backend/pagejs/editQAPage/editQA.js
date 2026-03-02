@@ -2,6 +2,7 @@ const API_BASE_URL = window.location.origin;
 let allTitles = [];
 let currentOtherCategoryItems = [];
 let currentOtherCategoryTitle = '';
+let modifiedAnswers = {}; // id -> { question, answer } for edit tracking
 
 const OTHER_CATEGORY_LABELS = { conversational: 'Conversational', rude: 'Rude', no_answer: 'No answer' };
 
@@ -11,8 +12,135 @@ document.addEventListener('DOMContentLoaded', () => {
     setupDelete();
     setupResume();
     setupOtherCategoryFilter();
+    setupAddFaq();
     resumeProgress.restore();
 });
+
+function getCurrentTitle() {
+    return document.getElementById('topicSearch') && document.getElementById('topicSearch').value.trim();
+}
+
+function createInfoIcon(tooltipText) {
+    const span = document.createElement('span');
+    span.className = 'info-icon';
+    span.setAttribute('data-tooltip', tooltipText);
+    span.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>';
+    return span;
+}
+
+function wrapButtonWithTooltip(button, tooltipText) {
+    const wrapper = document.createElement('span');
+    wrapper.className = 'btn-with-tooltip';
+    wrapper.appendChild(button);
+    wrapper.appendChild(createInfoIcon(tooltipText));
+    return wrapper;
+}
+
+function setupAddFaq() {
+    const addBtn = document.getElementById('addFaqBtn');
+    const section = document.getElementById('addFaqSection');
+    const cancelBtn = document.getElementById('addFaqCancelBtn');
+    const submitBtn = document.getElementById('addFaqSubmitBtn');
+    const addQuestion = document.getElementById('addQuestion');
+    const addAnswer = document.getElementById('addAnswer');
+    if (!addBtn || !section || !cancelBtn || !submitBtn) return;
+
+    addBtn.addEventListener('click', () => {
+        if (!getCurrentTitle()) {
+            alert('Please select a topic first.');
+            return;
+        }
+        addQuestion.value = '';
+        addAnswer.value = '';
+        section.style.display = 'block';
+    });
+    cancelBtn.addEventListener('click', () => {
+        section.style.display = 'none';
+    });
+    submitBtn.addEventListener('click', async () => {
+        const title = getCurrentTitle();
+        if (!title) return;
+        const question = addQuestion.value.trim();
+        const answer = addAnswer.value.trim();
+        if (!question || !answer) {
+            alert('Please enter both question and answer.');
+            return;
+        }
+        if (!currentAvatarPath) {
+            alert('No avatar image found for this topic. Please upload one first.');
+            return;
+        }
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Adding...';
+        try {
+            const res = await fetch(`${API_BASE_URL}/faq-answer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, question, answer })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to add');
+            const faq = data.data;
+            const statusEl = document.createElement('div');
+            statusEl.id = 'addFaqStatus';
+            statusEl.className = 'add-faq-status';
+            section.appendChild(statusEl);
+            const setStatus = (msg) => { const e = document.getElementById('addFaqStatus'); if (e) e.textContent = msg; };
+            setStatus('Generating audio and video (1/3)...');
+            await generateThreeVariantsForAnswer(faq.id, title, answer, setStatus);
+            setStatus('Done.');
+            section.style.display = 'none';
+            await loadFAQs(title);
+        } catch (e) {
+            alert(e.message || 'Failed to add question-answer.');
+        } finally {
+            const el = document.getElementById('addFaqStatus');
+            if (el) el.remove();
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Add and generate';
+        }
+    });
+}
+
+async function generateThreeVariantsForAnswer(baseId, title, answerText, setStatus) {
+    const prompt = document.getElementById('videoPrompt') && document.getElementById('videoPrompt').value.trim() || 'talking head';
+    for (let v = 1; v <= 3; v++) {
+        if (setStatus) setStatus(`Generating variant ${v}/3...`);
+        const filenameId = `${baseId}_${v}`;
+        const audioRes = await fetch(`${API_BASE_URL}/generate-audio-single`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: answerText, title, filename_id: filenameId, category: 'answers' })
+        });
+        const audioData = await audioRes.json();
+        if (!audioRes.ok) throw new Error(audioData.error || 'Audio failed');
+        const videoRes = await fetch(`${API_BASE_URL}/generate-video-extended`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                audio_path: audioData.audio_url,
+                image_path: currentAvatarPath,
+                title,
+                filename_id: filenameId,
+                category: 'answers',
+                prompt
+            })
+        });
+        const videoData = await videoRes.json();
+        if (!videoRes.ok) throw new Error(videoData.error || 'Video failed');
+        const jobId = videoData.job_id;
+        await new Promise((resolve, reject) => {
+            const interval = setInterval(async () => {
+                try {
+                    const pr = await fetch(`${API_BASE_URL}/progress/${jobId}`);
+                    const pd = await pr.json();
+                    if (pd.status === 'completed') { clearInterval(interval); resolve(); }
+                    else if (pd.status === 'failed') { clearInterval(interval); reject(new Error(pd.error)); }
+                } catch (e) { clearInterval(interval); reject(e); }
+            }, 2000);
+        });
+    }
+}
 
 function setupSearch() {
     const searchInput = document.getElementById('topicSearch');
@@ -69,8 +197,13 @@ function renderDropdown(titles) {
 
 async function selectTopic(title) {
     document.getElementById('selectedTitle').textContent = title;
-    
+    const addSection = document.getElementById('addFaqSection');
+    if (addSection) addSection.style.display = 'none';
+    modifiedAnswers = {};
+
     document.getElementById('managementControls').style.display = 'block';
+    const toolbar = document.getElementById('faqTableToolbar');
+    if (toolbar) toolbar.style.display = 'block';
     document.getElementById('videoPrompt').value = "talking head";
 
     if (resumeProgress.activeTitle === title) {
@@ -115,7 +248,9 @@ function setupDelete() {
                 document.getElementById('topicSearch').value = '';
                 document.getElementById('selectedTitle').textContent = '';
                 document.getElementById('managementControls').style.display = 'none';
-                document.querySelector('#faqTable tbody').innerHTML = '<tr><td colspan="3">Select a topic to view or delete...</td></tr>';
+                const toolbar = document.getElementById('faqTableToolbar');
+                if (toolbar) toolbar.style.display = 'none';
+                document.querySelector('#faqTable tbody').innerHTML = '<tr><td colspan="4">Select a topic to view or delete...</td></tr>';
                 setOtherCategoriesPlaceholder('Select a topic to view other category videos.');
                 currentOtherCategoryItems = [];
                 hideOtherCategoryFilter();
@@ -156,7 +291,7 @@ function setOtherCategoriesPlaceholder(text) {
 
 async function loadFAQs(title) {
     const tbody = document.querySelector('#faqTable tbody');
-    tbody.innerHTML = '<tr><td colspan="3">Loading...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="4">Loading...</td></tr>';
     setOtherCategoriesPlaceholder('Loading...');
 
     try {
@@ -274,7 +409,7 @@ async function loadFAQs(title) {
             populateOtherCategoryFilter(otherFaqs);
             applyOtherCategoryFilter();
         } else {
-            tbody.innerHTML = '<tr><td colspan="3">No FAQs found.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4">No FAQs found.</td></tr>';
             setOtherCategoriesPlaceholder('No other category items for this topic.');
             currentOtherCategoryItems = [];
             hideOtherCategoryFilter();
@@ -282,7 +417,7 @@ async function loadFAQs(title) {
 
     } catch (error) {
         console.error("Critical error loading FAQs:", error);
-        tbody.innerHTML = `<tr><td colspan="3" style="color: red;">Error: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="4" style="color: red;">Error: ${error.message}</td></tr>`;
         setOtherCategoriesPlaceholder('Select a topic to view other category videos.');
         currentOtherCategoryItems = [];
         hideOtherCategoryFilter();
@@ -330,93 +465,177 @@ function applyOtherCategoryFilter() {
 function populateFAQTable(faqs) {
     const tbody = document.querySelector('#faqTable tbody');
     tbody.innerHTML = '';
-    
+    modifiedAnswers = {};
+
     if (!faqs || faqs.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3">No FAQs found for this topic.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="4">No FAQs found for this topic.</td></tr>';
         return;
     }
 
     faqs.forEach(faq => {
         const row = document.createElement('tr');
-        
+        row.dataset.faqId = faq.id;
+
         const qCell = document.createElement('td');
         qCell.textContent = faq.question;
-        
+
         const aCell = document.createElement('td');
         aCell.textContent = faq.answer;
-        
+
         const vCell = document.createElement('td');
-        
+
         if (faq.has_video && faq.variants.length > 0) {
             const carousel = document.createElement('div');
             carousel.className = 'video-carousel';
-
             const video = document.createElement('video');
             const encodedTitle = encodeURIComponent(faq.title);
             video.src = `${API_BASE_URL}/static/videos/${encodedTitle}/answers/${faq.id}_${faq.variants[0]}.mp4`;
             video.controls = true;
             video.className = 'carousel-video';
             carousel.appendChild(video);
-
+            const controls = document.createElement('div');
+            controls.className = 'carousel-controls';
+            const label = document.createElement('span');
+            label.className = 'carousel-label';
+            label.textContent = `1 of ${faq.variants.length}`;
+            let currentIdx = 0;
+            function updateVariant() {
+                const v = faq.variants[currentIdx];
+                video.src = `${API_BASE_URL}/static/videos/${encodedTitle}/answers/${faq.id}_${v}.mp4`;
+                label.textContent = `${currentIdx + 1} of ${faq.variants.length}`;
+            }
             if (faq.variants.length > 1) {
-                const controls = document.createElement('div');
-                controls.className = 'carousel-controls';
-
                 const prevBtn = document.createElement('button');
                 prevBtn.className = 'carousel-arrow';
                 prevBtn.innerHTML = '&#8249;';
-
-                const label = document.createElement('span');
-                label.className = 'carousel-label';
-                label.textContent = `1 of ${faq.variants.length}`;
-
                 const nextBtn = document.createElement('button');
                 nextBtn.className = 'carousel-arrow';
                 nextBtn.innerHTML = '&#8250;';
-
-                let currentIdx = 0;
-
-                function updateVariant() {
-                    const v = faq.variants[currentIdx];
-                    video.src = `${API_BASE_URL}/static/videos/${encodedTitle}/answers/${faq.id}_${v}.mp4`;
-                    label.textContent = `${currentIdx + 1} of ${faq.variants.length}`;
-                }
-
-                prevBtn.onclick = () => {
-                    currentIdx = (currentIdx - 1 + faq.variants.length) % faq.variants.length;
-                    updateVariant();
-                };
-
-                nextBtn.onclick = () => {
-                    currentIdx = (currentIdx + 1) % faq.variants.length;
-                    updateVariant();
-                };
-
+                prevBtn.onclick = () => { currentIdx = (currentIdx - 1 + faq.variants.length) % faq.variants.length; updateVariant(); };
+                nextBtn.onclick = () => { currentIdx = (currentIdx + 1) % faq.variants.length; updateVariant(); };
                 controls.appendChild(prevBtn);
                 controls.appendChild(label);
                 controls.appendChild(nextBtn);
-                carousel.appendChild(controls);
+            } else {
+                controls.appendChild(label);
             }
-
+            carousel.appendChild(controls);
             vCell.appendChild(carousel);
         } else {
-            const btn = document.createElement('button');
-            btn.textContent = "Generate Video";
-            btn.className = "generate-btn";
-            
-            btn.onclick = () => {
-                const promptText = document.getElementById('videoPrompt').value.trim() || "talking head";
-                addToQueue(btn, faq.id, faq.title, faq.answer, promptText);
-            };
-            
-            vCell.appendChild(btn);
+            const noVideos = document.createElement('span');
+            noVideos.className = 'no-videos-label';
+            noVideos.textContent = 'No videos';
+            vCell.appendChild(noVideos);
         }
+
+        const actionsCell = document.createElement('td');
+        actionsCell.className = 'faq-actions-cell';
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'edit-faq-btn';
+        editBtn.textContent = 'Edit';
+        editBtn.onclick = () => enterEditMode(row, faq);
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'delete-faq-btn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.onclick = () => deleteFaqRow(faq);
+        actionsCell.appendChild(wrapButtonWithTooltip(editBtn, 'Edit this question and answer; save will regenerate all 3 video variants'));
+        actionsCell.appendChild(wrapButtonWithTooltip(deleteBtn, 'Delete this answer and its videos'));
 
         row.appendChild(qCell);
         row.appendChild(aCell);
         row.appendChild(vCell);
+        row.appendChild(actionsCell);
         tbody.appendChild(row);
     });
+}
+
+function enterEditMode(row, faq) {
+    const qCell = row.querySelector('td:nth-child(1)');
+    const aCell = row.querySelector('td:nth-child(2)');
+    const vCell = row.querySelector('td:nth-child(3)');
+    const actionsCell = row.querySelector('td:nth-child(4)');
+    const origQ = faq.question;
+    const origA = faq.answer;
+    qCell.innerHTML = '';
+    const qInput = document.createElement('textarea');
+    qInput.rows = 2;
+    qInput.value = origQ;
+    qInput.className = 'edit-faq-input';
+    qCell.appendChild(qInput);
+    aCell.innerHTML = '';
+    const aInput = document.createElement('textarea');
+    aInput.rows = 3;
+    aInput.value = origA;
+    aInput.className = 'edit-faq-input';
+    aCell.appendChild(aInput);
+    actionsCell.innerHTML = '';
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'save-faq-btn';
+    saveBtn.textContent = 'Save';
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type = 'button';
+    cancelBtn.className = 'cancel-faq-btn';
+    cancelBtn.textContent = 'Cancel';
+    saveBtn.onclick = async () => {
+        const question = qInput.value.trim();
+        const answer = aInput.value.trim();
+        if (!question || !answer) { alert('Question and answer cannot be empty.'); return; }
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        const title = faq.title || getCurrentTitle();
+        try {
+            const res = await fetch(`${API_BASE_URL}/faq-answer`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, id: faq.id, question, answer })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Update failed');
+            const setStatus = (msg) => { saveBtn.textContent = msg; };
+            await generateThreeVariantsForAnswer(faq.id, title, answer, setStatus);
+            await loadFAQs(title);
+        } catch (e) {
+            alert(e.message || 'Failed to save.');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+        }
+    };
+    cancelBtn.onclick = () => {
+        qCell.textContent = origQ;
+        aCell.textContent = origA;
+        actionsCell.innerHTML = '';
+        const editBtn = document.createElement('button');
+        editBtn.type = 'button';
+        editBtn.className = 'edit-faq-btn';
+        editBtn.textContent = 'Edit';
+        editBtn.onclick = () => enterEditMode(row, faq);
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'delete-faq-btn';
+        deleteBtn.textContent = 'Delete';
+        deleteBtn.onclick = () => deleteFaqRow(faq);
+        actionsCell.appendChild(wrapButtonWithTooltip(editBtn, 'Edit this question and answer; save will regenerate all 3 video variants'));
+        actionsCell.appendChild(wrapButtonWithTooltip(deleteBtn, 'Delete this answer and its videos'));
+    };
+    actionsCell.appendChild(wrapButtonWithTooltip(saveBtn, 'Save changes and regenerate all 3 video variants for this row'));
+    actionsCell.appendChild(wrapButtonWithTooltip(cancelBtn, 'Discard edits'));
+}
+
+async function deleteFaqRow(faq) {
+    if (!confirm('Delete this answer? This will remove the question-answer and its videos.')) return;
+    const title = faq.title || getCurrentTitle();
+    if (!title) return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/faq-answer?title=${encodeURIComponent(title)}&id=${encodeURIComponent(faq.id)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'Delete failed');
+        await loadFAQs(title);
+    } catch (e) {
+        alert(e.message || 'Failed to delete.');
+    }
 }
 
 function populateOtherCategoriesPanel(items, title) {
@@ -507,7 +726,7 @@ function populateOtherCategoriesPanel(items, title) {
                 const promptText = document.getElementById('videoPrompt').value.trim() || 'talking head';
                 addToQueue(btn, filenameId, faq.title, faq.answer, promptText, faq.category);
             };
-            videosWrap.appendChild(btn);
+            videosWrap.appendChild(wrapButtonWithTooltip(btn, 'Generate missing video variant for this item'));
         }
 
         card.appendChild(categoryLabel);

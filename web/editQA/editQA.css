@@ -647,6 +647,12 @@ tr:hover {
     white-space: nowrap;
 }
 
+.no-videos-label {
+    font-size: 0.9rem;
+    color: #95a5a6;
+    font-style: italic;
+}
+
 /* Progress bar */
 .progress-container {
     margin-top: 1rem;
@@ -681,4 +687,248 @@ tr:hover {
     background: linear-gradient(90deg, #3498db, #2ecc71);
     border-radius: 5px;
     transition: width 0.4s ease;
+}
+
+/* Add FAQ section */
+.faq-table-toolbar {
+    margin-bottom: 1rem;
+}
+
+.add-faq-btn {
+    background-color: #27ae60;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.add-faq-btn:hover {
+    background-color: #219a52;
+}
+
+.add-faq-section {
+    margin-bottom: 1.5rem;
+    padding: 1.25rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: #fafafa;
+}
+
+.add-faq-title {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    color: #2c3e50;
+}
+
+.add-faq-form label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.add-faq-form textarea {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    resize: vertical;
+}
+
+.add-faq-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 0.5rem;
+}
+
+.add-faq-submit-btn {
+    background-color: #3498db;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.add-faq-submit-btn:hover:not(:disabled) {
+    background-color: #2980b9;
+}
+
+.add-faq-submit-btn:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+.add-faq-cancel-btn {
+    background-color: #95a5a6;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.add-faq-cancel-btn:hover {
+    background-color: #7f8c8d;
+}
+
+.add-faq-status {
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: #555;
+}
+
+/* FAQ table edit mode & actions */
+.edit-faq-input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.9rem;
+    resize: vertical;
+}
+
+.faq-actions-cell {
+    white-space: nowrap;
+}
+
+.edit-faq-btn,
+.delete-faq-btn,
+.save-faq-btn,
+.cancel-faq-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    margin-right: 6px;
+}
+
+.edit-faq-btn {
+    background-color: #3498db;
+    color: white;
+}
+
+.edit-faq-btn:hover {
+    background-color: #2980b9;
+}
+
+.delete-faq-btn {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.delete-faq-btn:hover {
+    background-color: #c0392b;
+}
+
+.save-faq-btn {
+    background-color: #27ae60;
+    color: white;
+}
+
+.save-faq-btn:hover:not(:disabled) {
+    background-color: #219a52;
+}
+
+.save-faq-btn:disabled {
+    background-color: #95a5a6;
+    cursor: not-allowed;
+}
+
+.cancel-faq-btn {
+    background-color: #95a5a6;
+    color: white;
+}
+
+.cancel-faq-btn:hover {
+    background-color: #7f8c8d;
+}
+
+/* Button + info icon wrapper (same pattern as createQA) */
+.btn-with-tooltip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Info icon (little i) - same style as createQA */
+.info-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 18px;
+    height: 18px;
+    cursor: help;
+    vertical-align: middle;
+    position: relative;
+    flex-shrink: 0;
+    color: #555;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.info-icon:hover {
+    opacity: 1;
+}
+
+.info-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Tooltips (same style as createQA) */
+[data-tooltip] {
+    position: relative;
+}
+
+[data-tooltip]::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%) translateY(4px);
+    background-color: #2c3e50;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 999;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+[data-tooltip]::before {
+    content: '';
+    position: absolute;
+    bottom: calc(100% + 2px);
+    left: 50%;
+    transform: translateX(-50%);
+    border: 6px solid transparent;
+    border-top-color: #2c3e50;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+    z-index: 999;
+}
+
+[data-tooltip]:hover::after,
+[data-tooltip]:hover::before {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
 }
