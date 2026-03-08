@@ -97,6 +97,60 @@ def get_faqs():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/faq-answer', methods=['POST'])
+def add_faq_answer():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid request'}), 400
+    title = data.get('title')
+    question = data.get('question')
+    answer = data.get('answer')
+    if not title or not question or not answer:
+        return jsonify({'error': 'title, question, and answer are required'}), 400
+    try:
+        faq = faq_service.add_faq_single(title, question, answer)
+        return jsonify({'message': 'Added successfully', 'data': faq}), 201
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/faq-answer', methods=['PUT'])
+def update_faq_answer():
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid request'}), 400
+    title = data.get('title')
+    faq_id = data.get('id')
+    question = data.get('question')
+    answer = data.get('answer')
+    if not title or not faq_id or question is None or answer is None:
+        return jsonify({'error': 'title, id, question, and answer are required'}), 400
+    try:
+        faq = faq_service.update_faq_single(title, faq_id, question, answer)
+        return jsonify({'message': 'Updated successfully', 'data': faq}), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/faq-answer', methods=['DELETE'])
+def delete_faq_answer():
+    title = request.args.get('title')
+    faq_id = request.args.get('id')
+    if not title or not faq_id:
+        return jsonify({'error': 'title and id are required'}), 400
+    try:
+        faq_service.delete_faq_single(title, faq_id)
+        return jsonify({'message': 'Deleted successfully'}), 200
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 404
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/query', methods=['POST'])
 def query_faq():
     data = request.get_json()
@@ -219,7 +273,7 @@ def generate_audio_single_route():
             audio_url = f"/static/audio/{title}/{category}/{save_filename}"
             return jsonify({'audio_url': audio_url}), 200
         else:
-            audio_url = comfy_service.generate_audio_single(text, title, filename_id, speechSettings)
+            audio_url = comfy_service.generate_audio_single(text, title, filename_id, speechSettings, category)
             if audio_url:
                  return jsonify({'audio_url': audio_url}), 200
             else:

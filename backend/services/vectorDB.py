@@ -42,6 +42,11 @@ class VectorDBService:
             where={"Title": title}
         )
 
+    def delete_by_ids(self, ids):
+        """Delete documents by their ids."""
+        if ids:
+            self.collection.delete(ids=ids)
+
     # --- Rude collection methods ---
 
     def add_rude_documents(self, ids, documents, metadatas=None):

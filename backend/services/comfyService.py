@@ -285,11 +285,14 @@ class ComfyService:
         return None
 
 
-    def generate_audio_single(self, text, title, filename_id, speechSettings):
+    # Default emotion weights when speechSettings not provided (e.g. from editQA add flow)
+    DEFAULT_SPEECH_SETTINGS = [0.65, 0, 0, 0, 0, 0, 0.6, 0.3]  # Happy, Angry, Sad, Surprised, Afraid, Disgusted, Calm, Melancholic
+
+    def generate_audio_single(self, text, title, filename_id, speechSettings, category='answers'):
         workflow_path = "../backend/ComfyAPIs/IndexTTS-2.json"
         
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        output_dir = os.path.join(base_dir, 'static', 'audio', title)
+        output_dir = os.path.join(base_dir, 'static', 'audio', title, category)
         os.makedirs(output_dir, exist_ok=True)
 
         save_filename = f"{filename_id}.mp3"
@@ -297,19 +300,17 @@ class ComfyService:
 
         if os.path.exists(save_path):
             print(f"Audio already exists for {filename_id}, skipping generation.")
-            return f"/static/audio/{title}/{save_filename}"
+            return f"/static/audio/{title}/{category}/{save_filename}"
 
         with open(workflow_path, 'r', encoding="utf-8") as f:
             workflow = json.load(f)
 
-        workflow["125"]["inputs"]["Happy"] = speechSettings[0]
-        workflow["125"]["inputs"]["Angry"] = speechSettings[1]
-        workflow["125"]["inputs"]["Sad"] = speechSettings[2]
-        workflow["125"]["inputs"]["Surprised"] = speechSettings[3]
-        workflow["125"]["inputs"]["Afraid"] = speechSettings[4]
-        workflow["125"]["inputs"]["Disgusted"] = speechSettings[5]
-        workflow["125"]["inputs"]["Calm"] = speechSettings[6]
-        workflow["125"]["inputs"]["Melancholic"] = speechSettings[7]
+        # Use defaults when speechSettings missing or too short (e.g. editQA add/edit flow)
+        settings = list(speechSettings) if speechSettings else []
+        defaults = self.DEFAULT_SPEECH_SETTINGS
+        for i in range(8):
+            val = settings[i] if i < len(settings) and settings[i] is not None else defaults[i]
+            workflow["125"]["inputs"][["Happy", "Angry", "Sad", "Surprised", "Afraid", "Disgusted", "Calm", "Melancholic"][i]] = float(val)
 
         # Node 82 is PrimitiveStringMultiline (Text Input)
         workflow["82"]["inputs"]["value"] += " " + text + " [pause:0.5s]"
@@ -340,7 +341,7 @@ class ComfyService:
                 with open(save_path, 'wb') as audio_file:
                     audio_file.write(audio_data)
                 
-                return f"/static/audio/{title}/{save_filename}"
+                return f"/static/audio/{title}/{category}/{save_filename}"
         
         return None
 

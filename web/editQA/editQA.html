@@ -52,8 +52,14 @@
 
                 <!-- Bottom: Actions -->
                 <div class="actions-section">
-                    <button id="resumeAllBtn" class="resume-btn">Resume All Missing</button>
-                    <button id="deleteBtn" class="delete-btn">Delete Entire Topic</button>
+                    <span class="btn-with-tooltip">
+                        <button id="resumeAllBtn" class="resume-btn">Resume All Missing</button>
+                        <span class="info-icon" data-tooltip="Generate any missing audio and video variants for this topic"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+                    </span>
+                    <span class="btn-with-tooltip">
+                        <button id="deleteBtn" class="delete-btn">Delete Entire Topic</button>
+                        <span class="info-icon" data-tooltip="Permanently delete this topic and all its data"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+                    </span>
                 </div>
                 <div id="resumeStatus" class="resume-status" style="display: none;"></div>
                 <div id="resumeProgressContainer" class="progress-container" style="display: none;">
@@ -67,6 +73,32 @@
                 </div>
             </div>
 
+            <!-- Add new Q&A (answers only) -->
+            <div id="addFaqSection" class="add-faq-section" style="display: none;">
+                <h3 class="add-faq-title">Add question-answer</h3>
+                <div class="add-faq-form">
+                    <label for="addQuestion">Question</label>
+                    <textarea id="addQuestion" rows="2" placeholder="Question text"></textarea>
+                    <label for="addAnswer">Answer</label>
+                    <textarea id="addAnswer" rows="3" placeholder="Answer text"></textarea>
+                    <div class="add-faq-actions">
+                        <span class="btn-with-tooltip">
+                            <button type="button" id="addFaqSubmitBtn" class="add-faq-submit-btn">Add and generate</button>
+                            <span class="info-icon" data-tooltip="Save the new Q&A and generate 3 audio/video variants"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+                        </span>
+                        <span class="btn-with-tooltip">
+                            <button type="button" id="addFaqCancelBtn" class="add-faq-cancel-btn">Cancel</button>
+                            <span class="info-icon" data-tooltip="Close without adding"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div id="faqTableToolbar" class="faq-table-toolbar" style="display: none;">
+                <span class="btn-with-tooltip">
+                    <button type="button" id="addFaqBtn" class="add-faq-btn">Add question-answer</button>
+                    <span class="info-icon" data-tooltip="Add a new question-answer pair to this topic"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+                </span>
+            </div>
             <!-- FAQ (answers) Table only -->
             <div class="table-container">
                 <table id="faqTable">
@@ -75,10 +107,11 @@
                             <th>Question</th>
                             <th>Answer</th>
                             <th>Video</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td colspan="3">Select a topic to view or delete...</td></tr>
+                        <tr><td colspan="4">Select a topic to view or delete...</td></tr>
                     </tbody>
                 </table>
             </div>

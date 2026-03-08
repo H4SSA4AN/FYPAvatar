@@ -92,6 +92,66 @@ class FAQService:
 
         return formatted_results
 
+    def add_faq_single(self, title, question, answer):
+        """Add a single FAQ (answers category) for the given title."""
+        faq_id = str(uuid.uuid4())
+        self.vector_db_service.add_documents(
+            ids=[faq_id],
+            documents=[question],
+            metadatas=[{"answer": answer, "Title": title, "category": "answers"}]
+        )
+        title_id = self.get_title_id(title)
+        if not title_id:
+            raise ValueError(f"Title not found: {title}")
+        self.database_service.add_question_answer(faq_id, title_id, question, answer)
+        return {"id": faq_id, "question": question, "answer": answer, "title": title, "category": "answers"}
+
+    def update_faq_single(self, title, faq_id, question, answer):
+        """Update a single FAQ by id (Chroma delete + re-add, SQL update)."""
+        self.vector_db_service.delete_by_ids([faq_id])
+        self.vector_db_service.add_documents(
+            ids=[faq_id],
+            documents=[question],
+            metadatas=[{"answer": answer, "Title": title, "category": "answers"}]
+        )
+        title_id = self.get_title_id(title)
+        if not title_id:
+            raise ValueError(f"Title not found: {title}")
+        updated = self.database_service.update_question_answer(faq_id, title_id, question, answer)
+        if not updated:
+            raise ValueError(f"FAQ not found: {faq_id}")
+        return {"id": faq_id, "question": question, "answer": answer, "title": title, "category": "answers"}
+
+    def _delete_faq_files(self, title, faq_id):
+        """Remove video and audio files for a single FAQ (optional cleanup)."""
+        backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        for subdir, category in [("videos", "answers"), ("audio", None)]:
+            base = os.path.join(backend_dir, "static", subdir, title)
+            if category:
+                base = os.path.join(base, category)
+            if not os.path.isdir(base):
+                continue
+            try:
+                for name in os.listdir(base):
+                    if name.startswith(faq_id) and (name.endswith(".mp4") or name.endswith(".mp3")):
+                        path = os.path.join(base, name)
+                        if os.path.isfile(path):
+                            os.remove(path)
+            except OSError as e:
+                print(f"Error deleting files for {faq_id}: {e}")
+
+    def delete_faq_single(self, title, faq_id):
+        """Delete a single FAQ by id from Chroma and SQL; optionally remove related files."""
+        self.vector_db_service.delete_by_ids([faq_id])
+        title_id = self.get_title_id(title)
+        if not title_id:
+            raise ValueError(f"Title not found: {title}")
+        deleted = self.database_service.delete_question_answer(faq_id, title_id)
+        if not deleted:
+            raise ValueError(f"FAQ not found: {faq_id}")
+        self._delete_faq_files(title, faq_id)
+        return True
+
     def query_faq(self, query_text, title="none"):
         query_texts = [query_text] if isinstance(query_text, str) else query_text
         print(f"\n[QUERY] Input: '{query_text}' | Title: '{title}'")
