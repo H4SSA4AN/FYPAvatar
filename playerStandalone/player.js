@@ -13,6 +13,7 @@ let audioStream = null;
 
 let allTitles = [];
 let currentTitle = null;
+let encodedTitle = null;
 let idleTimer = null;
 let defaultResponses = null;
 const IDLE_TIMEOUT_MS = 45000;
@@ -195,6 +196,7 @@ function renderDropdown(titles) {
 
 async function selectTopic(title) {
     currentTitle = title;
+    encodedTitle = encodeURIComponent(currentTitle);
 
     const toggleBtn = document.getElementById('toggleQuestionsBtn');
     if (toggleBtn) {
@@ -210,22 +212,22 @@ async function selectTopic(title) {
 
 // === VIDEO PLAYBACK ===
 
-function playIntroVideo(title) {
-    const introUrl = `${API_BASE_URL}/static/videos/Intro/Hello.mp4`;
-    playIdleVideo(title);
+function playIntroVideo() {
+    const introUrl = `${API_BASE_URL}/static/videos/${encodedTitle}/Intro.mp4`;
+    playIdleVideo();
     playActiveVideo(introUrl, () => {
         console.log("Intro finished. Revealing Idle.");
         resetIdleTimer();
     });
 }
 
-function playIdleVideo(title) {
+function playIdleVideo() {
     const idleVideo = document.getElementById('idle-video');
     const activeVideo = document.getElementById('active-video');
     if (!idleVideo) return;
 
-    const idleUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(title)}/Idle.mp4`;
-    if (!idleVideo.src.includes(encodeURIComponent(title))) {
+    const idleUrl = `${API_BASE_URL}/static/videos/${encodedTitle}/Idle.mp4`;
+    if (!idleVideo.src.includes(encodedTitle)) {
         idleVideo.src = idleUrl;
     }
 
@@ -340,8 +342,8 @@ function resetIdleTimer() {
 
 function playIdleTooLongVideo() {
     if (!currentTitle) return;
-    console.log("Idle timeout reached. Playing IdleTooLong.");
-    const tooLongUrl = `${API_BASE_URL}/static/videos/IdleTooLong/IdleTooLong.mp4`;
+    console.log("Idle timeout reached. Playing IdleTooLong. at " + currentTitle);
+    const tooLongUrl = `${API_BASE_URL}/static/videos/${encodedTitle}/IdleTooLong.mp4`;
     playActiveVideo(tooLongUrl, () => {
         console.log("IdleTooLong finished. Revealing Idle.");
         resetIdleTimer();

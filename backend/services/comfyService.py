@@ -360,7 +360,8 @@ class ComfyService:
     def generate_video_talking_head(self, audio_path, image_path, title, filename_id, prompt_text, category='answers', progress_callback=None):
         workflow_path = "../backend/ComfyAPIs/InfiniteTalkWorkflow.json"
         
-        output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'videos', title, category)
+        base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'videos', title)
+        output_dir = os.path.join(base_dir, category) if category else base_dir
         os.makedirs(output_dir, exist_ok=True)
 
         # Upload Audio to ComfyUI
@@ -423,8 +424,9 @@ class ComfyService:
                  
                  with open(save_path, 'wb') as f:
                      f.write(video_data)
-                     
-                 return f"/static/videos/{title}/{category}/{save_filename}"
+                 
+                 url_path = f"/static/videos/{title}/{category}/{save_filename}" if category else f"/static/videos/{title}/{save_filename}"
+                 return url_path
         
         return None
 
@@ -568,7 +570,8 @@ class ComfyService:
         If *num_chunks* is None it is calculated from the audio length.
         """
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        output_dir = os.path.join(base_dir, 'static', 'videos', title, category)
+        videos_base = os.path.join(base_dir, 'static', 'videos', title)
+        output_dir = os.path.join(videos_base, category) if category else videos_base
         os.makedirs(output_dir, exist_ok=True)
 
         # --- Upload audio ---
@@ -628,7 +631,8 @@ class ComfyService:
                 save_path = os.path.join(output_dir, save_filename)
                 with open(save_path, 'wb') as f:
                     f.write(video_data)
-                return f"/static/videos/{title}/{category}/{save_filename}"
+                url_path = f"/static/videos/{title}/{category}/{save_filename}" if category else f"/static/videos/{title}/{save_filename}"
+                return url_path
 
         print(f"[Extended] No video output found for node {output_node_id}")
         return None
