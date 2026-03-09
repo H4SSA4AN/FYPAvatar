@@ -9,7 +9,6 @@ import os
 import yaml
 import time
 import math
-import subprocess
 
 
 class ComfyService:
@@ -437,17 +436,15 @@ class ComfyService:
     SECONDS_PER_CHUNK = 3.0
 
     def _get_audio_duration(self, audio_path):
-        """Return audio duration in seconds using ffprobe."""
+        """Return audio duration in seconds using mutagen (no external deps)."""
         try:
-            result = subprocess.run(
-                ['ffprobe', '-v', 'quiet', '-show_entries',
-                 'format=duration', '-of', 'csv=p=0', audio_path],
-                capture_output=True, text=True
-            )
-            return float(result.stdout.strip())
+            from mutagen import File
+            audio = File(audio_path)
+            if audio is not None and hasattr(audio.info, 'length'):
+                return float(audio.info.length)
         except Exception as e:
-            print(f"[Extended] ffprobe failed ({e}), defaulting to 3s")
-            return 3.0
+            print(f"[Extended] mutagen failed ({e}), defaulting to 3s")
+        return 3.0
 
     TEMPLATE_PATH = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
