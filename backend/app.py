@@ -31,6 +31,19 @@ except Exception as e:
 PROGRESS_STORE = {}
 
 
+@app.after_request
+def add_no_cache_headers(response):
+    try:
+        path = request.path or ''
+        if path.startswith('/static/videos/') or path.startswith('/static/images/'):
+            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+    except Exception:
+        pass
+    return response
+
+
 def _video_output_path(title, category, filename):
     """Return (output_dir, video_url). When category is empty, save to title folder."""
     base = os.path.join(app.root_path, 'static', 'videos', title)
@@ -311,11 +324,12 @@ def generate_video_single_route():
     category = data.get('category', 'answers') or None
     if category == '':
         category = None
+    category_for_path = category or ''
 
     audio_only = data.get('audioOnly', False)
 
     if use_placeholder:
-        output_dir, video_url = _video_output_path(title, category or '', f"{filename_id}.mp4")
+        output_dir, video_url = _video_output_path(title, category_for_path, f"{filename_id}.mp4")
         save_filename = f"{filename_id}.mp4"
         save_path = os.path.join(output_dir, save_filename)
         os.makedirs(output_dir, exist_ok=True)
@@ -351,17 +365,16 @@ def generate_video_single_route():
             # Pure placeholder -- just copy the silent video
             shutil.copy(placeholder_path, save_path)
 
-        job_id = filename_id
+        job_id = f"{title}__{category_for_path or 'root'}__{filename_id}__{uuid.uuid4().hex}"
         PROGRESS_STORE[job_id] = { "status": "completed", "progress": 100, "eta": 0, "url": video_url }
         return jsonify({'job_id': job_id, 'status': 'started'}), 202
     else:
-        # Use the filename_id (UUID) as the job_id since it's unique per question
-        job_id = filename_id 
+        job_id = f"{title}__{category_for_path or 'root'}__{filename_id}__{uuid.uuid4().hex}"
         
         # Initialize progress
         PROGRESS_STORE[job_id] = { "status": "processing", "progress": 0, "eta": 0 }
 
-        thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, category or '', job_id))
+        thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, category_for_path, job_id))
         thread.start()
 
         return jsonify({'job_id': job_id, 'status': 'started'}), 202
@@ -373,6 +386,10 @@ def video_worker_extended(audio_path, image_path, title, filename_id, prompt, nu
         PROGRESS_STORE[job_id]['eta'] = int(eta)
 
     try:
+        print(
+            f"[Extended][Worker] job_id={job_id} title='{title}' category='{category}' "
+            f"filename_id='{filename_id}' image_path='{image_path}'"
+        )
         video_url = comfy_service.generate_video_extended(
             audio_path, image_path, title, filename_id, prompt,
             category=category, num_chunks=num_chunks,
@@ -417,6 +434,11 @@ def generate_video_extended_route():
         category = None
     category_for_path = category or ''
 
+    print(
+        f"[Extended][Route] title='{title}' category='{category_for_path}' "
+        f"filename_id='{filename_id}' image_path='{image_path}' use_placeholder={use_placeholder}"
+    )
+
     audio_only = data.get('audioOnly', False)
 
     if use_placeholder:
@@ -448,11 +470,11 @@ def generate_video_extended_route():
         else:
             shutil.copy(placeholder_path, save_path)
 
-        job_id = filename_id
+        job_id = f"{title}__{category_for_path or 'root'}__{filename_id}__{uuid.uuid4().hex}"
         PROGRESS_STORE[job_id] = {"status": "completed", "progress": 100, "eta": 0, "url": video_url}
         return jsonify({'job_id': job_id, 'status': 'started'}), 202
     else:
-        job_id = filename_id
+        job_id = f"{title}__{category_for_path or 'root'}__{filename_id}__{uuid.uuid4().hex}"
         PROGRESS_STORE[job_id] = {"status": "processing", "progress": 0, "eta": 0}
 
         thread = threading.Thread(
@@ -480,16 +502,26 @@ def upload_avatar():
 
     try:
         # Create directory for the title if it doesn't exist
-        # We can save it in static/temp or static/images/Title
         upload_dir = os.path.join(app.root_path, 'static', 'images', title)
         os.makedirs(upload_dir, exist_ok=True)
-        
-        filename = f"avatar_{uuid.uuid4()}.png"
+
+        # Remove any existing avatar images so there is always exactly one file
+        _AVATAR_EXTS = {'.png', '.jpg', '.jpeg', '.webp'}
+        for old_file in os.listdir(upload_dir):
+            if os.path.splitext(old_file)[1].lower() in _AVATAR_EXTS:
+                try:
+                    os.remove(os.path.join(upload_dir, old_file))
+                except OSError:
+                    pass
+
+        # Always save as the canonical filename so every generation stage uses the same image
+        filename = 'avatar.png'
         filepath = os.path.join(upload_dir, filename)
         file.save(filepath)
         
         # Return the relative path
         image_path = f"/static/images/{title}/{filename}"
+        print(f"[Upload] Saved avatar for '{title}' → {image_path}")
         return jsonify({'message': 'Avatar uploaded successfully', 'image_path': image_path}), 200
 
     except Exception as e:

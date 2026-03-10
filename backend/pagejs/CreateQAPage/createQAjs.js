@@ -1105,16 +1105,15 @@ async function generateVideoForFAQ(audioResults) {
 }
 
 
-async function generateVideoForFAQExtended(audioResults) {
+async function generateVideoForFAQExtended(audioResults, uploadedImagePath) {
     const title = document.getElementById('title').value;
     const statusDiv = document.getElementById('statusMessage');
     const videoPrompt = document.getElementById('videoPrompt').value;
     const audioOnly = document.getElementById('audioOnly').checked;
     const usePlaceholders = audioOnly ? true : document.getElementById('usePlaceholders').checked;
 
-    let uploadedImagePath = await uploadAvatarImage(title);
     if (!uploadedImagePath) {
-        console.error("Failed to upload avatar image for video generation.");
+        console.error("No avatar image path provided for video generation.");
         return;
     }
 
@@ -1173,7 +1172,7 @@ async function generateVideoForFAQExtended(audioResults) {
 }
 
 
-async function generateTitleVideos(title) {
+async function generateTitleVideos(title, uploadedImagePath) {
     const statusDiv = document.getElementById('statusMessage');
     const audioOnly = document.getElementById('audioOnly').checked;
     const videoPrompt = document.getElementById('videoPrompt').value;
@@ -1189,9 +1188,8 @@ async function generateTitleVideos(title) {
         document.getElementById('speechMelancholic').value
     ];
 
-    let uploadedImagePath = await uploadAvatarImage(title);
     if (!uploadedImagePath) {
-        console.error("Failed to upload avatar image for title video generation.");
+        console.error("No avatar image path provided for title video generation.");
         return;
     }
 
@@ -1415,7 +1413,7 @@ async function generateDefaultCategoryVideos(title) {
 }
 
 
-async function generateDefaultCategoryVideosExtended(title) {
+async function generateDefaultCategoryVideosExtended(title, uploadedImagePath) {
     const statusDiv = document.getElementById('statusMessage');
     const audioOnly = document.getElementById('audioOnly').checked;
     const videoPrompt = document.getElementById('videoPrompt').value;
@@ -1440,9 +1438,8 @@ async function generateDefaultCategoryVideosExtended(title) {
         return;
     }
 
-    let uploadedImagePath = await uploadAvatarImage(title);
     if (!uploadedImagePath) {
-        console.error("Failed to upload avatar image for default category video generation.");
+        console.error("No avatar image path provided for default category video generation.");
         return;
     }
 
@@ -1697,7 +1694,7 @@ async function generateConversationalVideos(title) {
 }
 
 
-async function generateConversationalVideosExtended(title) {
+async function generateConversationalVideosExtended(title, uploadedImagePath) {
     const statusDiv = document.getElementById('statusMessage');
     const audioOnly = document.getElementById('audioOnly').checked;
     const videoPrompt = document.getElementById('videoPrompt').value;
@@ -1739,9 +1736,8 @@ async function generateConversationalVideosExtended(title) {
         return;
     }
 
-    let uploadedImagePath = await uploadAvatarImage(title);
     if (!uploadedImagePath) {
-        console.error("Failed to upload avatar image for conversational video generation.");
+        console.error("No avatar image path provided for conversational video generation.");
         return;
     }
 
@@ -1876,18 +1872,27 @@ async function createFAQ() {
 
 
 
+    // Upload the avatar image exactly once — all generators will reuse the same path.
+    const uploadedImagePath = await uploadAvatarImage(title);
+    if (!uploadedImagePath) {
+        console.error("Failed to upload avatar image. Aborting generation.");
+        progress.hide();
+        return;
+    }
+    console.log(`[createFAQ] Avatar uploaded once → ${uploadedImagePath}`);
+
    // await generateVideoForFAQ(audioResults);
 
-    await generateVideoForFAQExtended(audioResults);
+    await generateVideoForFAQExtended(audioResults, uploadedImagePath);
     if (generationHalted) return;
 
-    await generateTitleVideos(title);
+    await generateTitleVideos(title, uploadedImagePath);
     if (generationHalted) return;
 
-    await generateDefaultCategoryVideosExtended(title);
+    await generateDefaultCategoryVideosExtended(title, uploadedImagePath);
     if (generationHalted) return;
 
-    await generateConversationalVideosExtended(title);
+    await generateConversationalVideosExtended(title, uploadedImagePath);
     if (generationHalted) return;
 
    // await generateConversationalVideos(title);

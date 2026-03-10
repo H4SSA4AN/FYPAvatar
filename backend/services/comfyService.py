@@ -25,6 +25,9 @@ class ComfyService:
 
         self.client_id = str(uuid.uuid4())
 
+    def _safe_token(self, value):
+        return ''.join(ch if ch.isalnum() else '_' for ch in str(value))[:80]
+
     def queue_prompt(self, prompt_workflow):
         p = {"prompt": prompt_workflow, "client_id": self.client_id}
         data = json.dumps(p).encode('utf-8')
@@ -369,18 +372,21 @@ class ComfyService:
              print(f"Audio file not found: {local_audio_path}")
              return None
              
-        audio_filename = f"audio_{filename_id}.mp3"
+        unique_token = uuid.uuid4().hex[:8]
+        safe_title = self._safe_token(title)
+        safe_id = self._safe_token(filename_id)
+        audio_filename = f"audio_{safe_title}_{safe_id}_{unique_token}.mp3"
         self.upload_file(local_audio_path, audio_filename)
 
         # Upload Image to ComfyUI
         if image_path.startswith("static") or image_path.startswith("/static"):
              local_image_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), image_path.lstrip('/'))
              if os.path.exists(local_image_path):
-                 image_filename = f"image_{filename_id}.png"
+                 image_filename = f"image_{safe_title}_{safe_id}_{unique_token}.png"
                  self.upload_file(local_image_path, image_filename)
              else:
                  print(f"Image file not found: {local_image_path}")
-                 image_filename = os.path.basename(image_path)
+                 return None
         else:
              image_filename = os.path.basename(image_path)
 
@@ -571,26 +577,37 @@ class ComfyService:
         output_dir = os.path.join(videos_base, category) if category else videos_base
         os.makedirs(output_dir, exist_ok=True)
 
+        print(
+            f"[Extended][Service] title='{title}' category='{category}' filename_id='{filename_id}' "
+            f"audio_path='{audio_path}' image_path='{image_path}'"
+        )
+
         # --- Upload audio ---
         local_audio_path = os.path.join(base_dir, audio_path.lstrip('/'))
         if not os.path.exists(local_audio_path):
             print(f"[Extended] Audio file not found: {local_audio_path}")
             return None
 
-        audio_filename = f"audio_{filename_id}.mp3"
+        unique_token = uuid.uuid4().hex[:8]
+        safe_title = self._safe_token(title)
+        safe_id = self._safe_token(filename_id)
+        audio_filename = f"audio_{safe_title}_{safe_id}_{unique_token}.mp3"
         self.upload_file(local_audio_path, audio_filename)
 
         # --- Upload image ---
         if image_path.startswith("static") or image_path.startswith("/static"):
             local_image_path = os.path.join(base_dir, image_path.lstrip('/'))
+            print(f"[Extended][Service] Resolved local image path: {local_image_path}")
             if os.path.exists(local_image_path):
-                image_filename = f"image_{filename_id}.png"
+                image_filename = f"image_{safe_title}_{safe_id}_{unique_token}.png"
+                print(f"[Extended][Service] Uploading image file as: {image_filename}")
                 self.upload_file(local_image_path, image_filename)
             else:
                 print(f"[Extended] Image not found: {local_image_path}")
-                image_filename = os.path.basename(image_path)
+                return None
         else:
             image_filename = os.path.basename(image_path)
+            print(f"[Extended][Service] Using provided image filename: {image_filename}")
 
         # --- Determine chunk count ---
         if num_chunks is None:
