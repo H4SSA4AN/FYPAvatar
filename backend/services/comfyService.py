@@ -45,16 +45,16 @@ class ComfyService:
         with urllib.request.urlopen(f"http://{self.server_addr}/history/{prompt_id}") as response:
             return json.loads(response.read())
 
-    def execute_workflow(self, workflow, timeout=120, progress_callback=None):
+    def execute_workflow(self, workflow, progress_callback=None):
         """
         Queue a workflow on ComfyUI and block until completion.
         Verifies the prompt is queued, tracks execution start, handles
-        errors/interruptions, and enforces a recv timeout.
+        errors/interruptions, and waits for ComfyUI to finish.
 
         Returns (prompt_id, history) on success, or None on failure.
         """
         ws = websocket.WebSocket()
-        ws.connect(f"ws://{self.server_addr}/ws?clientId={self.client_id}", timeout=timeout)
+        ws.connect(f"ws://{self.server_addr}/ws?clientId={self.client_id}")
 
         prompt_response = self.queue_prompt(workflow)
         prompt_id = prompt_response['prompt_id']
@@ -109,8 +109,8 @@ class ComfyService:
                         print(f"[ComfyUI] Prompt {prompt_id} complete")
                         break
 
-        except websocket.WebSocketTimeoutException:
-            print(f"[ComfyUI] Timeout waiting for prompt {prompt_id} (queued={queued}, started={started})")
+        except websocket.WebSocketException as exc:
+            print(f"[ComfyUI] WebSocket failure while waiting for prompt {prompt_id}: {exc}")
             ws.close()
             return None
 
@@ -130,7 +130,7 @@ class ComfyService:
         # Node "44" is the KSampler - randomize seed to get new images
         workflow["44"]["inputs"]["seed"] = random.randint(1, 10**14)
 
-        result = self.execute_workflow(workflow, timeout=120)
+        result = self.execute_workflow(workflow)
         if result is None:
             return None
 
@@ -256,7 +256,7 @@ class ComfyService:
         workflow["47"]["inputs"]["seed"] = random.randint(1, 10**9)
         workflow["82"]["inputs"]["value"] += " I am a test audio, to see if the emotions work. [pause:0.5s]"
 
-        result = self.execute_workflow(workflow, timeout=120)
+        result = self.execute_workflow(workflow)
         if result is None:
             return None
 
@@ -322,7 +322,7 @@ class ComfyService:
             workflow["47"]["inputs"]["seed"] = random.randint(1, 10**9)
 
         print(f"Queueing audio for text: {text[:30]}...")
-        result = self.execute_workflow(workflow, timeout=120)
+        result = self.execute_workflow(workflow)
         if result is None:
             return None
 
@@ -408,7 +408,7 @@ class ComfyService:
              workflow["16"]["inputs"]["seed"] = random.randint(1, 10**14)
 
         print(f"Queueing video for {filename_id}...")
-        result = self.execute_workflow(workflow, timeout=900, progress_callback=progress_callback)
+        result = self.execute_workflow(workflow, progress_callback=progress_callback)
         if result is None:
             return None
 
@@ -623,10 +623,9 @@ class ComfyService:
             prompt_text=prompt_text,
         )
 
-        timeout = max(900, num_chunks * 300)
-        print(f"[Extended] Queueing video for {filename_id} (timeout {timeout}s)...")
-        result = self.execute_workflow(workflow, timeout=timeout,
-                                       progress_callback=progress_callback)
+        print(f"[Extended] Queueing video for {filename_id}...")
+        result = self.execute_workflow(workflow,
+                           progress_callback=progress_callback)
         if result is None:
             return None
 

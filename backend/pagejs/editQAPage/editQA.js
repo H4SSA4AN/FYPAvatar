@@ -915,9 +915,8 @@ async function checkComfyHealth() {
     }
 }
 
-async function waitForVideo(jobId, pollInterval = 3000, maxWait = 600000) {
-    const start = Date.now();
-    while (Date.now() - start < maxWait) {
+async function waitForVideo(jobId, pollInterval = 3000) {
+    while (true) {
         try {
             const res = await fetch(`${API_BASE_URL}/progress/${jobId}`);
             if (!res.ok) {
@@ -933,11 +932,11 @@ async function waitForVideo(jobId, pollInterval = 3000, maxWait = 600000) {
             }
         } catch (e) {
             console.error(`Error polling progress for ${jobId}:`, e);
+            return { ok: false, error: 'Progress polling failed. The server may be unavailable.' };
         }
 
         await new Promise(r => setTimeout(r, pollInterval));
     }
-    return { ok: false, error: 'Timed out waiting for video generation' };
 }
 
 const PROGRESS_STORAGE_KEY = 'editQA_resumeProgress';
