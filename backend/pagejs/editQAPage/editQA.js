@@ -1134,6 +1134,28 @@ async function resumeAllMissing(title) {
     resumeProgress.setStatus('Checking for missing media...', 'resume-status processing');
 
     try {
+        // Ensure conversational data is loaded so it can be included in missing media
+        const faqsRes = await fetch(`${API_BASE_URL}/faqs?title=${encodeURIComponent(title)}`);
+        const faqsData = await faqsRes.json();
+        const faqs = faqsData.data || [];
+        const hasConversational = faqs.some(f => f.category === 'conversational' || String(f.id || '').startsWith('conv_'));
+        if (!hasConversational) {
+            resumeProgress.setStatus('Loading conversational data...', 'resume-status processing');
+            try {
+                const loadResp = await fetch(`${API_BASE_URL}/load-conversational`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title })
+                });
+                const loadResult = await loadResp.json();
+                if (!loadResp.ok) {
+                    console.warn('Could not load conversational data:', loadResult.error);
+                }
+            } catch (e) {
+                console.warn('Load conversational failed:', e);
+            }
+        }
+
         const res = await fetch(`${API_BASE_URL}/get-missing-media?title=${encodeURIComponent(title)}`);
         const data = await res.json();
 

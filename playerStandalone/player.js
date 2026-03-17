@@ -213,7 +213,7 @@ async function selectTopic(title) {
 // === VIDEO PLAYBACK ===
 
 function playIntroVideo() {
-    const introUrl = `${API_BASE_URL}/static/videos/${encodedTitle}/Intro.mp4`;
+    const introUrl = `${API_BASE_URL}/data/static/videos/${encodedTitle}/Intro.mp4`;
     playIdleVideo();
     playActiveVideo(introUrl, () => {
         console.log("Intro finished. Revealing Idle.");
