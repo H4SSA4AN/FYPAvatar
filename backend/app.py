@@ -626,6 +626,35 @@ def get_missing_media():
         return jsonify({'error': str(e)}), 500
 
 
+@app.route('/check-title-videos', methods=['GET'])
+def check_title_videos():
+    """Check which title videos (Idle, Intro, IdleTooLong) are missing for a topic."""
+    title = request.args.get('title')
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+
+    try:
+        base_dir = app.root_path
+        videos_dir = os.path.join(base_dir, 'static', 'videos', title)
+        missing_videos = []
+
+        # Define title videos
+        title_videos = [
+            {'id': 'Idle', 'filename': 'Idle.mp4'},
+            {'id': 'Intro', 'filename': 'Intro.mp4'},
+            {'id': 'IdleTooLong', 'filename': 'IdleTooLong.mp4'}
+        ]
+
+        for video_info in title_videos:
+            video_path = os.path.join(videos_dir, video_info['filename'])
+            if not os.path.exists(video_path):
+                missing_videos.append(video_info['id'])
+
+        return jsonify({'missing': missing_videos, 'total': len(missing_videos)}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/get-videos', methods=['GET'])
 def get_videos_route():
     title = request.args.get('title')

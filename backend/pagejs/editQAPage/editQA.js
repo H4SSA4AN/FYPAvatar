@@ -1166,8 +1166,20 @@ async function resumeAllMissing(title) {
         }
 
         const missing = data.missing || [];
-        if (missing.length === 0) {
-            resumeProgress.setStatus('All audio and video variants are already generated!', 'resume-status success');
+
+        // Check for missing title videos even if there are no missing FAQ items
+        let missingTitleVideos = [];
+        try {
+            const titleVideoRes = await fetch(`${API_BASE_URL}/check-title-videos?title=${encodeURIComponent(title)}`);
+            const titleVideoData = await titleVideoRes.json();
+            missingTitleVideos = titleVideoData.missing || [];
+        } catch (e) {
+            console.warn('Could not check title videos:', e);
+        }
+
+        // If nothing is missing, return success
+        if (missing.length === 0 && missingTitleVideos.length === 0) {
+            resumeProgress.setStatus('All audio, video variants, and title videos are already generated!', 'resume-status success');
             resumeBtn.disabled = false;
             return;
         }
@@ -1183,11 +1195,20 @@ async function resumeAllMissing(title) {
         const needsVideo = missing.filter(m => m.needs_video);
 
         resumeProgress.reset(title);
-        resumeProgress.addOps(needsAudio.length + needsVideo.length);
-        resumeProgress.setStatus(
-            `Found ${missing.length} missing items (${needsAudio.length} audio, ${needsVideo.length} video). Generating audio...`,
-            'resume-status processing'
-        );
+        // Count ops: FAQ audio + FAQ video + title videos (each has audio + video gen, or just video for Idle)
+        const titleVideoOps = missingTitleVideos.length > 0 ? missingTitleVideos.length * 2 : 0;
+        resumeProgress.addOps(needsAudio.length + needsVideo.length + titleVideoOps);
+        
+        let statusMsg = ``;
+        if (missing.length > 0) {
+            statusMsg = `Found ${missing.length} missing items (${needsAudio.length} audio, ${needsVideo.length} video)`;
+        }
+        if (missingTitleVideos.length > 0) {
+            if (statusMsg) statusMsg += ` and ${missingTitleVideos.length} missing title video(s)`;
+            else statusMsg = `Found ${missingTitleVideos.length} missing title video(s)`;
+        }
+        statusMsg += '. Generating...';
+        resumeProgress.setStatus(statusMsg, 'resume-status processing');
 
         // Phase 1: Generate all missing audio
         const audioResults = [];
@@ -1300,6 +1321,126 @@ async function resumeAllMissing(title) {
                 }
             }
             resumeProgress.completeOp();
+        }
+
+        // Phase 3: Generate missing title videos (Idle, Intro, IdleTooLong)
+        if (missingTitleVideos.length > 0) {
+            // Define title videos with their metadata
+            const TITLE_VIDEOS = [
+                { id: 'Idle', audioPath: 'static/audio/IdleSound.mp3', text: null, prompt: 'Smiling and looking at the camera, blinking idly.' },
+                { id: 'Intro', audioPath: null, text: "Hello there! It's great to see you.", prompt: 'Warmly greeting the viewer, smiling.' },
+                { id: 'IdleTooLong', audioPath: null, text: "Are you still there? I'm here when you're ready to continue.", prompt: 'Gently checking in, patient expression.' }
+            ];
+
+            // Filter to only generate missing ones
+            const toGenerate = TITLE_VIDEOS.filter(v => missingTitleVideos.includes(v.id));
+
+            for (const vid of toGenerate) {
+                let audioUrl = vid.audioPath ? `/${vid.audioPath}` : null;
+                
+                // Generate audio if needed (Intro and IdleTooLong need audio generation)
+                if (!audioUrl && vid.text) {
+                    resumeProgress.setStatus(`Generating ${vid.id} audio...`, 'resume-status processing');
+                    resumeProgress.startOp(`Audio: ${vid.id}`);
+                    try {
+                        const audioResp = await fetch(`${API_BASE_URL}/generate-audio-single`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                text: vid.text,
+                                title: title,
+                                filename_id: vid.id,
+                                category: vid.id.toLowerCase(),
+                                speechSettings: [],
+                                usePlaceholder: false
+                            })
+                        });
+                        const audioResult = await audioResp.json();
+                        if (audioResp.ok && audioResult.audio_url) {
+                            audioUrl = audioResult.audio_url;
+                        } else {
+                            console.error(`Audio generation failed for ${vid.id}:`, audioResult);
+                            if (!(await checkComfyHealth())) {
+                                resumeProgress.setStatus('ComfyUI crashed during audio. Resume again later.', 'resume-status error');
+                                resumeProgress.markError();
+                                resumeProgress.finish();
+                                resumeBtn.disabled = false;
+                                return;
+                            }
+                        }
+                    } catch (e) {
+                        console.error(`Error generating ${vid.id} audio:`, e);
+                        if (!(await checkComfyHealth())) {
+                            resumeProgress.setStatus('ComfyUI crashed during audio. Resume again later.', 'resume-status error');
+                            resumeProgress.markError();
+                            resumeProgress.finish();
+                            resumeBtn.disabled = false;
+                            return;
+                        }
+                    }
+                    resumeProgress.completeOp();
+                } else if (vid.audioPath) {
+                    // Just mark op as complete for Idle which uses pre-recorded audio
+                    resumeProgress.startOp(`Audio: ${vid.id}`);
+                    resumeProgress.completeOp();
+                }
+
+                if (!audioUrl) continue;
+
+                // Generate video
+                resumeProgress.setStatus(`Generating ${vid.id} video...`, 'resume-status processing');
+                resumeProgress.startOp(`Video: ${vid.id}`);
+                try {
+                    const videoResp = await fetch(`${API_BASE_URL}/generate-video-extended`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            audio_path: audioUrl,
+                            image_path: currentAvatarPath,
+                            title: title,
+                            filename_id: vid.id,
+                            category: '',
+                            prompt: vid.prompt,
+                            usePlaceholder: false
+                        })
+                    });
+                    const videoResult = await videoResp.json();
+                    if (videoResp.ok && videoResult.job_id) {
+                        const pollResult = await waitForVideo(videoResult.job_id);
+                        if (pollResult.ok) {
+                            console.log(`${vid.id} video generated:`, pollResult.video_url);
+                        } else {
+                            console.error(`${vid.id} video failed:`, pollResult.error);
+                            if (!(await checkComfyHealth())) {
+                                resumeProgress.setStatus('ComfyUI crashed during video. Resume again later.', 'resume-status error');
+                                resumeProgress.markError();
+                                resumeProgress.finish();
+                                resumeBtn.disabled = false;
+                                return;
+                            }
+                        }
+                    } else {
+                        console.error(`Video start failed for ${vid.id}:`, videoResult?.error);
+                        if (!(await checkComfyHealth())) {
+                            resumeProgress.setStatus('ComfyUI crashed during video. Resume again later.', 'resume-status error');
+                            resumeProgress.markError();
+                            resumeProgress.finish();
+                            resumeBtn.disabled = false;
+                            return;
+                        }
+                    }
+                } catch (e) {
+                    console.error(`Error generating ${vid.id} video:`, e);
+                    if (!(await checkComfyHealth())) {
+                        resumeProgress.setStatus('ComfyUI crashed during video. Resume again later.', 'resume-status error');
+                        resumeProgress.markError();
+                        resumeProgress.finish();
+                        resumeBtn.disabled = false;
+                        return;
+                    }
+                }
+                resumeProgress.completeOp();
+            }
         }
 
         resumeProgress.setStatus('Done! All missing media generated. Refreshing...', 'resume-status success');
