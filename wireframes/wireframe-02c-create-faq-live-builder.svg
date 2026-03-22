@@ -1,0 +1,305 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Wireframe 02-C  –  Create FAQ (Variant C: Live Q&A Builder)
+
+  Key differences from the original (wireframe-02):
+  • Three panels, but with a completely different responsibility split:
+      – Left panel  (~240 px) : topic metadata sidebar  –  title field, avatar
+        thumbnail with Upload / Generate buttons, and generation-mode radio buttons.
+        This replaces the original left panel's plain form.
+      – Centre panel (~720 px): spreadsheet-style INLINE editable Q&A table is the
+        hero element.  No modal needed – users type directly in the table.
+        CSV import button sits above the table; "Add Row" lives at the bottom.
+        A per-row "Generate Video" icon lets the user trigger generation for a
+        single Q&A without doing all at once.
+      – Right panel  (~268 px): live mini-preview – shows the selected row's
+        question and the avatar video player for that answer, plus a "Generate All"
+        button at the bottom.
+  • Emotion/speech-tone is selected per-row via a small dropdown inside the row,
+    not via a global set of sliders as in the original.
+  • Progress indicator above the table shows overall video generation progress.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900">
+
+  <!-- ── Browser shell ──────────────────────────────────────────────── -->
+  <rect width="1280" height="900" fill="#ebebeb"/>
+  <rect x="14" y="14" width="1260" height="876" rx="12" fill="#c0c0c0"/>
+  <rect x="10" y="10" width="1260" height="876" rx="10" fill="white" stroke="#aaaaaa" stroke-width="1.5"/>
+  <rect x="10" y="10" width="1260" height="40" rx="10" fill="#dcdcdc"/>
+  <rect x="10" y="36" width="1260" height="14" fill="#dcdcdc"/>
+  <circle cx="36" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="32" y1="26" x2="40" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="40" y1="26" x2="32" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="58" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="54" y1="30" x2="62" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="80" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="76" y1="30" x2="84" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="80" y1="26" x2="80" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <rect x="100" y="15" width="260" height="30" rx="5" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="230" y="34" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#444">Create FAQ – Live Builder – InteractiveAvatar</text>
+  <!-- address bar -->
+  <rect x="10" y="50" width="1260" height="44" fill="#f5f5f5"/>
+  <rect x="22" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="35" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#666">&#8592;</text>
+  <rect x="52" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="65" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#cccccc">&#8594;</text>
+  <rect x="90" y="58" width="1068" height="28" rx="14" fill="white" stroke="#d0d0d0" stroke-width="1"/>
+  <rect x="104" y="67" width="8" height="7" rx="1" fill="none" stroke="#999" stroke-width="1"/>
+  <path d="M106 67 a2 2 0 0 1 4 0" fill="none" stroke="#999" stroke-width="1"/>
+  <text x="624" y="76" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#555">localhost:5000/createQA</text>
+  <line x1="10" y1="94" x2="1270" y2="94" stroke="#e0e0e0" stroke-width="1"/>
+
+  <!-- ── Nav bar ──────────────────────────────────────────────────────── -->
+  <rect x="10" y="94" width="1260" height="48" fill="#222222"/>
+  <text x="30"  y="123" font-family="Arial,sans-serif" font-size="13" fill="#999999">Home</text>
+  <line x1="86" y1="138" x2="156" y2="138" stroke="white" stroke-width="2"/>
+  <text x="86"  y="123" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="white">Create FAQ</text>
+  <text x="190" y="123" font-family="Arial,sans-serif" font-size="13" fill="#999999">Edit FAQs</text>
+  <text x="286" y="123" font-family="Arial,sans-serif" font-size="13" fill="#999999">Test FAQs</text>
+  <text x="1060" y="123" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="white">InteractiveAvatar</text>
+  <rect x="1204" y="104" width="58" height="28" rx="4" fill="#444444" stroke="#666" stroke-width="1"/>
+  <text x="1233" y="122" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="white">Download</text>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       LEFT PANEL – Topic Metadata Sidebar  (x=18 … x=262, width=244)
+       ═══════════════════════════════════════════════════════════════════ -->
+  <rect x="18" y="148" width="244" height="730" rx="4" fill="white" stroke="#dddddd" stroke-width="1"/>
+
+  <!-- Panel title -->
+  <text x="32" y="174" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#222222">Topic Settings</text>
+  <line x1="32" y1="182" x2="250" y2="182" stroke="#eeeeee" stroke-width="1"/>
+
+  <!-- Topic title field -->
+  <text x="32" y="202" font-family="Arial,sans-serif" font-size="11" fill="#555555">Topic Title *</text>
+  <rect x="32" y="212" width="216" height="30" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="42" y="231" font-family="Arial,sans-serif" font-size="12" fill="#333333">Product FAQ</text>
+  <!-- small edit pencil hint -->
+  <text x="236" y="231" font-family="Arial,sans-serif" font-size="11" fill="#aaaaaa">✎</text>
+
+  <!-- Avatar image section -->
+  <text x="32" y="262" font-family="Arial,sans-serif" font-size="11" fill="#555555">Avatar Image</text>
+  <!-- thumbnail placeholder -->
+  <rect x="32" y="272" width="100" height="100" rx="5" fill="#f0f0f0" stroke="#cccccc" stroke-width="1"/>
+  <line x1="32" y1="272" x2="132" y2="372" stroke="#e0e0e0" stroke-width="1.5"/>
+  <line x1="132" y1="272" x2="32" y2="372" stroke="#e0e0e0" stroke-width="1.5"/>
+  <text x="82" y="318" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#aaaaaa">Avatar</text>
+  <text x="82" y="332" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#aaaaaa">Image</text>
+  <!-- upload + generate buttons -->
+  <rect x="140" y="272" width="108" height="28" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="194" y="290" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#444444">Upload Image</text>
+  <rect x="140" y="308" width="108" height="28" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="194" y="326" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#444444">Generate AI</text>
+  <rect x="140" y="344" width="108" height="28" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="194" y="362" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#444444">Remove</text>
+
+  <!-- Generation mode -->
+  <text x="32" y="396" font-family="Arial,sans-serif" font-size="11" fill="#555555">Generation Mode</text>
+  <!-- radio 1 – selected -->
+  <circle cx="44" cy="414" r="7" fill="none" stroke="#333333" stroke-width="1.5"/>
+  <circle cx="44" cy="414" r="3.5" fill="#333333"/>
+  <text x="56" y="418" font-family="Arial,sans-serif" font-size="11" fill="#222222">Full video + audio</text>
+  <!-- radio 2 -->
+  <circle cx="44" cy="436" r="7" fill="none" stroke="#aaaaaa" stroke-width="1.5"/>
+  <text x="56" y="440" font-family="Arial,sans-serif" font-size="11" fill="#555555">Audio only</text>
+  <!-- radio 3 -->
+  <circle cx="44" cy="458" r="7" fill="none" stroke="#aaaaaa" stroke-width="1.5"/>
+  <text x="56" y="462" font-family="Arial,sans-serif" font-size="11" fill="#555555">Placeholder video</text>
+
+  <!-- Video generation prompt -->
+  <text x="32" y="492" font-family="Arial,sans-serif" font-size="11" fill="#555555">Video Prompt (optional)</text>
+  <rect x="32" y="502" width="216" height="72" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="42" y="520" font-family="Arial,sans-serif" font-size="11" fill="#bbbbbb">Describe avatar style,</text>
+  <text x="42" y="534" font-family="Arial,sans-serif" font-size="11" fill="#bbbbbb">background, clothing…</text>
+
+  <!-- Overall progress bar -->
+  <text x="32" y="596" font-family="Arial,sans-serif" font-size="11" fill="#555555">Video Progress</text>
+  <rect x="32" y="604" width="216" height="8" rx="4" fill="#e0e0e0" stroke="none"/>
+  <rect x="32" y="604" width="72" height="8" rx="4" fill="#888888"/>
+  <text x="32" y="626" font-family="Arial,sans-serif" font-size="10" fill="#888888">2 of 5 generated (40%)</text>
+
+  <!-- Finalize button -->
+  <rect x="32" y="806" width="216" height="38" rx="5" fill="#333333" stroke="#444444" stroke-width="1"/>
+  <text x="140" y="829" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="white">Save &amp; Generate All</text>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       CENTRE PANEL – Inline Q&A Table  (x=270 … x=990, width=720)
+       ═══════════════════════════════════════════════════════════════════ -->
+  <rect x="270" y="148" width="720" height="730" rx="4" fill="white" stroke="#dddddd" stroke-width="1"/>
+
+  <!-- Panel header row -->
+  <text x="284" y="174" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#222222">Q&amp;A Pairs</text>
+  <!-- import CSV button top-right of panel -->
+  <rect x="810" y="156" width="108" height="28" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="864" y="174" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#444444">Import CSV ↑</text>
+  <line x1="284" y1="182" x2="974" y2="182" stroke="#eeeeee" stroke-width="1"/>
+
+  <!-- Table column headers -->
+  <rect x="284" y="190" width="692" height="28" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="296" y="208" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="#333333">#</text>
+  <line x1="320" y1="190" x2="320" y2="218" stroke="#cccccc" stroke-width="1"/>
+  <text x="328" y="208" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="#333333">Question</text>
+  <line x1="578" y1="190" x2="578" y2="218" stroke="#cccccc" stroke-width="1"/>
+  <text x="586" y="208" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="#333333">Answer</text>
+  <line x1="826" y1="190" x2="826" y2="218" stroke="#cccccc" stroke-width="1"/>
+  <text x="834" y="208" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="#333333">Tone</text>
+  <line x1="900" y1="190" x2="900" y2="218" stroke="#cccccc" stroke-width="1"/>
+  <text x="908" y="208" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="#333333">Video</text>
+  <line x1="946" y1="190" x2="946" y2="218" stroke="#cccccc" stroke-width="1"/>
+  <text x="954" y="208" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="#333333">⋮</text>
+
+  <!-- Row 1 (video ready) -->
+  <rect x="284" y="218" width="692" height="34" fill="white" stroke="#eeeeee" stroke-width="1"/>
+  <text x="296" y="239" font-family="Arial,sans-serif" font-size="10" fill="#888888">1</text>
+  <line x1="320" y1="218" x2="320" y2="252" stroke="#eeeeee" stroke-width="1"/>
+  <rect x="326" y="222" width="248" height="24" rx="3" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="334" y="238" font-family="Arial,sans-serif" font-size="11" fill="#333333">What is your name?</text>
+  <line x1="578" y1="218" x2="578" y2="252" stroke="#eeeeee" stroke-width="1"/>
+  <rect x="584" y="222" width="238" height="24" rx="3" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="592" y="238" font-family="Arial,sans-serif" font-size="11" fill="#333333">I am the Interactive Avatar.</text>
+  <line x1="826" y1="218" x2="826" y2="252" stroke="#eeeeee" stroke-width="1"/>
+  <rect x="832" y="224" width="62" height="20" rx="3" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="840" y="238" font-family="Arial,sans-serif" font-size="10" fill="#555555">Calm ▼</text>
+  <line x1="900" y1="218" x2="900" y2="252" stroke="#eeeeee" stroke-width="1"/>
+  <!-- video ready check -->
+  <text x="916" y="239" font-family="Arial,sans-serif" font-size="11" fill="#555555">✓</text>
+  <line x1="946" y1="218" x2="946" y2="252" stroke="#eeeeee" stroke-width="1"/>
+  <text x="956" y="239" font-family="Arial,sans-serif" font-size="11" fill="#aaaaaa">…</text>
+
+  <!-- Row 2 (video ready) -->
+  <rect x="284" y="252" width="692" height="34" fill="#fafafa" stroke="#eeeeee" stroke-width="1"/>
+  <text x="296" y="273" font-family="Arial,sans-serif" font-size="10" fill="#888888">2</text>
+  <line x1="320" y1="252" x2="320" y2="286" stroke="#eeeeee" stroke-width="1"/>
+  <rect x="326" y="256" width="248" height="24" rx="3" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="334" y="272" font-family="Arial,sans-serif" font-size="11" fill="#333333">How can I help you?</text>
+  <line x1="578" y1="252" x2="578" y2="286" stroke="#eeeeee" stroke-width="1"/>
+  <rect x="584" y="256" width="238" height="24" rx="3" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="592" y="272" font-family="Arial,sans-serif" font-size="11" fill="#333333">I can answer your questions.</text>
+  <line x1="826" y1="252" x2="826" y2="286" stroke="#eeeeee" stroke-width="1"/>
+  <rect x="832" y="258" width="62" height="20" rx="3" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="840" y="272" font-family="Arial,sans-serif" font-size="10" fill="#555555">Happy ▼</text>
+  <line x1="900" y1="252" x2="900" y2="286" stroke="#eeeeee" stroke-width="1"/>
+  <text x="916" y="273" font-family="Arial,sans-serif" font-size="11" fill="#555555">✓</text>
+  <line x1="946" y1="252" x2="946" y2="286" stroke="#eeeeee" stroke-width="1"/>
+  <text x="956" y="273" font-family="Arial,sans-serif" font-size="11" fill="#aaaaaa">…</text>
+
+  <!-- Row 3 – selected / highlighted -->
+  <rect x="284" y="286" width="692" height="34" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <text x="296" y="307" font-family="Arial,sans-serif" font-size="10" fill="#888888">3</text>
+  <line x1="320" y1="286" x2="320" y2="320" stroke="#888888" stroke-width="1"/>
+  <rect x="326" y="290" width="248" height="24" rx="3" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <text x="334" y="306" font-family="Arial,sans-serif" font-size="11" fill="#333333">What features do you have?</text>
+  <line x1="578" y1="286" x2="578" y2="320" stroke="#888888" stroke-width="1"/>
+  <rect x="584" y="290" width="238" height="24" rx="3" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <text x="592" y="306" font-family="Arial,sans-serif" font-size="11" fill="#333333">I can speak with emotions and…</text>
+  <line x1="826" y1="286" x2="826" y2="320" stroke="#888888" stroke-width="1"/>
+  <rect x="832" y="292" width="62" height="20" rx="3" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <text x="840" y="306" font-family="Arial,sans-serif" font-size="10" fill="#555555">Sad ▼</text>
+  <line x1="900" y1="286" x2="900" y2="320" stroke="#888888" stroke-width="1"/>
+  <!-- generate button per-row -->
+  <rect x="904" y="292" width="36" height="20" rx="3" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="922" y="306" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="#444444">Gen ▶</text>
+  <line x1="946" y1="286" x2="946" y2="320" stroke="#888888" stroke-width="1"/>
+  <text x="956" y="307" font-family="Arial,sans-serif" font-size="11" fill="#aaaaaa">…</text>
+
+  <!-- Row 4 (no video yet) -->
+  <rect x="284" y="320" width="692" height="34" fill="#fafafa" stroke="#eeeeee" stroke-width="1"/>
+  <text x="296" y="341" font-family="Arial,sans-serif" font-size="10" fill="#888888">4</text>
+  <line x1="320" y1="320" x2="320" y2="354" stroke="#eeeeee" stroke-width="1"/>
+  <rect x="326" y="324" width="248" height="24" rx="3" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="334" y="340" font-family="Arial,sans-serif" font-size="11" fill="#333333">Can you show emotions?</text>
+  <line x1="578" y1="320" x2="578" y2="354" stroke="#eeeeee" stroke-width="1"/>
+  <rect x="584" y="324" width="238" height="24" rx="3" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="592" y="340" font-family="Arial,sans-serif" font-size="11" fill="#333333">Yes – happy, sad, angry and more.</text>
+  <line x1="826" y1="320" x2="826" y2="354" stroke="#eeeeee" stroke-width="1"/>
+  <rect x="832" y="326" width="62" height="20" rx="3" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="840" y="340" font-family="Arial,sans-serif" font-size="10" fill="#555555">Angry ▼</text>
+  <line x1="900" y1="320" x2="900" y2="354" stroke="#eeeeee" stroke-width="1"/>
+  <!-- no video icon -->
+  <text x="916" y="341" font-family="Arial,sans-serif" font-size="11" fill="#cccccc">○</text>
+  <line x1="946" y1="320" x2="946" y2="354" stroke="#eeeeee" stroke-width="1"/>
+  <text x="956" y="341" font-family="Arial,sans-serif" font-size="11" fill="#aaaaaa">…</text>
+
+  <!-- Row 5 (no video yet) -->
+  <rect x="284" y="354" width="692" height="34" fill="white" stroke="#eeeeee" stroke-width="1"/>
+  <text x="296" y="375" font-family="Arial,sans-serif" font-size="10" fill="#888888">5</text>
+  <line x1="320" y1="354" x2="320" y2="388" stroke="#eeeeee" stroke-width="1"/>
+  <rect x="326" y="358" width="248" height="24" rx="3" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="334" y="374" font-family="Arial,sans-serif" font-size="11" fill="#333333">How do I use this system?</text>
+  <line x1="578" y1="354" x2="578" y2="388" stroke="#eeeeee" stroke-width="1"/>
+  <rect x="584" y="358" width="238" height="24" rx="3" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="592" y="374" font-family="Arial,sans-serif" font-size="11" fill="#333333">Type or speak your question.</text>
+  <line x1="826" y1="354" x2="826" y2="388" stroke="#eeeeee" stroke-width="1"/>
+  <rect x="832" y="360" width="62" height="20" rx="3" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="840" y="374" font-family="Arial,sans-serif" font-size="10" fill="#555555">Calm ▼</text>
+  <line x1="900" y1="354" x2="900" y2="388" stroke="#eeeeee" stroke-width="1"/>
+  <text x="916" y="375" font-family="Arial,sans-serif" font-size="11" fill="#cccccc">○</text>
+  <line x1="946" y1="354" x2="946" y2="388" stroke="#eeeeee" stroke-width="1"/>
+  <text x="956" y="375" font-family="Arial,sans-serif" font-size="11" fill="#aaaaaa">…</text>
+
+  <!-- Empty / add row -->
+  <rect x="284" y="388" width="692" height="30" fill="#f5f5f5" stroke="#eeeeee" stroke-width="1"/>
+  <text x="630" y="407" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#aaaaaa">+ Add row</text>
+
+  <!-- Context menu open on row 3 (shown as small overlay) -->
+  <rect x="950" y="285" width="120" height="80" rx="4" fill="white" stroke="#aaaaaa" stroke-width="1"/>
+  <text x="962" y="304" font-family="Arial,sans-serif" font-size="11" fill="#333333">Edit row</text>
+  <line x1="958" y1="310" x2="1062" y2="310" stroke="#eeeeee" stroke-width="1"/>
+  <text x="962" y="328" font-family="Arial,sans-serif" font-size="11" fill="#333333">Generate video</text>
+  <line x1="958" y1="334" x2="1062" y2="334" stroke="#eeeeee" stroke-width="1"/>
+  <text x="962" y="352" font-family="Arial,sans-serif" font-size="11" fill="#cc3333">Delete row</text>
+
+  <!-- ═══════════════════════════════════════════════════════════════════
+       RIGHT PANEL – Live Preview  (x=998 … x=1262, width=264)
+       ═══════════════════════════════════════════════════════════════════ -->
+  <rect x="998" y="148" width="264" height="730" rx="4" fill="white" stroke="#dddddd" stroke-width="1"/>
+
+  <!-- Panel title -->
+  <text x="1012" y="174" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#222222">Live Preview</text>
+  <line x1="1012" y1="182" x2="1250" y2="182" stroke="#eeeeee" stroke-width="1"/>
+
+  <!-- Currently previewing label -->
+  <text x="1012" y="200" font-family="Arial,sans-serif" font-size="10" fill="#888888">Previewing row 3:</text>
+  <rect x="1012" y="206" width="236" height="28" rx="3" fill="#f5f5f5" stroke="#eeeeee" stroke-width="1"/>
+  <text x="1020" y="224" font-family="Arial,sans-serif" font-size="10" fill="#555555">What features do you have?</text>
+
+  <!-- Avatar video placeholder -->
+  <rect x="1012" y="242" width="236" height="300" rx="5" fill="#f0f0f0" stroke="#cccccc" stroke-width="1"/>
+  <line x1="1012" y1="242" x2="1248" y2="542" stroke="#e0e0e0" stroke-width="1.5"/>
+  <line x1="1248" y1="242" x2="1012" y2="542" stroke="#e0e0e0" stroke-width="1.5"/>
+  <polygon points="1112,374 1148,392 1112,410" fill="#cccccc"/>
+  <text x="1130" y="528" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#aaaaaa">Avatar video for row 3</text>
+
+  <!-- Playback controls row -->
+  <rect x="1012" y="548" width="236" height="32" rx="3" fill="#f5f5f5" stroke="#eeeeee" stroke-width="1"/>
+  <!-- play icon -->
+  <polygon points="1026,558 1026,572 1038,565" fill="#555555"/>
+  <!-- progress track -->
+  <rect x="1048" y="562" width="140" height="4" rx="2" fill="#dddddd"/>
+  <rect x="1048" y="562" width="50" height="4" rx="2" fill="#888888"/>
+  <text x="1200" y="567" font-family="Arial,sans-serif" font-size="9" fill="#888888">0:04</text>
+
+  <!-- Answer text preview -->
+  <text x="1012" y="600" font-family="Arial,sans-serif" font-size="10" fill="#888888">Answer text:</text>
+  <rect x="1012" y="608" width="236" height="52" rx="3" fill="#f8f8f8" stroke="#eeeeee" stroke-width="1"/>
+  <text x="1020" y="622" font-family="Arial,sans-serif" font-size="10" fill="#555555">I can speak with emotions</text>
+  <text x="1020" y="636" font-family="Arial,sans-serif" font-size="10" fill="#555555">and adapt my tone based</text>
+  <text x="1020" y="650" font-family="Arial,sans-serif" font-size="10" fill="#555555">on your configuration.</text>
+
+  <!-- Tone shown -->
+  <text x="1012" y="678" font-family="Arial,sans-serif" font-size="10" fill="#888888">Tone: Sad</text>
+
+  <!-- Re-generate single button -->
+  <rect x="1012" y="690" width="236" height="30" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="1130" y="709" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#444444">Re-generate this video</text>
+
+  <!-- Previous / Next row nav -->
+  <rect x="1012" y="730" width="110" height="28" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="1067" y="748" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#444444">← Prev row</text>
+  <rect x="1136" y="730" width="112" height="28" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="1192" y="748" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#444444">Next row →</text>
+
+  <!-- Generate All button -->
+  <rect x="1012" y="806" width="236" height="38" rx="5" fill="#333333" stroke="#444444" stroke-width="1"/>
+  <text x="1130" y="829" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="white">Generate All Videos</text>
+
+</svg>
