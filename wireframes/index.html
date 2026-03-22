@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FYPAvatar – Wireframes</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      background: #f0f0f0;
+      color: #222;
+      padding: 40px 20px;
+    }
+    h1 { font-size: 28px; margin-bottom: 8px; color: #111; }
+    .subtitle { font-size: 14px; color: #666; margin-bottom: 40px; }
+    .toc {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px 28px;
+      display: inline-block;
+      margin-bottom: 48px;
+    }
+    .toc h2 { font-size: 15px; margin-bottom: 12px; color: #333; }
+    .toc ol { padding-left: 18px; }
+    .toc li { margin-bottom: 6px; }
+    .toc a { color: #444; text-decoration: none; font-size: 13px; }
+    .toc a:hover { text-decoration: underline; color: #000; }
+    .wireframe-section {
+      margin-bottom: 60px;
+    }
+    .wireframe-section h2 {
+      font-size: 20px;
+      margin-bottom: 6px;
+      color: #111;
+    }
+    .wireframe-section p {
+      font-size: 13px;
+      color: #777;
+      margin-bottom: 14px;
+    }
+    .wireframe-section img {
+      width: 100%;
+      max-width: 1280px;
+      border: 1px solid #cccccc;
+      border-radius: 4px;
+      background: white;
+      display: block;
+    }
+    hr { border: none; border-top: 1px solid #ddd; margin: 48px 0; }
+  </style>
+</head>
+<body>
+
+<h1>FYPAvatar – Wireframes</h1>
+<p class="subtitle">
+  Black &amp; white wireframes for every web page in the FYPAvatar application.
+  Each wireframe is shown inside a Mac browser window (traffic-light buttons + URL bar).
+</p>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><a href="#wf1">Dashboard</a></li>
+    <li><a href="#wf2">Create FAQ</a></li>
+    <li><a href="#wf3">Create FAQ – Avatar Generation Modal</a></li>
+    <li><a href="#wf4">Create FAQ – Manual Entry Modal</a></li>
+    <li><a href="#wf5">Edit FAQs</a></li>
+    <li><a href="#wf6">Test FAQs</a></li>
+    <li><a href="#wf7">Player (in-app)</a></li>
+    <li><a href="#wf8">Standalone Player – Upload Screen</a></li>
+    <li><a href="#wf9">Standalone Player – Active State</a></li>
+  </ol>
+</div>
+
+<!-- 1 -->
+<div class="wireframe-section" id="wf1">
+  <h2>1 – Dashboard</h2>
+  <p>Route: <code>localhost:5000/</code> &nbsp;|&nbsp; Upload a FAQ CSV, ask a question, view FAQ list.</p>
+  <img src="wireframe-01-dashboard.svg" alt="Dashboard wireframe">
+</div>
+<hr>
+
+<!-- 2 -->
+<div class="wireframe-section" id="wf2">
+  <h2>2 – Create FAQ</h2>
+  <p>Route: <code>localhost:5000/createQA</code> &nbsp;|&nbsp; Three-panel layout: form, avatar preview, instructions.</p>
+  <img src="wireframe-02-create-faq.svg" alt="Create FAQ wireframe">
+</div>
+<hr>
+
+<!-- 3 -->
+<div class="wireframe-section" id="wf3">
+  <h2>3 – Create FAQ: Avatar Generation Modal</h2>
+  <p>
+    Opened from the "Open avatar generation window" button on the Create FAQ page.
+    Enter a prompt to generate an AI image or upload your own.
+  </p>
+  <img src="wireframe-03-create-faq-avatar-modal.svg" alt="Avatar modal wireframe">
+</div>
+<hr>
+
+<!-- 4 -->
+<div class="wireframe-section" id="wf4">
+  <h2>4 – Create FAQ: Manual Entry Modal</h2>
+  <p>
+    Opened from the "Click to manually enter FAQ" button.
+    Allows adding multiple question-answer pairs by hand.
+  </p>
+  <img src="wireframe-04-create-faq-manual-modal.svg" alt="Manual entry modal wireframe">
+</div>
+<hr>
+
+<!-- 5 -->
+<div class="wireframe-section" id="wf5">
+  <h2>5 – Edit FAQs</h2>
+  <p>Route: <code>localhost:5000/editQA</code> &nbsp;|&nbsp; Manage topics, edit/delete Q&amp;A pairs, view other-category videos.</p>
+  <img src="wireframe-05-edit-faq.svg" alt="Edit FAQs wireframe">
+</div>
+<hr>
+
+<!-- 6 -->
+<div class="wireframe-section" id="wf6">
+  <h2>6 – Test FAQs</h2>
+  <p>Route: <code>localhost:5000/testQA</code> &nbsp;|&nbsp; Three-panel: avatar video, FAQ table, conversation log.</p>
+  <img src="wireframe-06-test-faq.svg" alt="Test FAQs wireframe">
+</div>
+<hr>
+
+<!-- 7 -->
+<div class="wireframe-section" id="wf7">
+  <h2>7 – Player (in-app)</h2>
+  <p>Route: <code>localhost:5000/player</code> &nbsp;|&nbsp; Full-screen avatar video with overlaid controls and chat interface.</p>
+  <img src="wireframe-07-player.svg" alt="Player wireframe">
+</div>
+<hr>
+
+<!-- 8 -->
+<div class="wireframe-section" id="wf8">
+  <h2>8 – Standalone Player: Upload Screen</h2>
+  <p>
+    File: <code>playerStandalone/player.html</code> &nbsp;|&nbsp;
+    Initial screen – prompts the user to upload a ZIP file before the player loads.
+  </p>
+  <img src="wireframe-08-standalone-player-upload.svg" alt="Standalone player upload wireframe">
+</div>
+<hr>
+
+<!-- 9 -->
+<div class="wireframe-section" id="wf9">
+  <h2>9 – Standalone Player: Active State</h2>
+  <p>
+    File: <code>playerStandalone/player.html</code> &nbsp;|&nbsp;
+    After the ZIP is loaded – same layout as the in-app player.
+  </p>
+  <img src="wireframe-09-standalone-player-active.svg" alt="Standalone player active wireframe">
+</div>
+
+</body>
+</html>

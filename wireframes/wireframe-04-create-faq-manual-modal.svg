@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900">
+  <rect width="1280" height="900" fill="#ebebeb"/>
+  <rect x="14" y="14" width="1260" height="876" rx="12" fill="#c0c0c0"/>
+  <rect x="10" y="10" width="1260" height="876" rx="10" fill="white" stroke="#aaaaaa" stroke-width="1.5"/>
+  <rect x="10" y="10" width="1260" height="40" rx="10" fill="#dcdcdc"/>
+  <rect x="10" y="36" width="1260" height="14" fill="#dcdcdc"/>
+  <circle cx="36" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="32" y1="26" x2="40" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="40" y1="26" x2="32" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="58" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="54" y1="30" x2="62" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="80" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="76" y1="30" x2="84" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="80" y1="26" x2="80" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <rect x="100" y="15" width="200" height="30" rx="5" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="200" y="34" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#444">Create FAQ – Manual Entry</text>
+  <rect x="10" y="50" width="1260" height="44" fill="#f5f5f5"/>
+  <rect x="22" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="35" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#666">&#8592;</text>
+  <rect x="52" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="65" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#cccccc">&#8594;</text>
+  <rect x="90" y="58" width="1068" height="28" rx="14" fill="white" stroke="#d0d0d0" stroke-width="1"/>
+  <rect x="104" y="67" width="8" height="7" rx="1" fill="none" stroke="#999" stroke-width="1"/>
+  <path d="M106 67 a2 2 0 0 1 4 0" fill="none" stroke="#999" stroke-width="1"/>
+  <text x="624" y="76" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#555">localhost:5000/createQA</text>
+  <line x1="10" y1="94" x2="1270" y2="94" stroke="#e0e0e0" stroke-width="1"/>
+  <rect x="10" y="94" width="1260" height="48" fill="#222222" stroke="none"/>
+  <text x="30" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="normal" fill="#999999">Home</text>
+  <line x1="86" y1="138" x2="156" y2="138" stroke="white" stroke-width="2"/>
+  <text x="86" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="white">Create FAQ</text>
+  <text x="190" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="normal" fill="#999999">Edit FAQs</text>
+  <text x="286" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="normal" fill="#999999">Test FAQs</text>
+  <text x="1060" y="123" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="white">InteractiveAvatar</text>
+  <rect x="1204" y="104" width="58" height="28" rx="4" fill="#444444" stroke="#666" stroke-width="1"/>
+  <text x="1233" y="122" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="white">Download</text>
+  <rect x="10" y="142" width="1260" height="744" fill="#555555" opacity="0.5"/>
+  <rect x="10" y="142" width="1260" height="744" fill="#444444" opacity="0.55"/>
+  <rect x="210" y="234" width="860" height="560" rx="8" fill="white" stroke="#bbbbbb" stroke-width="1.5"/>
+  <rect x="210" y="234" width="860" height="50" rx="8" fill="#f5f5f5"/>
+  <rect x="210" y="272" width="860" height="12" fill="#f5f5f5"/>
+  <line x1="210" y1="284" x2="1070" y2="284" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="230" y="266" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="#222222">Manually Enter FAQ</text>
+  <circle cx="1048" cy="259" r="10" fill="#e0e0e0" stroke="#cccccc" stroke-width="1"/>
+  <line x1="1043" y1="254" x2="1053" y2="264" stroke="#888888" stroke-width="1.5"/>
+  <line x1="1053" y1="254" x2="1043" y2="264" stroke="#888888" stroke-width="1.5"/>
+  <text x="226" y="298" font-family="Arial,sans-serif" font-size="11" fill="#555555">Question 1</text>
+  <rect x="226" y="312" width="394" height="28" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="236" y="330" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Type question here…</text>
+  <text x="640" y="298" font-family="Arial,sans-serif" font-size="11" fill="#555555">Answer</text>
+  <rect x="640" y="312" width="394" height="28" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="650" y="330" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Type answer here…</text>
+  <text x="226" y="350" font-family="Arial,sans-serif" font-size="11" fill="#555555">Question 2</text>
+  <rect x="226" y="364" width="394" height="28" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="236" y="382" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Type question here…</text>
+  <text x="640" y="350" font-family="Arial,sans-serif" font-size="11" fill="#555555">Answer</text>
+  <rect x="640" y="364" width="394" height="28" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="650" y="382" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Type answer here…</text>
+  <text x="226" y="402" font-family="Arial,sans-serif" font-size="11" fill="#555555">Question 3</text>
+  <rect x="226" y="416" width="394" height="28" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="236" y="434" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Type question here…</text>
+  <text x="640" y="402" font-family="Arial,sans-serif" font-size="11" fill="#555555">Answer</text>
+  <rect x="640" y="416" width="394" height="28" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="650" y="434" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Type answer here…</text>
+  <text x="226" y="454" font-family="Arial,sans-serif" font-size="11" fill="#555555">Question 4</text>
+  <rect x="226" y="468" width="394" height="28" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="236" y="486" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Type question here…</text>
+  <text x="640" y="454" font-family="Arial,sans-serif" font-size="11" fill="#555555">Answer</text>
+  <rect x="640" y="468" width="394" height="28" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="650" y="486" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Type answer here…</text>
+  <text x="570" y="512" font-family="Arial,sans-serif" font-size="11" fill="#aaaaaa">[ … more rows … ]</text>
+  <rect x="226" y="536" width="828" height="36" rx="5" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="640" y="558" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#444444">+ Add Another Record</text>
+  <line x1="210" y1="726" x2="1070" y2="726" stroke="#e8e8e8" stroke-width="1"/>
+  <rect x="500" y="744" width="280" height="36" rx="5" fill="#333333" stroke="#444444" stroke-width="1"/>
+  <text x="640" y="766" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="white">Save All to FAQ List</text>
+</svg>

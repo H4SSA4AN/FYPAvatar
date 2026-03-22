@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900">
+  <rect width="1280" height="900" fill="#ebebeb"/>
+  <rect x="14" y="14" width="1260" height="876" rx="12" fill="#c0c0c0"/>
+  <rect x="10" y="10" width="1260" height="876" rx="10" fill="white" stroke="#aaaaaa" stroke-width="1.5"/>
+  <rect x="10" y="10" width="1260" height="40" rx="10" fill="#dcdcdc"/>
+  <rect x="10" y="36" width="1260" height="14" fill="#dcdcdc"/>
+  <circle cx="36" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="32" y1="26" x2="40" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="40" y1="26" x2="32" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="58" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="54" y1="30" x2="62" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="80" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="76" y1="30" x2="84" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="80" y1="26" x2="80" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <rect x="100" y="15" width="200" height="30" rx="5" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="200" y="34" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#444">Interactive Avatar Player (Standalone)</text>
+  <rect x="10" y="50" width="1260" height="44" fill="#f5f5f5"/>
+  <rect x="22" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="35" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#666">&#8592;</text>
+  <rect x="52" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="65" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#cccccc">&#8594;</text>
+  <rect x="90" y="58" width="1068" height="28" rx="14" fill="white" stroke="#d0d0d0" stroke-width="1"/>
+  <rect x="104" y="67" width="8" height="7" rx="1" fill="none" stroke="#999" stroke-width="1"/>
+  <path d="M106 67 a2 2 0 0 1 4 0" fill="none" stroke="#999" stroke-width="1"/>
+  <text x="624" y="76" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#555">file:///player.html</text>
+  <line x1="10" y1="94" x2="1270" y2="94" stroke="#e0e0e0" stroke-width="1"/>
+  <rect x="10" y="94" width="1260" height="792" rx="0" fill="#1c1c1c" stroke="#1c1c1c" stroke-width="1"/>
+  <rect x="470" y="190" width="340" height="600" rx="6" fill="#f0f0f0" stroke="#cccccc" stroke-width="1"/>
+  <line x1="470" y1="190" x2="810" y2="790" stroke="#e0e0e0" stroke-width="1.5"/>
+  <line x1="810" y1="190" x2="470" y2="790" stroke="#e0e0e0" stroke-width="1.5"/>
+  <polygon points="626,472 658,490 626,508" fill="#cccccc"/>
+  <text x="640" y="778" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#aaaaaa">Avatar Video (idle / active)</text>
+  <rect x="28" y="112" width="342" height="418" rx="8" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <rect x="28" y="112" width="342" height="418" rx="8" fill="white" opacity="0.92"/>
+  <text x="42" y="140" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="#222222">Interactive Avatar</text>
+  <rect x="42" y="162" width="314" height="30" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="52" y="181" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Search topics…</text>
+  <rect x="42" y="204" width="314" height="32" rx="5" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="199" y="224" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#444444">Show Questions ▼</text>
+  <rect x="42" y="248" width="306" height="30" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="50" y="267" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#333333">Question</text>
+  <line x1="196" y1="248" x2="196" y2="278" stroke="#cccccc" stroke-width="1"/>
+  <text x="204" y="267" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#333333">Answer</text>
+  <rect x="42" y="276" width="306" height="24" fill="#fafafa" stroke="#eeeeee" stroke-width="1"/>
+  <text x="50" y="292" font-family="Arial,sans-serif" font-size="11" fill="#555555">What is your name?</text>
+  <line x1="196" y1="276" x2="196" y2="300" stroke="#eeeeee" stroke-width="1"/>
+  <text x="204" y="292" font-family="Arial,sans-serif" font-size="11" fill="#555555">I am the avatar…</text>
+  <rect x="42" y="300" width="306" height="24" fill="white" stroke="#eeeeee" stroke-width="1"/>
+  <text x="50" y="316" font-family="Arial,sans-serif" font-size="11" fill="#555555">How can I help?</text>
+  <line x1="196" y1="300" x2="196" y2="324" stroke="#eeeeee" stroke-width="1"/>
+  <text x="204" y="316" font-family="Arial,sans-serif" font-size="11" fill="#555555">I can answer…</text>
+  <rect x="42" y="324" width="306" height="24" fill="#fafafa" stroke="#eeeeee" stroke-width="1"/>
+  <text x="50" y="340" font-family="Arial,sans-serif" font-size="11" fill="#555555">What do you know?</text>
+  <line x1="196" y1="324" x2="196" y2="348" stroke="#eeeeee" stroke-width="1"/>
+  <text x="204" y="340" font-family="Arial,sans-serif" font-size="11" fill="#555555">I know about…</text>
+  <rect x="42" y="348" width="306" height="24" fill="white" stroke="#eeeeee" stroke-width="1"/>
+  <text x="50" y="364" font-family="Arial,sans-serif" font-size="11" fill="#555555">Tell me more…</text>
+  <line x1="196" y1="348" x2="196" y2="372" stroke="#eeeeee" stroke-width="1"/>
+  <text x="204" y="364" font-family="Arial,sans-serif" font-size="11" fill="#555555">Sure, here is…</text>
+  <rect x="42" y="372" width="306" height="24" fill="#fafafa" stroke="#eeeeee" stroke-width="1"/>
+  <text x="50" y="388" font-family="Arial,sans-serif" font-size="11" fill="#555555">Any other topics?</text>
+  <line x1="196" y1="372" x2="196" y2="396" stroke="#eeeeee" stroke-width="1"/>
+  <text x="204" y="388" font-family="Arial,sans-serif" font-size="11" fill="#555555">Yes, please ask…</text>
+  <rect x="882" y="478" width="370" height="390" rx="8" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <rect x="882" y="478" width="370" height="390" rx="8" fill="white" opacity="0.92"/>
+  <rect x="896" y="488" width="342" height="320" rx="4" fill="#f8f8f8" stroke="#eeeeee" stroke-width="1"/>
+  <text x="906" y="508" font-family="Arial,sans-serif" font-size="11" fill="#aaaaaa">Conversation messages…</text>
+  <rect x="902" y="528" width="210" height="36" rx="4" fill="#eeeeee" stroke="#cccccc" stroke-width="1"/>
+  <text x="910" y="550" font-family="Arial,sans-serif" font-size="11" fill="#333333">Hello! How can I help?</text>
+  <rect x="1022" y="570" width="210" height="36" rx="4" fill="#dddddd" stroke="#cccccc" stroke-width="1"/>
+  <text x="1030" y="592" font-family="Arial,sans-serif" font-size="11" fill="#333333">Tell me about this topic.</text>
+  <rect x="896" y="814" width="308" height="34" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="906" y="835" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Type a message…</text>
+  <circle cx="1230" cy="832" r="18" fill="#333333"/>
+  <rect x="1225" y="822" width="10" height="13" rx="5" fill="none" stroke="white" stroke-width="1.5"/>
+  <path d="M1222 836 a8 6 0 0 0 16 0" fill="none" stroke="white" stroke-width="1.5"/>
+  <line x1="1230" y1="842" x2="1230" y2="846" stroke="white" stroke-width="1.5"/>
+  <line x1="1225" y1="846" x2="1235" y2="846" stroke="white" stroke-width="1.5"/>
+</svg>

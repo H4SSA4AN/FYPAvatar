@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900">
+  <rect width="1280" height="900" fill="#ebebeb"/>
+  <rect x="14" y="14" width="1260" height="876" rx="12" fill="#c0c0c0"/>
+  <rect x="10" y="10" width="1260" height="876" rx="10" fill="white" stroke="#aaaaaa" stroke-width="1.5"/>
+  <rect x="10" y="10" width="1260" height="40" rx="10" fill="#dcdcdc"/>
+  <rect x="10" y="36" width="1260" height="14" fill="#dcdcdc"/>
+  <circle cx="36" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="32" y1="26" x2="40" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="40" y1="26" x2="32" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="58" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="54" y1="30" x2="62" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="80" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="76" y1="30" x2="84" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="80" y1="26" x2="80" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <rect x="100" y="15" width="200" height="30" rx="5" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="200" y="34" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#444">Upload FAQ POC</text>
+  <rect x="10" y="50" width="1260" height="44" fill="#f5f5f5"/>
+  <rect x="22" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="35" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#666">&#8592;</text>
+  <rect x="52" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="65" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#cccccc">&#8594;</text>
+  <rect x="90" y="58" width="1068" height="28" rx="14" fill="white" stroke="#d0d0d0" stroke-width="1"/>
+  <rect x="104" y="67" width="8" height="7" rx="1" fill="none" stroke="#999" stroke-width="1"/>
+  <path d="M106 67 a2 2 0 0 1 4 0" fill="none" stroke="#999" stroke-width="1"/>
+  <text x="624" y="76" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#555">localhost:5000/</text>
+  <line x1="10" y1="94" x2="1270" y2="94" stroke="#e0e0e0" stroke-width="1"/>
+  <rect x="18" y="100" width="468" height="778" rx="4" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <text x="32" y="130" font-family="Arial,sans-serif" font-size="18" font-weight="bold" fill="#111111">Upload FAQ CSV</text>
+  <rect x="32" y="152" width="440" height="32" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="42" y="172" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Choose .csv file</text>
+  <rect x="32" y="196" width="440" height="32" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="42" y="216" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Enter FAQ Title</text>
+  <rect x="32" y="240" width="110" height="34" rx="5" fill="#333333" stroke="#444444" stroke-width="1"/>
+  <text x="87" y="261" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="white">Upload</text>
+  <line x1="32" y1="292" x2="472" y2="292" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="32" y="330" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="#222222">Ask question</text>
+  <rect x="32" y="350" width="440" height="32" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="42" y="370" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Select a title</text>
+  <text x="458" y="370" font-family="Arial,sans-serif" font-size="11" fill="#aaaaaa">&#9660;</text>
+  <rect x="32" y="394" width="440" height="32" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="42" y="414" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Ask a question</text>
+  <rect x="32" y="438" width="90" height="34" rx="5" fill="#333333" stroke="#444444" stroke-width="1"/>
+  <text x="77" y="459" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="white">Enter</text>
+  <text x="32" y="490" font-family="Arial,sans-serif" font-size="11" fill="#888888">Answer</text>
+  <rect x="32" y="500" width="440" height="110" rx="4" fill="#fafafa" stroke="#e0e0e0" stroke-width="1"/>
+  <text x="42" y="520" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Answer will appear here…</text>
+  <rect x="494" y="100" width="768" height="778" rx="4" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <text x="508" y="130" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="#222222">FAQ</text>
+  <rect x="508" y="152" width="740" height="32" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="518" y="172" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Search FAQ</text>
+  <rect x="508" y="200" width="740" height="64" rx="4" fill="#fafafa" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="518" y="220" font-family="Arial,sans-serif" font-size="12" fill="#333333">Q: Sample question 1?</text>
+  <text x="518" y="240" font-family="Arial,sans-serif" font-size="11" fill="#777777">A: Sample answer text for question 1.</text>
+  <rect x="508" y="270" width="740" height="64" rx="4" fill="#fafafa" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="518" y="290" font-family="Arial,sans-serif" font-size="12" fill="#333333">Q: Sample question 2?</text>
+  <text x="518" y="310" font-family="Arial,sans-serif" font-size="11" fill="#777777">A: Sample answer text for question 2.</text>
+  <rect x="508" y="340" width="740" height="64" rx="4" fill="#fafafa" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="518" y="360" font-family="Arial,sans-serif" font-size="12" fill="#333333">Q: Sample question 3?</text>
+  <text x="518" y="380" font-family="Arial,sans-serif" font-size="11" fill="#777777">A: Sample answer text for question 3.</text>
+  <rect x="508" y="410" width="740" height="64" rx="4" fill="#fafafa" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="518" y="430" font-family="Arial,sans-serif" font-size="12" fill="#333333">Q: Sample question 4?</text>
+  <text x="518" y="450" font-family="Arial,sans-serif" font-size="11" fill="#777777">A: Sample answer text for question 4.</text>
+  <rect x="508" y="480" width="740" height="64" rx="4" fill="#fafafa" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="518" y="500" font-family="Arial,sans-serif" font-size="12" fill="#333333">Q: Sample question 5?</text>
+  <text x="518" y="520" font-family="Arial,sans-serif" font-size="11" fill="#777777">A: Sample answer text for question 5.</text>
+  <rect x="508" y="550" width="740" height="64" rx="4" fill="#fafafa" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="518" y="570" font-family="Arial,sans-serif" font-size="12" fill="#333333">Q: Sample question 6?</text>
+  <text x="518" y="590" font-family="Arial,sans-serif" font-size="11" fill="#777777">A: Sample answer text for question 6.</text>
+  <rect x="508" y="620" width="740" height="64" rx="4" fill="#fafafa" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="518" y="640" font-family="Arial,sans-serif" font-size="12" fill="#333333">Q: Sample question 7?</text>
+  <text x="518" y="660" font-family="Arial,sans-serif" font-size="11" fill="#777777">A: Sample answer text for question 7.</text>
+</svg>

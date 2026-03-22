@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900">
+  <rect width="1280" height="900" fill="#ebebeb"/>
+  <rect x="14" y="14" width="1260" height="876" rx="12" fill="#c0c0c0"/>
+  <rect x="10" y="10" width="1260" height="876" rx="10" fill="white" stroke="#aaaaaa" stroke-width="1.5"/>
+  <rect x="10" y="10" width="1260" height="40" rx="10" fill="#dcdcdc"/>
+  <rect x="10" y="36" width="1260" height="14" fill="#dcdcdc"/>
+  <circle cx="36" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="32" y1="26" x2="40" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="40" y1="26" x2="32" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="58" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="54" y1="30" x2="62" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="80" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="76" y1="30" x2="84" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="80" y1="26" x2="80" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <rect x="100" y="15" width="200" height="30" rx="5" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="200" y="34" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#444">Create FAQ – Avatar Modal</text>
+  <rect x="10" y="50" width="1260" height="44" fill="#f5f5f5"/>
+  <rect x="22" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="35" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#666">&#8592;</text>
+  <rect x="52" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="65" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#cccccc">&#8594;</text>
+  <rect x="90" y="58" width="1068" height="28" rx="14" fill="white" stroke="#d0d0d0" stroke-width="1"/>
+  <rect x="104" y="67" width="8" height="7" rx="1" fill="none" stroke="#999" stroke-width="1"/>
+  <path d="M106 67 a2 2 0 0 1 4 0" fill="none" stroke="#999" stroke-width="1"/>
+  <text x="624" y="76" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#555">localhost:5000/createQA</text>
+  <line x1="10" y1="94" x2="1270" y2="94" stroke="#e0e0e0" stroke-width="1"/>
+  <rect x="10" y="94" width="1260" height="48" fill="#222222" stroke="none"/>
+  <text x="30" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="normal" fill="#999999">Home</text>
+  <line x1="86" y1="138" x2="156" y2="138" stroke="white" stroke-width="2"/>
+  <text x="86" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="white">Create FAQ</text>
+  <text x="190" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="normal" fill="#999999">Edit FAQs</text>
+  <text x="286" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="normal" fill="#999999">Test FAQs</text>
+  <text x="1060" y="123" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="white">InteractiveAvatar</text>
+  <rect x="1204" y="104" width="58" height="28" rx="4" fill="#444444" stroke="#666" stroke-width="1"/>
+  <text x="1233" y="122" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="white">Download</text>
+  <rect x="10" y="142" width="1260" height="744" fill="#555555" opacity="0.5"/>
+  <rect x="10" y="142" width="1260" height="744" fill="#444444" opacity="0.55"/>
+  <rect x="190" y="254" width="900" height="520" rx="8" fill="white" stroke="#bbbbbb" stroke-width="1.5"/>
+  <rect x="190" y="254" width="900" height="50" rx="8" fill="#f5f5f5"/>
+  <rect x="190" y="292" width="900" height="12" fill="#f5f5f5"/>
+  <line x1="190" y1="304" x2="1090" y2="304" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="210" y="286" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="#222222">Generate Avatar Video</text>
+  <circle cx="1068" cy="279" r="10" fill="#e0e0e0" stroke="#cccccc" stroke-width="1"/>
+  <line x1="1063" y1="274" x2="1073" y2="284" stroke="#888888" stroke-width="1.5"/>
+  <line x1="1073" y1="274" x2="1063" y2="284" stroke="#888888" stroke-width="1.5"/>
+  <text x="206" y="326" font-family="Arial,sans-serif" font-size="12" fill="#444444">Enter Prompt for Image Generation</text>
+  <rect x="206" y="340" width="424" height="140" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="216" y="358" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Describe the avatar you want to create…</text>
+  <rect x="206" y="488" width="424" height="36" rx="5" fill="#333333" stroke="#444444" stroke-width="1"/>
+  <text x="418" y="510" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="white">Generate Image</text>
+  <text x="650" y="326" font-family="Arial,sans-serif" font-size="12" fill="#444444">Image Preview</text>
+  <rect x="650" y="340" width="424" height="184" rx="6" fill="#f0f0f0" stroke="#cccccc" stroke-width="1"/>
+  <line x1="650" y1="340" x2="1074" y2="524" stroke="#e0e0e0" stroke-width="1.5"/>
+  <line x1="1074" y1="340" x2="650" y2="524" stroke="#e0e0e0" stroke-width="1.5"/>
+  <text x="862" y="414" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#aaaaaa">Generated image will appear here</text>
+  <text x="862" y="432" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#aaaaaa">OR</text>
+  <text x="862" y="450" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#aaaaaa">Click to upload your own</text>
+  <line x1="190" y1="706" x2="1090" y2="706" stroke="#e8e8e8" stroke-width="1"/>
+  <rect x="430" y="722" width="200" height="36" rx="5" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="530" y="744" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#444444">Confirm Image Only</text>
+  <rect x="650" y="722" width="200" height="36" rx="5" fill="#333333" stroke="#444444" stroke-width="1"/>
+  <text x="750" y="744" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="white">Confirm &amp; Generate Video</text>
+</svg>

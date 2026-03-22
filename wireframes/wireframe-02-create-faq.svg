@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900">
+  <rect width="1280" height="900" fill="#ebebeb"/>
+  <rect x="14" y="14" width="1260" height="876" rx="12" fill="#c0c0c0"/>
+  <rect x="10" y="10" width="1260" height="876" rx="10" fill="white" stroke="#aaaaaa" stroke-width="1.5"/>
+  <rect x="10" y="10" width="1260" height="40" rx="10" fill="#dcdcdc"/>
+  <rect x="10" y="36" width="1260" height="14" fill="#dcdcdc"/>
+  <circle cx="36" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="32" y1="26" x2="40" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="40" y1="26" x2="32" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="58" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="54" y1="30" x2="62" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="80" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="76" y1="30" x2="84" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="80" y1="26" x2="80" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <rect x="100" y="15" width="200" height="30" rx="5" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="200" y="34" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#444">Create FAQ – InteractiveAvatar</text>
+  <rect x="10" y="50" width="1260" height="44" fill="#f5f5f5"/>
+  <rect x="22" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="35" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#666">&#8592;</text>
+  <rect x="52" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="65" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#cccccc">&#8594;</text>
+  <rect x="90" y="58" width="1068" height="28" rx="14" fill="white" stroke="#d0d0d0" stroke-width="1"/>
+  <rect x="104" y="67" width="8" height="7" rx="1" fill="none" stroke="#999" stroke-width="1"/>
+  <path d="M106 67 a2 2 0 0 1 4 0" fill="none" stroke="#999" stroke-width="1"/>
+  <text x="624" y="76" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#555">localhost:5000/createQA</text>
+  <line x1="10" y1="94" x2="1270" y2="94" stroke="#e0e0e0" stroke-width="1"/>
+  <rect x="10" y="94" width="1260" height="48" fill="#222222" stroke="none"/>
+  <text x="30" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="normal" fill="#999999">Home</text>
+  <line x1="86" y1="138" x2="156" y2="138" stroke="white" stroke-width="2"/>
+  <text x="86" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="white">Create FAQ</text>
+  <text x="190" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="normal" fill="#999999">Edit FAQs</text>
+  <text x="286" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="normal" fill="#999999">Test FAQs</text>
+  <text x="1060" y="123" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="white">InteractiveAvatar</text>
+  <rect x="1204" y="104" width="58" height="28" rx="4" fill="#444444" stroke="#666" stroke-width="1"/>
+  <text x="1233" y="122" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="white">Download</text>
+  <rect x="18" y="148" width="348" height="730" rx="4" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <text x="32" y="176" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="#222222">Create New FAQ</text>
+  <text x="32" y="198" font-family="Arial,sans-serif" font-size="11" fill="#555555">Title</text>
+  <rect x="32" y="214" width="320" height="30" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="42" y="233" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Title of the FAQ</text>
+  <text x="32" y="258" font-family="Arial,sans-serif" font-size="11" fill="#555555">Upload FAQ CSV</text>
+  <rect x="32" y="274" width="320" height="36" rx="5" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="192" y="296" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#444444">Upload CSV here</text>
+  <text x="32" y="326" font-family="Arial,sans-serif" font-size="11" fill="#555555">Manually enter FAQ</text>
+  <rect x="32" y="342" width="320" height="36" rx="5" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="192" y="364" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#444444">Click to manually enter FAQ</text>
+  <text x="32" y="394" font-family="Arial,sans-serif" font-size="11" fill="#555555">Generate an avatar</text>
+  <rect x="32" y="410" width="320" height="36" rx="5" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="192" y="432" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#444444">Open avatar generation window</text>
+  <rect x="32" y="466" width="14" height="14" rx="2" fill="white" stroke="#aaaaaa" stroke-width="1"/>
+  <line x1="34" y1="473" x2="38" y2="478" stroke="#333333" stroke-width="2"/>
+  <line x1="38" y1="478" x2="46" y2="468" stroke="#333333" stroke-width="2"/>
+  <text x="52" y="477" font-family="Arial,sans-serif" font-size="12" fill="#555555">Use placeholder videos (testing mode)</text>
+  <rect x="32" y="494" width="14" height="14" rx="2" fill="white" stroke="#aaaaaa" stroke-width="1"/>
+  <text x="52" y="505" font-family="Arial,sans-serif" font-size="12" fill="#555555">Audio only (real audio, placeholder video)</text>
+  <rect x="32" y="538" width="320" height="38" rx="5" fill="#333333" stroke="#444444" stroke-width="1"/>
+  <text x="192" y="561" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="white">Create FAQ and Generate</text>
+  <rect x="374" y="148" width="420" height="730" rx="4" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <text x="388" y="176" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="#222222">Preview Avatar</text>
+  <rect x="388" y="198" width="392" height="260" rx="6" fill="#f0f0f0" stroke="#cccccc" stroke-width="1"/>
+  <line x1="388" y1="198" x2="780" y2="458" stroke="#e0e0e0" stroke-width="1.5"/>
+  <line x1="780" y1="198" x2="388" y2="458" stroke="#e0e0e0" stroke-width="1.5"/>
+  <polygon points="570,310 602,328 570,346" fill="#cccccc"/>
+  <text x="584" y="446" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#aaaaaa">Avatar Video Preview</text>
+  <text x="388" y="470" font-family="Arial,sans-serif" font-size="11" fill="#555555">Video Generation Prompt</text>
+  <rect x="388" y="486" width="392" height="60" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="398" y="504" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Describe how the video should look…</text>
+  <text x="388" y="558" font-family="Arial,sans-serif" font-size="11" fill="#555555">Speech Settings</text>
+  <text x="390" y="578" font-family="Arial,sans-serif" font-size="11" fill="#666666">Happy</text>
+  <rect x="390" y="590" width="184" height="4" rx="2" fill="#dddddd" stroke="#cccccc" stroke-width="1"/>
+  <rect x="390" y="590" width="46" height="4" rx="2" fill="#888888"/>
+  <circle cx="436" cy="592" r="7" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <text x="590" y="578" font-family="Arial,sans-serif" font-size="11" fill="#666666">Angry</text>
+  <rect x="590" y="590" width="184" height="4" rx="2" fill="#dddddd" stroke="#cccccc" stroke-width="1"/>
+  <rect x="590" y="590" width="46" height="4" rx="2" fill="#888888"/>
+  <circle cx="636" cy="592" r="7" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <text x="390" y="616" font-family="Arial,sans-serif" font-size="11" fill="#666666">Sad</text>
+  <rect x="390" y="628" width="184" height="4" rx="2" fill="#dddddd" stroke="#cccccc" stroke-width="1"/>
+  <rect x="390" y="628" width="46" height="4" rx="2" fill="#888888"/>
+  <circle cx="436" cy="630" r="7" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <text x="590" y="616" font-family="Arial,sans-serif" font-size="11" fill="#666666">Surprised</text>
+  <rect x="590" y="628" width="184" height="4" rx="2" fill="#dddddd" stroke="#cccccc" stroke-width="1"/>
+  <rect x="590" y="628" width="46" height="4" rx="2" fill="#888888"/>
+  <circle cx="636" cy="630" r="7" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <text x="390" y="654" font-family="Arial,sans-serif" font-size="11" fill="#666666">Afraid</text>
+  <rect x="390" y="666" width="184" height="4" rx="2" fill="#dddddd" stroke="#cccccc" stroke-width="1"/>
+  <rect x="390" y="666" width="46" height="4" rx="2" fill="#888888"/>
+  <circle cx="436" cy="668" r="7" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <text x="590" y="654" font-family="Arial,sans-serif" font-size="11" fill="#666666">Disgusted</text>
+  <rect x="590" y="666" width="184" height="4" rx="2" fill="#dddddd" stroke="#cccccc" stroke-width="1"/>
+  <rect x="590" y="666" width="46" height="4" rx="2" fill="#888888"/>
+  <circle cx="636" cy="668" r="7" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <text x="390" y="692" font-family="Arial,sans-serif" font-size="11" fill="#666666">Calm</text>
+  <rect x="390" y="704" width="184" height="4" rx="2" fill="#dddddd" stroke="#cccccc" stroke-width="1"/>
+  <rect x="390" y="704" width="46" height="4" rx="2" fill="#888888"/>
+  <circle cx="436" cy="706" r="7" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <text x="590" y="692" font-family="Arial,sans-serif" font-size="11" fill="#666666">Melancholic</text>
+  <rect x="590" y="704" width="184" height="4" rx="2" fill="#dddddd" stroke="#cccccc" stroke-width="1"/>
+  <rect x="590" y="704" width="46" height="4" rx="2" fill="#888888"/>
+  <circle cx="636" cy="706" r="7" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <rect x="802" y="148" width="460" height="730" rx="4" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <text x="816" y="176" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="#222222">Preview / Instructions</text>
+  <text x="816" y="202" font-family="Arial,sans-serif" font-size="12" fill="#777777">Select a topic or create a new one</text>
+  <text x="816" y="222" font-family="Arial,sans-serif" font-size="12" fill="#777777">to start adding questions to your</text>
+  <text x="816" y="242" font-family="Arial,sans-serif" font-size="12" fill="#777777">knowledge base.</text>
+  <text x="816" y="262" font-family="Arial,sans-serif" font-size="12" fill="#777777"></text>
+  <text x="816" y="282" font-family="Arial,sans-serif" font-size="12" fill="#777777">Steps:</text>
+  <text x="816" y="302" font-family="Arial,sans-serif" font-size="12" fill="#777777">1. Enter a title for your FAQ.</text>
+  <text x="816" y="322" font-family="Arial,sans-serif" font-size="12" fill="#777777">2. Upload a CSV or manually enter Q&amp;A.</text>
+  <text x="816" y="342" font-family="Arial,sans-serif" font-size="12" fill="#777777">3. Generate or upload an avatar image.</text>
+  <text x="816" y="362" font-family="Arial,sans-serif" font-size="12" fill="#777777">4. Click 'Create FAQ and Generate'.</text>
+</svg>

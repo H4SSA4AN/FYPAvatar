@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900">
+  <rect width="1280" height="900" fill="#ebebeb"/>
+  <rect x="14" y="14" width="1260" height="876" rx="12" fill="#c0c0c0"/>
+  <rect x="10" y="10" width="1260" height="876" rx="10" fill="white" stroke="#aaaaaa" stroke-width="1.5"/>
+  <rect x="10" y="10" width="1260" height="40" rx="10" fill="#dcdcdc"/>
+  <rect x="10" y="36" width="1260" height="14" fill="#dcdcdc"/>
+  <circle cx="36" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="32" y1="26" x2="40" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="40" y1="26" x2="32" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="58" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="54" y1="30" x2="62" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <circle cx="80" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="76" y1="30" x2="84" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="80" y1="26" x2="80" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <rect x="100" y="15" width="200" height="30" rx="5" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="200" y="34" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#444">Test FAQs – InteractiveAvatar</text>
+  <rect x="10" y="50" width="1260" height="44" fill="#f5f5f5"/>
+  <rect x="22" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="35" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#666">&#8592;</text>
+  <rect x="52" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="65" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#cccccc">&#8594;</text>
+  <rect x="90" y="58" width="1068" height="28" rx="14" fill="white" stroke="#d0d0d0" stroke-width="1"/>
+  <rect x="104" y="67" width="8" height="7" rx="1" fill="none" stroke="#999" stroke-width="1"/>
+  <path d="M106 67 a2 2 0 0 1 4 0" fill="none" stroke="#999" stroke-width="1"/>
+  <text x="624" y="76" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#555">localhost:5000/testQA</text>
+  <line x1="10" y1="94" x2="1270" y2="94" stroke="#e0e0e0" stroke-width="1"/>
+  <rect x="10" y="94" width="1260" height="48" fill="#222222" stroke="none"/>
+  <text x="30" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="normal" fill="#999999">Home</text>
+  <text x="86" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="normal" fill="#999999">Create FAQ</text>
+  <text x="190" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="normal" fill="#999999">Edit FAQs</text>
+  <line x1="286" y1="138" x2="349" y2="138" stroke="white" stroke-width="2"/>
+  <text x="286" y="123" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="white">Test FAQs</text>
+  <text x="1060" y="123" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="white">InteractiveAvatar</text>
+  <rect x="18" y="148" width="370" height="730" rx="4" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <text x="32" y="176" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="#222222">Avatar Interaction</text>
+  <rect x="32" y="198" width="342" height="500" rx="6" fill="#f0f0f0" stroke="#cccccc" stroke-width="1"/>
+  <line x1="32" y1="198" x2="374" y2="698" stroke="#e0e0e0" stroke-width="1.5"/>
+  <line x1="374" y1="198" x2="32" y2="698" stroke="#e0e0e0" stroke-width="1.5"/>
+  <polygon points="189,430 221,448 189,466" fill="#cccccc"/>
+  <text x="203" y="686" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#aaaaaa">Avatar Video</text>
+  <rect x="32" y="712" width="170" height="36" rx="5" fill="#333333" stroke="#444444" stroke-width="1"/>
+  <text x="117" y="734" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="white">Start Conversation</text>
+  <rect x="214" y="712" width="80" height="36" rx="5" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="254" y="734" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#444444">Stop</text>
+  <rect x="396" y="148" width="388" height="730" rx="4" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <text x="410" y="176" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="#222222">FAQs</text>
+  <rect x="410" y="198" width="360" height="30" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="420" y="217" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Search topics…</text>
+  <rect x="410" y="242" width="356" height="30" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="418" y="261" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#333333">Question</text>
+  <line x1="588" y1="242" x2="588" y2="272" stroke="#cccccc" stroke-width="1"/>
+  <text x="596" y="261" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#333333">Answer</text>
+  <rect x="410" y="272" width="356" height="26" fill="#fafafa" stroke="#eeeeee" stroke-width="1"/>
+  <text x="418" y="289" font-family="Arial,sans-serif" font-size="11" fill="#555555">What is your name?</text>
+  <line x1="588" y1="272" x2="588" y2="298" stroke="#eeeeee" stroke-width="1"/>
+  <text x="596" y="289" font-family="Arial,sans-serif" font-size="11" fill="#555555">I am the avatar…</text>
+  <rect x="410" y="298" width="356" height="26" fill="white" stroke="#eeeeee" stroke-width="1"/>
+  <text x="418" y="315" font-family="Arial,sans-serif" font-size="11" fill="#555555">How can I help you?</text>
+  <line x1="588" y1="298" x2="588" y2="324" stroke="#eeeeee" stroke-width="1"/>
+  <text x="596" y="315" font-family="Arial,sans-serif" font-size="11" fill="#555555">I can answer FAQ…</text>
+  <rect x="410" y="324" width="356" height="26" fill="#fafafa" stroke="#eeeeee" stroke-width="1"/>
+  <text x="418" y="341" font-family="Arial,sans-serif" font-size="11" fill="#555555">What topics do you kno…</text>
+  <line x1="588" y1="324" x2="588" y2="350" stroke="#eeeeee" stroke-width="1"/>
+  <text x="596" y="341" font-family="Arial,sans-serif" font-size="11" fill="#555555">I know about…</text>
+  <rect x="410" y="350" width="356" height="26" fill="white" stroke="#eeeeee" stroke-width="1"/>
+  <text x="418" y="367" font-family="Arial,sans-serif" font-size="11" fill="#555555">How do I ask questions…</text>
+  <line x1="588" y1="350" x2="588" y2="376" stroke="#eeeeee" stroke-width="1"/>
+  <text x="596" y="367" font-family="Arial,sans-serif" font-size="11" fill="#555555">Type or speak…</text>
+  <rect x="410" y="376" width="356" height="26" fill="#fafafa" stroke="#eeeeee" stroke-width="1"/>
+  <text x="418" y="393" font-family="Arial,sans-serif" font-size="11" fill="#555555">Can you show emotions?</text>
+  <line x1="588" y1="376" x2="588" y2="402" stroke="#eeeeee" stroke-width="1"/>
+  <text x="596" y="393" font-family="Arial,sans-serif" font-size="11" fill="#555555">Yes, I can…</text>
+  <rect x="410" y="402" width="356" height="26" fill="white" stroke="#eeeeee" stroke-width="1"/>
+  <text x="418" y="419" font-family="Arial,sans-serif" font-size="11" fill="#555555">What is this system?</text>
+  <line x1="588" y1="402" x2="588" y2="428" stroke="#eeeeee" stroke-width="1"/>
+  <text x="596" y="419" font-family="Arial,sans-serif" font-size="11" fill="#555555">An interactive FAQ…</text>
+  <rect x="410" y="428" width="356" height="26" fill="#fafafa" stroke="#eeeeee" stroke-width="1"/>
+  <text x="418" y="445" font-family="Arial,sans-serif" font-size="11" fill="#555555">What languages?</text>
+  <line x1="588" y1="428" x2="588" y2="454" stroke="#eeeeee" stroke-width="1"/>
+  <text x="596" y="445" font-family="Arial,sans-serif" font-size="11" fill="#555555">English for now…</text>
+  <rect x="792" y="148" width="470" height="730" rx="4" fill="#ffffff" stroke="#dddddd" stroke-width="1"/>
+  <text x="806" y="176" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="#222222">Conversation Log</text>
+  <rect x="806" y="198" width="442" height="630" rx="4" fill="#fafafa" stroke="#e8e8e8" stroke-width="1"/>
+  <text x="816" y="220" font-family="Arial,sans-serif" font-size="12" fill="#aaaaaa">Ready to start conversation…</text>
+  <rect x="812" y="246" width="220" height="42" rx="4" fill="#eeeeee" stroke="#cccccc" stroke-width="1"/>
+  <text x="820" y="260" font-family="Arial,sans-serif" font-size="9" fill="#888888">System:</text>
+  <text x="820" y="274" font-family="Arial,sans-serif" font-size="11" fill="#333333">Hello! How can I help?</text>
+  <rect x="1022" y="298" width="220" height="42" rx="4" fill="#dddddd" stroke="#cccccc" stroke-width="1"/>
+  <text x="1030" y="312" font-family="Arial,sans-serif" font-size="9" fill="#888888">User:</text>
+  <text x="1030" y="326" font-family="Arial,sans-serif" font-size="11" fill="#333333">What is your name?</text>
+  <rect x="812" y="350" width="220" height="42" rx="4" fill="#eeeeee" stroke="#cccccc" stroke-width="1"/>
+  <text x="820" y="364" font-family="Arial,sans-serif" font-size="9" fill="#888888">System:</text>
+  <text x="820" y="378" font-family="Arial,sans-serif" font-size="11" fill="#333333">I am the Interactive Avatar.</text>
+  <rect x="806" y="838" width="380" height="36" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="816" y="860" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Type your message…</text>
+  <rect x="1194" y="838" width="56" height="36" rx="5" fill="#333333" stroke="#444444" stroke-width="1"/>
+  <text x="1222" y="860" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="white">Send</text>
+</svg>
