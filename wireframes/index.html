@@ -73,6 +73,8 @@
     <li><a href="#wf7">Player (in-app)</a></li>
     <li><a href="#wf8">Standalone Player – Upload Screen</a></li>
     <li><a href="#wf9">Standalone Player – Active State</a></li>
+    <li><a href="#wf10">Create FAQ: Variant A – Wizard / Stepper</a></li>
+    <li><a href="#wf11">Create FAQ: Variant B – Live Q&amp;A Table</a></li>
   </ol>
 </div>
 
@@ -194,6 +196,34 @@
     After the ZIP is loaded – same layout as the in-app player.
   </p>
   <img src="wireframe-09-standalone-player-active.svg" alt="Standalone player active wireframe">
+</div>
+<hr>
+
+<!-- 10 -->
+<div class="wireframe-section" id="wf10">
+  <h2>10 – Create FAQ: Variant A – Wizard / Stepper</h2>
+  <p>
+    Route: <code>localhost:5000/createQA</code> &nbsp;|&nbsp;
+    Alternative layout using a 4-step wizard: FAQ Details → Add Questions → Configure Avatar → Review &amp; Create.
+    Step 1 is shown here with a title field, description, topic/category selector, and a CSV drag-and-drop zone.
+    A tips panel on the right shows a sample CSV layout.
+    Navigation is handled by Cancel / Save Draft / Next buttons in a bottom action bar.
+  </p>
+  <img src="wireframe-10-create-faq-wizard-steps.svg" alt="Create FAQ wizard steps wireframe">
+</div>
+<hr>
+
+<!-- 11 -->
+<div class="wireframe-section" id="wf11">
+  <h2>11 – Create FAQ: Variant B – Live Q&amp;A Table</h2>
+  <p>
+    Route: <code>localhost:5000/createQA</code> &nbsp;|&nbsp;
+    Alternative split-screen layout: a narrow left panel holds all creation controls (title, avatar, tabbed
+    CSV/manual input, speech-emotion sliders, submit button) while a wide right panel shows a live,
+    editable Q&amp;A table.  Rows can be edited or deleted inline, and new rows can be typed directly
+    into an add-row bar at the bottom of the table.
+  </p>
+  <img src="wireframe-11-create-faq-table-focus.svg" alt="Create FAQ live table wireframe">
 </div>
 
 </body>

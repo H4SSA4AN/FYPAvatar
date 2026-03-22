@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900">
+
+  <!-- ── Background + window chrome ── -->
+  <rect width="1280" height="900" fill="#ebebeb"/>
+  <rect x="14" y="14" width="1260" height="876" rx="12" fill="#c0c0c0"/>
+  <rect x="10" y="10" width="1260" height="876" rx="10" fill="white" stroke="#aaaaaa" stroke-width="1.5"/>
+
+  <!-- Title bar -->
+  <rect x="10" y="10" width="1260" height="40" rx="10" fill="#dcdcdc"/>
+  <rect x="10" y="36" width="1260" height="14" fill="#dcdcdc"/>
+  <!-- close -->
+  <circle cx="36" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="32" y1="26" x2="40" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="40" y1="26" x2="32" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <!-- minimise -->
+  <circle cx="58" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="54" y1="30" x2="62" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <!-- maximise -->
+  <circle cx="80" cy="30" r="7" fill="white" stroke="#aaa" stroke-width="1.5"/>
+  <line x1="76" y1="30" x2="84" y2="30" stroke="#bbb" stroke-width="1.5"/>
+  <line x1="80" y1="26" x2="80" y2="34" stroke="#bbb" stroke-width="1.5"/>
+  <!-- tab label -->
+  <rect x="100" y="15" width="200" height="30" rx="5" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="200" y="34" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#444">Create FAQ – InteractiveAvatar</text>
+
+  <!-- Browser toolbar -->
+  <rect x="10" y="50" width="1260" height="44" fill="#f5f5f5"/>
+  <rect x="22" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="35" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#666">&#8592;</text>
+  <rect x="52" y="60" width="26" height="24" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="65" y="77" text-anchor="middle" font-family="Arial,sans-serif" font-size="16" fill="#cccccc">&#8594;</text>
+  <rect x="90" y="58" width="1068" height="28" rx="14" fill="white" stroke="#d0d0d0" stroke-width="1"/>
+  <rect x="104" y="67" width="8" height="7" rx="1" fill="none" stroke="#999" stroke-width="1"/>
+  <path d="M106 67 a2 2 0 0 1 4 0" fill="none" stroke="#999" stroke-width="1"/>
+  <text x="624" y="76" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="#555">localhost:5000/createQA</text>
+  <line x1="10" y1="94" x2="1270" y2="94" stroke="#e0e0e0" stroke-width="1"/>
+
+  <!-- Nav bar -->
+  <rect x="10" y="94" width="1260" height="48" fill="#222222"/>
+  <text x="30"  y="123" font-family="Arial,sans-serif" font-size="13" fill="#999999">Home</text>
+  <text x="86"  y="123" font-family="Arial,sans-serif" font-size="13" font-weight="bold" fill="white">Create FAQ</text>
+  <line x1="86" y1="138" x2="156" y2="138" stroke="white" stroke-width="2"/>
+  <text x="190" y="123" font-family="Arial,sans-serif" font-size="13" fill="#999999">Edit FAQs</text>
+  <text x="286" y="123" font-family="Arial,sans-serif" font-size="13" fill="#999999">Test FAQs</text>
+  <text x="1060" y="123" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="white">InteractiveAvatar</text>
+  <rect x="1204" y="104" width="58" height="28" rx="4" fill="#444444" stroke="#666" stroke-width="1"/>
+  <text x="1233" y="122" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="white">Download</text>
+
+  <!-- ════════════ PAGE CONTENT ════════════ -->
+
+  <!-- ── LEFT: Form / controls panel ── -->
+  <rect x="18" y="148" width="366" height="728" rx="4" fill="white" stroke="#dddddd" stroke-width="1"/>
+
+  <text x="34" y="178" font-family="Arial,sans-serif" font-size="15" font-weight="bold" fill="#222222">Create New FAQ</text>
+  <line x1="34" y1="186" x2="370" y2="186" stroke="#eeeeee" stroke-width="1"/>
+
+  <!-- Title field -->
+  <text x="34" y="210" font-family="Arial,sans-serif" font-size="11" fill="#555555">Title *</text>
+  <rect x="34" y="222" width="332" height="32" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="44" y="242" font-family="Arial,sans-serif" font-size="12" fill="#bbbbbb">Title of the FAQ</text>
+
+  <!-- Avatar section -->
+  <text x="34" y="272" font-family="Arial,sans-serif" font-size="11" fill="#555555">Avatar</text>
+  <!-- Avatar thumbnail -->
+  <rect x="34" y="284" width="90" height="78" rx="6" fill="#f0f0f0" stroke="#cccccc" stroke-width="1"/>
+  <line x1="34" y1="284" x2="124" y2="362" stroke="#e0e0e0" stroke-width="1.5"/>
+  <line x1="124" y1="284" x2="34" y2="362" stroke="#e0e0e0" stroke-width="1.5"/>
+  <circle cx="79" cy="320" r="16" fill="#cccccc"/>
+  <text x="79" y="325" text-anchor="middle" font-family="Arial,sans-serif" font-size="9" fill="white">Avatar</text>
+  <!-- Avatar buttons -->
+  <rect x="132" y="296" width="234" height="28" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="249" y="314" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#444444">Open avatar window</text>
+  <rect x="132" y="332" width="234" height="28" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="249" y="350" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#444444">Generate avatar image</text>
+
+  <!-- Add Questions tabs -->
+  <text x="34" y="386" font-family="Arial,sans-serif" font-size="11" fill="#555555">Add Questions</text>
+  <!-- Tab: Upload CSV (active) -->
+  <rect x="34" y="398" width="162" height="30" rx="4" fill="#333333"/>
+  <text x="115" y="418" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="white">Upload CSV</text>
+  <!-- Tab: Manual Entry -->
+  <rect x="202" y="398" width="164" height="30" rx="4" fill="#f0f0f0" stroke="#cccccc" stroke-width="1"/>
+  <text x="284" y="418" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#666666">Manual Entry</text>
+
+  <!-- CSV drop zone -->
+  <rect x="34" y="434" width="332" height="64" rx="6" fill="#f7f7f7" stroke="#cccccc" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="200" y="462" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#888888">Drop CSV here or click to browse</text>
+  <text x="200" y="482" text-anchor="middle" font-family="Arial,sans-serif" font-size="10" fill="#aaaaaa">No file selected</text>
+
+  <line x1="34" y1="514" x2="370" y2="514" stroke="#eeeeee" stroke-width="1"/>
+
+  <!-- Options -->
+  <text x="34" y="534" font-family="Arial,sans-serif" font-size="11" fill="#555555">Options</text>
+  <!-- Checkbox 1: checked -->
+  <rect x="34" y="546" width="14" height="14" rx="2" fill="white" stroke="#aaaaaa" stroke-width="1"/>
+  <line x1="36" y1="553" x2="40" y2="558" stroke="#333333" stroke-width="2"/>
+  <line x1="40" y1="558" x2="48" y2="547" stroke="#333333" stroke-width="2"/>
+  <text x="54" y="558" font-family="Arial,sans-serif" font-size="11" fill="#555555">Use placeholder videos (testing mode)</text>
+  <!-- Checkbox 2: unchecked -->
+  <rect x="34" y="572" width="14" height="14" rx="2" fill="white" stroke="#aaaaaa" stroke-width="1"/>
+  <text x="54" y="584" font-family="Arial,sans-serif" font-size="11" fill="#555555">Audio only mode</text>
+
+  <!-- Speech emotion sliders (condensed) -->
+  <line x1="34" y1="602" x2="370" y2="602" stroke="#eeeeee" stroke-width="1"/>
+  <text x="34" y="622" font-family="Arial,sans-serif" font-size="11" fill="#555555">Speech Emotion</text>
+  <!-- Slider row 1 -->
+  <text x="34" y="644" font-family="Arial,sans-serif" font-size="10" fill="#666666">Happy</text>
+  <rect x="82" y="636" width="130" height="4" rx="2" fill="#dddddd"/>
+  <rect x="82" y="636" width="32" height="4" rx="2" fill="#888888"/>
+  <circle cx="114" cy="638" r="6" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <text x="228" y="644" font-family="Arial,sans-serif" font-size="10" fill="#666666">Calm</text>
+  <rect x="260" y="636" width="106" height="4" rx="2" fill="#dddddd"/>
+  <rect x="260" y="636" width="53" height="4" rx="2" fill="#888888"/>
+  <circle cx="313" cy="638" r="6" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <!-- Slider row 2 -->
+  <text x="34" y="666" font-family="Arial,sans-serif" font-size="10" fill="#666666">Sad</text>
+  <rect x="82" y="658" width="130" height="4" rx="2" fill="#dddddd"/>
+  <circle cx="83" cy="660" r="6" fill="white" stroke="#888888" stroke-width="1.5"/>
+  <text x="228" y="666" font-family="Arial,sans-serif" font-size="10" fill="#666666">Angry</text>
+  <rect x="260" y="658" width="106" height="4" rx="2" fill="#dddddd"/>
+  <circle cx="261" cy="660" r="6" fill="white" stroke="#888888" stroke-width="1.5"/>
+
+  <!-- Submit button -->
+  <rect x="34" y="782" width="332" height="42" rx="5" fill="#333333"/>
+  <text x="200" y="808" text-anchor="middle" font-family="Arial,sans-serif" font-size="13" fill="white">Create FAQ and Generate</text>
+  <!-- Save as draft link -->
+  <text x="200" y="846" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#888888">or Save as Draft</text>
+
+  <!-- ── RIGHT: Live Q&amp;A table panel ── -->
+  <rect x="392" y="148" width="870" height="728" rx="4" fill="white" stroke="#dddddd" stroke-width="1"/>
+
+  <!-- Panel header bar -->
+  <rect x="392" y="148" width="870" height="50" rx="4" fill="#f5f5f5" stroke="#dddddd" stroke-width="1"/>
+  <rect x="392" y="178" width="870" height="20" fill="#f5f5f5"/>
+  <text x="410" y="178" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#222222">Q&amp;A Preview</text>
+
+  <!-- Topic dropdown -->
+  <text x="720" y="178" font-family="Arial,sans-serif" font-size="11" fill="#555555">Topic:</text>
+  <rect x="746" y="160" width="194" height="26" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="756" y="177" font-family="Arial,sans-serif" font-size="12" fill="#444444">Open Day FAQ</text>
+  <text x="930" y="177" font-family="Arial,sans-serif" font-size="12" fill="#aaaaaa">▼</text>
+
+  <!-- Question count badge -->
+  <rect x="960" y="161" width="86" height="22" rx="11" fill="#e8e8e8"/>
+  <text x="1003" y="176" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" fill="#666666">12 questions</text>
+
+  <!-- Table column headers -->
+  <rect x="392" y="198" width="870" height="32" fill="#f0f0f0" stroke="#dddddd" stroke-width="1"/>
+  <text x="410" y="219" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#555555">#</text>
+  <text x="444" y="219" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#555555">Question</text>
+  <text x="790" y="219" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#555555">Answer</text>
+  <text x="1175" y="219" text-anchor="middle" font-family="Arial,sans-serif" font-size="11" font-weight="bold" fill="#555555">Actions</text>
+
+  <!-- Vertical column dividers -->
+  <line x1="434" y1="198" x2="434" y2="862" stroke="#eeeeee" stroke-width="1"/>
+  <line x1="778" y1="198" x2="778" y2="862" stroke="#eeeeee" stroke-width="1"/>
+  <line x1="1148" y1="198" x2="1148" y2="862" stroke="#eeeeee" stroke-width="1"/>
+
+  <!-- Row 1 (white) -->
+  <rect x="392" y="230" width="870" height="52" fill="white"/>
+  <line x1="392" y1="282" x2="1262" y2="282" stroke="#eeeeee" stroke-width="1"/>
+  <text x="410" y="260" font-family="Arial,sans-serif" font-size="12" fill="#555555">1</text>
+  <text x="444" y="253" font-family="Arial,sans-serif" font-size="12" fill="#333333">What time does the open day start?</text>
+  <text x="444" y="271" font-family="Arial,sans-serif" font-size="10" fill="#aaaaaa">General</text>
+  <text x="790" y="260" font-family="Arial,sans-serif" font-size="12" fill="#333333">Doors open at 10am, events run until 4pm.</text>
+  <rect x="1156" y="242" width="26" height="22" rx="3" fill="#f0f0f0" stroke="#dddddd" stroke-width="1"/>
+  <text x="1169" y="257" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#666666">&#9998;</text>
+  <rect x="1188" y="242" width="26" height="22" rx="3" fill="#f0f0f0" stroke="#dddddd" stroke-width="1"/>
+  <text x="1201" y="257" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#999999">&#10005;</text>
+
+  <!-- Row 2 (tinted) -->
+  <rect x="392" y="282" width="870" height="52" fill="#fafafa"/>
+  <line x1="392" y1="334" x2="1262" y2="334" stroke="#eeeeee" stroke-width="1"/>
+  <text x="410" y="312" font-family="Arial,sans-serif" font-size="12" fill="#555555">2</text>
+  <text x="444" y="312" font-family="Arial,sans-serif" font-size="12" fill="#333333">Where is the main venue located?</text>
+  <text x="790" y="312" font-family="Arial,sans-serif" font-size="12" fill="#333333">Haslegrave Building, main campus.</text>
+  <rect x="1156" y="294" width="26" height="22" rx="3" fill="#f0f0f0" stroke="#dddddd" stroke-width="1"/>
+  <text x="1169" y="309" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#666666">&#9998;</text>
+  <rect x="1188" y="294" width="26" height="22" rx="3" fill="#f0f0f0" stroke="#dddddd" stroke-width="1"/>
+  <text x="1201" y="309" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#999999">&#10005;</text>
+
+  <!-- Row 3 (white) -->
+  <rect x="392" y="334" width="870" height="52" fill="white"/>
+  <line x1="392" y1="386" x2="1262" y2="386" stroke="#eeeeee" stroke-width="1"/>
+  <text x="410" y="364" font-family="Arial,sans-serif" font-size="12" fill="#555555">3</text>
+  <text x="444" y="364" font-family="Arial,sans-serif" font-size="12" fill="#333333">Is parking available on the day?</text>
+  <text x="790" y="364" font-family="Arial,sans-serif" font-size="12" fill="#333333">Free parking available on open days.</text>
+  <rect x="1156" y="346" width="26" height="22" rx="3" fill="#f0f0f0" stroke="#dddddd" stroke-width="1"/>
+  <text x="1169" y="361" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#666666">&#9998;</text>
+  <rect x="1188" y="346" width="26" height="22" rx="3" fill="#f0f0f0" stroke="#dddddd" stroke-width="1"/>
+  <text x="1201" y="361" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#999999">&#10005;</text>
+
+  <!-- Row 4 (tinted) -->
+  <rect x="392" y="386" width="870" height="52" fill="#fafafa"/>
+  <line x1="392" y1="438" x2="1262" y2="438" stroke="#eeeeee" stroke-width="1"/>
+  <text x="410" y="416" font-family="Arial,sans-serif" font-size="12" fill="#555555">4</text>
+  <text x="444" y="416" font-family="Arial,sans-serif" font-size="12" fill="#333333">Can I bring my parents or guardians?</text>
+  <text x="790" y="416" font-family="Arial,sans-serif" font-size="12" fill="#333333">Yes, all guests are welcome to attend.</text>
+  <rect x="1156" y="398" width="26" height="22" rx="3" fill="#f0f0f0" stroke="#dddddd" stroke-width="1"/>
+  <text x="1169" y="413" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#666666">&#9998;</text>
+  <rect x="1188" y="398" width="26" height="22" rx="3" fill="#f0f0f0" stroke="#dddddd" stroke-width="1"/>
+  <text x="1201" y="413" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#999999">&#10005;</text>
+
+  <!-- Row 5 (white) -->
+  <rect x="392" y="438" width="870" height="52" fill="white"/>
+  <line x1="392" y1="490" x2="1262" y2="490" stroke="#eeeeee" stroke-width="1"/>
+  <text x="410" y="468" font-family="Arial,sans-serif" font-size="12" fill="#555555">5</text>
+  <text x="444" y="468" font-family="Arial,sans-serif" font-size="12" fill="#333333">How do I register for the open day?</text>
+  <text x="790" y="468" font-family="Arial,sans-serif" font-size="12" fill="#333333">Register at lboro.ac.uk/opendays</text>
+  <rect x="1156" y="450" width="26" height="22" rx="3" fill="#f0f0f0" stroke="#dddddd" stroke-width="1"/>
+  <text x="1169" y="465" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#666666">&#9998;</text>
+  <rect x="1188" y="450" width="26" height="22" rx="3" fill="#f0f0f0" stroke="#dddddd" stroke-width="1"/>
+  <text x="1201" y="465" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#999999">&#10005;</text>
+
+  <!-- Row 6 (tinted) -->
+  <rect x="392" y="490" width="870" height="52" fill="#fafafa"/>
+  <line x1="392" y1="542" x2="1262" y2="542" stroke="#eeeeee" stroke-width="1"/>
+  <text x="410" y="520" font-family="Arial,sans-serif" font-size="12" fill="#555555">6</text>
+  <text x="444" y="520" font-family="Arial,sans-serif" font-size="12" fill="#333333">Are there accommodation tours?</text>
+  <text x="790" y="520" font-family="Arial,sans-serif" font-size="12" fill="#333333">Yes, guided tours run every 30 minutes.</text>
+  <rect x="1156" y="502" width="26" height="22" rx="3" fill="#f0f0f0" stroke="#dddddd" stroke-width="1"/>
+  <text x="1169" y="517" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#666666">&#9998;</text>
+  <rect x="1188" y="502" width="26" height="22" rx="3" fill="#f0f0f0" stroke="#dddddd" stroke-width="1"/>
+  <text x="1201" y="517" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#999999">&#10005;</text>
+
+  <!-- "More rows" indicator -->
+  <rect x="392" y="542" width="870" height="36" fill="white"/>
+  <line x1="392" y1="578" x2="1262" y2="578" stroke="#eeeeee" stroke-width="1"/>
+  <text x="827" y="564" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#aaaaaa">… 6 more rows …</text>
+
+  <!-- Inline add-row bar -->
+  <rect x="392" y="578" width="870" height="46" fill="#f9f9ff" stroke="#e8e8ff" stroke-width="1"/>
+  <rect x="444" y="588" width="318" height="26" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="454" y="605" font-family="Arial,sans-serif" font-size="12" fill="#cccccc">Type new question…</text>
+  <rect x="790" y="588" width="318" height="26" rx="4" fill="white" stroke="#cccccc" stroke-width="1"/>
+  <text x="800" y="605" font-family="Arial,sans-serif" font-size="12" fill="#cccccc">Type answer…</text>
+  <rect x="1130" y="588" width="112" height="26" rx="4" fill="#333333"/>
+  <text x="1186" y="605" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="white">+ Add Row</text>
+
+  <!-- Panel footer -->
+  <rect x="392" y="826" width="870" height="50" rx="4" fill="#f5f5f5" stroke="#dddddd" stroke-width="1"/>
+  <text x="410" y="855" font-family="Arial,sans-serif" font-size="12" fill="#888888">12 questions loaded across 3 topics</text>
+  <rect x="1082" y="836" width="162" height="28" rx="4" fill="#e8e8e8" stroke="#cccccc" stroke-width="1"/>
+  <text x="1163" y="854" text-anchor="middle" font-family="Arial,sans-serif" font-size="12" fill="#444444">Import more CSV</text>
+
+</svg>
