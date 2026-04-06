@@ -286,7 +286,7 @@ async function handleUserMessage(transcriptionTime = null) {
                 addMessageToLog('bot', answerGiven);
                 playRandomCategoryVideo(currentTitle, 'rude');
 
-            } else if (category === 'no_answer') {
+            } else if (category === 'no_answer' || category === 'no_answer_relevant' || category === 'no_answer_irrelevant') {
                 answerGiven = "I'm not confident about this answer. Let me get back to you.";
                 addMessageToLog('bot', answerGiven);
                 playRandomCategoryVideo(currentTitle, 'no_answer');
@@ -431,16 +431,12 @@ async function selectTopic(title) {
 }
 
 function playIntroVideo(title) {
-    const introUrl = `${API_BASE_URL}/static/videos/Intro/Hello.mp4`;
+    const introUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(title)}/Intro.mp4`;
     
-    // Ensure idle video is ready in background
-    playIdleVideo(title); 
-    
-    // Play Intro on top
-    console.log("Attempting to play intro:", introUrl); // Add logging
+    console.log("Attempting to play intro:", introUrl);
     playActiveVideo(introUrl, () => {
-        console.log("Intro finished. Revealing Idle.");
-        resetIdleTimer();
+        console.log("Intro finished. Starting idle video.");
+        playIdleVideo(title);
     });
 }
 
@@ -646,7 +642,7 @@ function playIdleTooLongVideo() {
     if (!currentTitle) return;
     
     console.log("Idle timeout reached. Playing IdleTooLong.");
-    const tooLongUrl = `${API_BASE_URL}/static/videos/IdleTooLong/IdleTooLong.mp4`;
+    const tooLongUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(currentTitle)}/IdleTooLong.mp4`;
 
     playActiveVideo(tooLongUrl, () => {
         console.log("IdleTooLong finished. Revealing Idle.");
