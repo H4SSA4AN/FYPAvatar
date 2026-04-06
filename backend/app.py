@@ -31,6 +31,31 @@ except Exception as e:
 PROGRESS_STORE = {}
 
 
+@app.after_request
+def add_no_cache_headers(response):
+    try:
+        path = request.path or ''
+        if path.startswith('/static/videos/') or path.startswith('/static/images/'):
+            response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+    except Exception:
+        pass
+    return response
+
+
+def _video_output_path(title, category, filename):
+    """Return (output_dir, video_url). When category is empty, save to title folder."""
+    base = os.path.join(app.root_path, 'static', 'videos', title)
+    if category:
+        output_dir = os.path.join(base, category)
+        url = f"/static/videos/{title}/{category}/{filename}"
+    else:
+        output_dir = base
+        url = f"/static/videos/{title}/{filename}"
+    return output_dir, url
+
+
 @app.route('/comfy-health', methods=['GET'])
 def comfy_health():
     """Quick check if ComfyUI is reachable."""
@@ -296,15 +321,18 @@ def generate_video_single_route():
     if not all([audio_path, image_path, title, filename_id]):
         return jsonify({'error': 'Missing required fields'}), 400
 
-    category = data.get('category', 'answers')
+    category = data.get('category', 'answers') or None
+    if category == '':
+        category = None
+    category_for_path = category or ''
 
     audio_only = data.get('audioOnly', False)
 
     if use_placeholder:
-        output_dir = os.path.join(app.root_path, 'static', 'videos', title, category)
-        os.makedirs(output_dir, exist_ok=True)
+        output_dir, video_url = _video_output_path(title, category_for_path, f"{filename_id}.mp4")
         save_filename = f"{filename_id}.mp4"
         save_path = os.path.join(output_dir, save_filename)
+        os.makedirs(output_dir, exist_ok=True)
         placeholder_path = os.path.join(app.root_path, 'static', 'placeholder.mp4')
 
         if audio_only and audio_path:
@@ -337,18 +365,16 @@ def generate_video_single_route():
             # Pure placeholder -- just copy the silent video
             shutil.copy(placeholder_path, save_path)
 
-        video_url = f"/static/videos/{title}/{category}/{save_filename}"
-        job_id = filename_id
+        job_id = f"{title}__{category_for_path or 'root'}__{filename_id}__{uuid.uuid4().hex}"
         PROGRESS_STORE[job_id] = { "status": "completed", "progress": 100, "eta": 0, "url": video_url }
         return jsonify({'job_id': job_id, 'status': 'started'}), 202
     else:
-        # Use the filename_id (UUID) as the job_id since it's unique per question
-        job_id = filename_id 
+        job_id = f"{title}__{category_for_path or 'root'}__{filename_id}__{uuid.uuid4().hex}"
         
         # Initialize progress
         PROGRESS_STORE[job_id] = { "status": "processing", "progress": 0, "eta": 0 }
 
-        thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, category, job_id))
+        thread = threading.Thread(target=video_worker, args=(audio_path, image_path, title, filename_id, prompt, category_for_path, job_id))
         thread.start()
 
         return jsonify({'job_id': job_id, 'status': 'started'}), 202
@@ -360,6 +386,10 @@ def video_worker_extended(audio_path, image_path, title, filename_id, prompt, nu
         PROGRESS_STORE[job_id]['eta'] = int(eta)
 
     try:
+        print(
+            f"[Extended][Worker] job_id={job_id} title='{title}' category='{category}' "
+            f"filename_id='{filename_id}' image_path='{image_path}'"
+        )
         video_url = comfy_service.generate_video_extended(
             audio_path, image_path, title, filename_id, prompt,
             category=category, num_chunks=num_chunks,
@@ -400,13 +430,22 @@ def generate_video_extended_route():
         return jsonify({'error': 'Missing required fields (audio_path, image_path, title, filename_id)'}), 400
 
     category = data.get('category', 'answers')
+    if category == '':
+        category = None
+    category_for_path = category or ''
+
+    print(
+        f"[Extended][Route] title='{title}' category='{category_for_path}' "
+        f"filename_id='{filename_id}' image_path='{image_path}' use_placeholder={use_placeholder}"
+    )
+
     audio_only = data.get('audioOnly', False)
 
     if use_placeholder:
-        output_dir = os.path.join(app.root_path, 'static', 'videos', title, category)
-        os.makedirs(output_dir, exist_ok=True)
+        output_dir, video_url = _video_output_path(title, category_for_path, f"{filename_id}.mp4")
         save_filename = f"{filename_id}.mp4"
         save_path = os.path.join(output_dir, save_filename)
+        os.makedirs(output_dir, exist_ok=True)
         placeholder_path = os.path.join(app.root_path, 'static', 'placeholder.mp4')
 
         if audio_only and audio_path:
@@ -431,17 +470,16 @@ def generate_video_extended_route():
         else:
             shutil.copy(placeholder_path, save_path)
 
-        video_url = f"/static/videos/{title}/{category}/{save_filename}"
-        job_id = filename_id
+        job_id = f"{title}__{category_for_path or 'root'}__{filename_id}__{uuid.uuid4().hex}"
         PROGRESS_STORE[job_id] = {"status": "completed", "progress": 100, "eta": 0, "url": video_url}
         return jsonify({'job_id': job_id, 'status': 'started'}), 202
     else:
-        job_id = filename_id
+        job_id = f"{title}__{category_for_path or 'root'}__{filename_id}__{uuid.uuid4().hex}"
         PROGRESS_STORE[job_id] = {"status": "processing", "progress": 0, "eta": 0}
 
         thread = threading.Thread(
             target=video_worker_extended,
-            args=(audio_path, image_path, title, filename_id, prompt, num_chunks, category, job_id)
+            args=(audio_path, image_path, title, filename_id, prompt, num_chunks, category_for_path, job_id)
         )
         thread.start()
 
@@ -454,26 +492,36 @@ def upload_avatar():
         return jsonify({'error': 'No image part'}), 400
     
     file = request.files['image']
-    title = request.form.get('title')
+    title = (request.form.get('title') or '').strip()
     
     if file.filename == '':
         return jsonify({'error': 'No selected file'}), 400
 
     if not title:
-         return jsonify({'error': 'Title is required'}), 400
+        return jsonify({'error': 'Title is required'}), 400
 
     try:
         # Create directory for the title if it doesn't exist
-        # We can save it in static/temp or static/images/Title
         upload_dir = os.path.join(app.root_path, 'static', 'images', title)
         os.makedirs(upload_dir, exist_ok=True)
-        
-        filename = f"avatar_{uuid.uuid4()}.png"
+
+        # Remove any existing avatar images so there is always exactly one file
+        _AVATAR_EXTS = {'.png', '.jpg', '.jpeg', '.webp'}
+        for old_file in os.listdir(upload_dir):
+            if os.path.splitext(old_file)[1].lower() in _AVATAR_EXTS:
+                try:
+                    os.remove(os.path.join(upload_dir, old_file))
+                except OSError:
+                    pass
+
+        # Always save as the canonical filename so every generation stage uses the same image
+        filename = 'avatar.png'
         filepath = os.path.join(upload_dir, filename)
         file.save(filepath)
         
         # Return the relative path
         image_path = f"/static/images/{title}/{filename}"
+        print(f"[Upload] Saved avatar for '{title}' → {image_path}")
         return jsonify({'message': 'Avatar uploaded successfully', 'image_path': image_path}), 200
 
     except Exception as e:
@@ -574,6 +622,35 @@ def get_missing_media():
                 check_variants(base_id, text, category, f"{category} #{i + 1}")
 
         return jsonify({'missing': missing, 'total': len(missing)}), 200
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/check-title-videos', methods=['GET'])
+def check_title_videos():
+    """Check which title videos (Idle, Intro, IdleTooLong) are missing for a topic."""
+    title = request.args.get('title')
+    if not title:
+        return jsonify({'error': 'Title is required'}), 400
+
+    try:
+        base_dir = app.root_path
+        videos_dir = os.path.join(base_dir, 'static', 'videos', title)
+        missing_videos = []
+
+        # Define title videos
+        title_videos = [
+            {'id': 'Idle', 'filename': 'Idle.mp4'},
+            {'id': 'Intro', 'filename': 'Intro.mp4'},
+            {'id': 'IdleTooLong', 'filename': 'IdleTooLong.mp4'}
+        ]
+
+        for video_info in title_videos:
+            video_path = os.path.join(videos_dir, video_info['filename'])
+            if not os.path.exists(video_path):
+                missing_videos.append(video_info['id'])
+
+        return jsonify({'missing': missing_videos, 'total': len(missing_videos)}), 200
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 

@@ -13,6 +13,7 @@ let audioStream = null;
 
 let allTitles = [];
 let currentTitle = null;
+let encodedTitle = null;
 let idleTimer = null;
 let defaultResponses = null;
 const IDLE_TIMEOUT_MS = 45000;
@@ -195,6 +196,7 @@ function renderDropdown(titles) {
 
 async function selectTopic(title) {
     currentTitle = title;
+    encodedTitle = encodeURIComponent(currentTitle);
 
     const toggleBtn = document.getElementById('toggleQuestionsBtn');
     if (toggleBtn) {
@@ -210,22 +212,22 @@ async function selectTopic(title) {
 
 // === VIDEO PLAYBACK ===
 
-function playIntroVideo(title) {
-    const introUrl = `${API_BASE_URL}/static/videos/Intro/Hello.mp4`;
-    playIdleVideo(title);
+function playIntroVideo() {
+    const introUrl = `${API_BASE_URL}/data/static/videos/${encodedTitle}/Intro.mp4`;
+    playIdleVideo();
     playActiveVideo(introUrl, () => {
         console.log("Intro finished. Revealing Idle.");
         resetIdleTimer();
     });
 }
 
-function playIdleVideo(title) {
+function playIdleVideo() {
     const idleVideo = document.getElementById('idle-video');
     const activeVideo = document.getElementById('active-video');
     if (!idleVideo) return;
 
-    const idleUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(title)}/Idle.mp4`;
-    if (!idleVideo.src.includes(encodeURIComponent(title))) {
+    const idleUrl = `${API_BASE_URL}/static/videos/${encodedTitle}/Idle.mp4`;
+    if (!idleVideo.src.includes(encodedTitle)) {
         idleVideo.src = idleUrl;
     }
 
@@ -340,8 +342,8 @@ function resetIdleTimer() {
 
 function playIdleTooLongVideo() {
     if (!currentTitle) return;
-    console.log("Idle timeout reached. Playing IdleTooLong.");
-    const tooLongUrl = `${API_BASE_URL}/static/videos/IdleTooLong/IdleTooLong.mp4`;
+    console.log("Idle timeout reached. Playing IdleTooLong. at " + currentTitle);
+    const tooLongUrl = `${API_BASE_URL}/static/videos/${encodedTitle}/IdleTooLong.mp4`;
     playActiveVideo(tooLongUrl, () => {
         console.log("IdleTooLong finished. Revealing Idle.");
         resetIdleTimer();
@@ -349,6 +351,18 @@ function playIdleTooLongVideo() {
 }
 
 // === CHAT / QUERY ===
+
+async function logInteraction(data) {
+    try {
+        await fetch(`${API_BASE_URL}/log-interaction`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    } catch (e) {
+        console.warn('Failed to log interaction:', e);
+    }
+}
 
 async function handleUserMessage(transcriptionTime = null) {
     const chatInput = document.getElementById('chat-input');
@@ -378,39 +392,57 @@ async function handleUserMessage(transcriptionTime = null) {
 
         if (response.ok) {
             const category = result.category || 'answers';
+            const confidencePercent = (result.score !== undefined && result.score !== null)
+                ? Math.max(0, Math.min(100, (1 - result.score) * 100)).toFixed(1)
+                : '';
 
-            if (result.question && result.score !== undefined && result.score !== null) {
-                const confidencePercent = Math.max(0, Math.min(100, (1 - result.score) * 100));
-                addMessageToLog('system', `Matched: "${result.question}"\nConfidence: ${confidencePercent.toFixed(1)}% | Category: ${category}`);
+            if (result.question && confidencePercent !== '') {
+                addMessageToLog('system', `Matched: "${result.question}"\nConfidence: ${confidencePercent}% | Category: ${category}`);
             }
+
+            let answerGiven = '';
 
             if (category === 'rude' || category === 'no_answer') {
                 const texts = (defaultResponses && defaultResponses[category]) || [];
                 if (texts.length > 0) {
                     const responseIndex = Math.floor(Math.random() * texts.length);
-                    addMessageToLog('bot', texts[responseIndex]);
+                    answerGiven = texts[responseIndex];
+                    addMessageToLog('bot', answerGiven);
                     const baseId = `${category}_${responseIndex + 1}`;
                     const variant = pickVariant(baseId);
                     const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(currentTitle)}/${category}/${baseId}_${variant}.mp4`;
                     playActiveVideo(videoUrl, () => resetIdleTimer());
                 } else {
-                    addMessageToLog('bot', category === 'rude'
+                    answerGiven = category === 'rude'
                         ? "That language is not appropriate."
-                        : "I'm not confident about this answer.");
+                        : "I'm not confident about this answer.";
+                    addMessageToLog('bot', answerGiven);
                 }
 
             } else if (category === 'conversational') {
+                answerGiven = result.answer || '';
                 if (result.answer) addMessageToLog('bot', result.answer);
                 if (result.id) {
                     playAnswerVideo(result.id, currentTitle, 'conversational');
                 }
 
             } else {
+                answerGiven = result.answer || '';
                 if (result.answer) addMessageToLog('bot', result.answer);
                 if (result.id) {
                     playAnswerVideo(result.id, currentTitle, category);
                 }
             }
+
+            logInteraction({
+                title: currentTitle,
+                question_user_asked: message,
+                question_system_thought: result.question || '',
+                answer_given: answerGiven,
+                category,
+                confidence_score: confidencePercent,
+                timestamp: new Date().toISOString()
+            });
         } else {
             addMessageToLog('system', `Error: ${result.error || 'Unknown error'}`);
         }

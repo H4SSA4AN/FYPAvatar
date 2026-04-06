@@ -98,9 +98,8 @@ function haltGeneration(reason) {
     if (fill) fill.style.background = '#e74c3c';
 }
 
-async function waitForVideo(jobId, pollInterval = 3000, maxWait = 600000) {
-    const start = Date.now();
-    while (Date.now() - start < maxWait) {
+async function waitForVideo(jobId, pollInterval = 3000) {
+    while (true) {
         try {
             const res = await fetch(`${API_BASE_URL}/progress/${jobId}`);
             if (!res.ok) {
@@ -116,11 +115,11 @@ async function waitForVideo(jobId, pollInterval = 3000, maxWait = 600000) {
             }
         } catch (e) {
             console.error(`Error polling progress for ${jobId}:`, e);
+            return { ok: false, error: 'Progress polling failed. The server may be unavailable.' };
         }
 
         await new Promise(r => setTimeout(r, pollInterval));
     }
-    return { ok: false, error: 'Timed out waiting for video generation' };
 }
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -1105,50 +1104,17 @@ async function generateVideoForFAQ(audioResults) {
 }
 
 
-async function generateVideoForFAQExtended(audioResults) {
+async function generateVideoForFAQExtended(audioResults, uploadedImagePath) {
     const title = document.getElementById('title').value;
     const statusDiv = document.getElementById('statusMessage');
     const videoPrompt = document.getElementById('videoPrompt').value;
     const audioOnly = document.getElementById('audioOnly').checked;
     const usePlaceholders = audioOnly ? true : document.getElementById('usePlaceholders').checked;
 
-    let uploadedImagePath = await uploadAvatarImage(title);
     if (!uploadedImagePath) {
-        console.error("Failed to upload avatar image for video generation.");
+        console.error("No avatar image path provided for video generation.");
         return;
     }
-
-    // Idle video
-    if (generationHalted) return;
-    statusDiv.innerHTML = `Generating idle video...`;
-    statusDiv.className = 'status-message processing';
-    progress.startOp();
-    try {
-        const response = await generateVideoExtendedRequest({
-            audio_path: '../backend/static/audio/IdleSound.mp3',
-            image_path: uploadedImagePath,
-            title: title,
-            filename_id: `Idle`,
-            prompt: "Smiling and looking at the camera, blinking idly.",
-            usePlaceholder: usePlaceholders
-        });
-        const result = await response.json();
-        if (response.ok && result.job_id) {
-            const videoResult = await waitForVideo(result.job_id);
-            if (videoResult.ok) {
-                console.log(`Idle video generated:`, videoResult.video_url);
-            } else {
-                console.error(`Idle video failed:`, videoResult.error);
-                if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
-            }
-        } else {
-            if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
-        }
-    } catch (e) {
-        console.error(`Error generating idle video:`, e);
-        if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
-    }
-    progress.completeOp();
 
     const totalGenerations = audioResults.reduce((sum, item) => sum + item.variants.length, 0);
     let generationCount = 0;
@@ -1200,7 +1166,112 @@ async function generateVideoForFAQExtended(audioResults) {
         }
     }
 
-    statusDiv.innerHTML = `FAQ Creation & Video Generation Complete!`;
+    statusDiv.innerHTML = `Answers videos complete. Generating title videos...`;
+    statusDiv.className = 'status-message processing';
+}
+
+
+async function generateTitleVideos(title, uploadedImagePath) {
+    const statusDiv = document.getElementById('statusMessage');
+    const audioOnly = document.getElementById('audioOnly').checked;
+    const videoPrompt = document.getElementById('videoPrompt').value;
+    const usePlaceholders = audioOnly ? true : document.getElementById('usePlaceholders').checked;
+    let speechSettings = [
+        document.getElementById('speechHappy').value,
+        document.getElementById('speechAngry').value,
+        document.getElementById('speechSad').value,
+        document.getElementById('speechSurprised').value,
+        document.getElementById('speechAfraid').value,
+        document.getElementById('speechDisgusted').value,
+        document.getElementById('speechCalm').value,
+        document.getElementById('speechMelancholic').value
+    ];
+
+    if (!uploadedImagePath) {
+        console.error("No avatar image path provided for title video generation.");
+        return;
+    }
+
+    const TITLE_VIDEOS = [
+        { id: 'Idle', audioPath: 'static/audio/IdleSound.mp3', text: null, prompt: 'Smiling and looking at the camera, blinking idly.' },
+        { id: 'Intro', audioPath: null, text: "Hello there! It's great to see you.", prompt: 'Warmly greeting the viewer, smiling.' },
+        { id: 'IdleTooLong', audioPath: null, text: "Are you still there? I'm here when you're ready to continue.", prompt: 'Gently checking in, patient expression.' }
+    ];
+
+    progress.addOps(TITLE_VIDEOS.length * 2);
+
+    for (const vid of TITLE_VIDEOS) {
+        if (generationHalted) return;
+
+        let audioUrl = vid.audioPath ? `/${vid.audioPath}` : null;
+        if (!audioUrl && vid.text) {
+            statusDiv.innerHTML = `Generating ${vid.id} audio...`;
+            statusDiv.className = 'status-message processing';
+            progress.startOp();
+            try {
+                const audioResp = await fetch(`${API_BASE_URL}/generate-audio-single`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: vid.text,
+                        title: title,
+                        filename_id: vid.id,
+                        category: vid.id.toLowerCase(),
+                        speechSettings: speechSettings,
+                        usePlaceholder: audioOnly ? false : document.getElementById('usePlaceholders').checked
+                    })
+                });
+                const audioResult = await audioResp.json();
+                if (audioResp.ok && audioResult.audio_url) {
+                    audioUrl = audioResult.audio_url;
+                }
+            } catch (e) {
+                console.error(`Error generating ${vid.id} audio:`, e);
+                if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
+            }
+            progress.completeOp();
+        } else if (vid.audioPath) {
+            progress.startOp();
+            progress.completeOp();
+        }
+
+        if (generationHalted) return;
+        if (!audioUrl) continue;
+
+        statusDiv.innerHTML = `Generating ${vid.id} video...`;
+        statusDiv.className = 'status-message processing';
+        progress.startOp();
+        try {
+            const videoResp = await generateVideoExtendedRequest({
+                audio_path: audioUrl,
+                image_path: uploadedImagePath,
+                title: title,
+                filename_id: vid.id,
+                category: '',
+                prompt: vid.prompt,
+                usePlaceholder: usePlaceholders,
+                audioOnly: audioOnly
+            });
+            const videoResult = await videoResp.json();
+            if (videoResp.ok && videoResult.job_id) {
+                const pollResult = await waitForVideo(videoResult.job_id);
+                if (pollResult.ok) {
+                    console.log(`${vid.id} video generated:`, pollResult.video_url);
+                } else {
+                    console.error(`${vid.id} video failed:`, pollResult.error);
+                    if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
+                }
+            } else {
+                if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
+            }
+        } catch (e) {
+            console.error(`Error generating ${vid.id} video:`, e);
+            if (!(await checkComfyHealth())) { haltGeneration('ComfyUI service is not responding'); return; }
+        }
+        progress.completeOp();
+    }
+
+    statusDiv.innerHTML = `Title videos (Idle, Intro, IdleTooLong) complete!`;
     statusDiv.className = 'status-message success';
 }
 
@@ -1341,7 +1412,7 @@ async function generateDefaultCategoryVideos(title) {
 }
 
 
-async function generateDefaultCategoryVideosExtended(title) {
+async function generateDefaultCategoryVideosExtended(title, uploadedImagePath) {
     const statusDiv = document.getElementById('statusMessage');
     const audioOnly = document.getElementById('audioOnly').checked;
     const videoPrompt = document.getElementById('videoPrompt').value;
@@ -1366,9 +1437,8 @@ async function generateDefaultCategoryVideosExtended(title) {
         return;
     }
 
-    let uploadedImagePath = await uploadAvatarImage(title);
     if (!uploadedImagePath) {
-        console.error("Failed to upload avatar image for default category video generation.");
+        console.error("No avatar image path provided for default category video generation.");
         return;
     }
 
@@ -1623,7 +1693,7 @@ async function generateConversationalVideos(title) {
 }
 
 
-async function generateConversationalVideosExtended(title) {
+async function generateConversationalVideosExtended(title, uploadedImagePath) {
     const statusDiv = document.getElementById('statusMessage');
     const audioOnly = document.getElementById('audioOnly').checked;
     const videoPrompt = document.getElementById('videoPrompt').value;
@@ -1665,9 +1735,8 @@ async function generateConversationalVideosExtended(title) {
         return;
     }
 
-    let uploadedImagePath = await uploadAvatarImage(title);
     if (!uploadedImagePath) {
-        console.error("Failed to upload avatar image for conversational video generation.");
+        console.error("No avatar image path provided for conversational video generation.");
         return;
     }
 
@@ -1802,17 +1871,27 @@ async function createFAQ() {
 
 
 
+    // Upload the avatar image exactly once — all generators will reuse the same path.
+    const uploadedImagePath = await uploadAvatarImage(title);
+    if (!uploadedImagePath) {
+        console.error("Failed to upload avatar image. Aborting generation.");
+        progress.hide();
+        return;
+    }
+    console.log(`[createFAQ] Avatar uploaded once → ${uploadedImagePath}`);
+
    // await generateVideoForFAQ(audioResults);
 
-    await generateVideoForFAQExtended(audioResults);
+    await generateVideoForFAQExtended(audioResults, uploadedImagePath);
     if (generationHalted) return;
 
-    //await generateDefaultCategoryVideos(title);
-
-    await generateDefaultCategoryVideosExtended(title);
+    await generateTitleVideos(title, uploadedImagePath);
     if (generationHalted) return;
 
-    await generateConversationalVideosExtended(title);
+    await generateDefaultCategoryVideosExtended(title, uploadedImagePath);
+    if (generationHalted) return;
+
+    await generateConversationalVideosExtended(title, uploadedImagePath);
     if (generationHalted) return;
 
    // await generateConversationalVideos(title);

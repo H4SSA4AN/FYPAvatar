@@ -16,6 +16,8 @@ import sqlite3
 import json
 import shutil
 import tempfile
+import csv
+from datetime import datetime
 
 import chromadb
 from chromadb.utils import embedding_functions
@@ -40,6 +42,8 @@ except Exception as e:
 
 # Base directory for extracted data
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data')
+# Directory for interaction logs
+LOGS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
 
 # ChromaDB and SQLite are initialized after zip upload
 chroma_client = None
@@ -338,6 +342,41 @@ def query_faq():
         "answer": None, "question": None, "id": None,
         "score": None, "title": title, "category": "no_answer"
     }), 200
+
+
+# === LOG INTERACTION ===
+
+CSV_HEADERS = ['Title', 'Question user asked', 'Question system thought', 'Answer given', 'Category of answer', 'Confidence score', 'Timestamp']
+
+@app.route('/log-interaction', methods=['POST'])
+def log_interaction():
+    """Append an avatar-user interaction to a CSV log file."""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid request'}), 400
+
+    title = data.get('title', '')
+    question_user = data.get('question_user_asked', '')
+    question_system = data.get('question_system_thought', '')
+    answer_given = data.get('answer_given', '')
+    category = data.get('category', '')
+    confidence = data.get('confidence_score', '')
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
+
+    os.makedirs(LOGS_DIR, exist_ok=True)
+    csv_path = os.path.join(LOGS_DIR, 'interactions.csv')
+    file_exists = os.path.exists(csv_path)
+
+    try:
+        with open(csv_path, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(CSV_HEADERS)
+            writer.writerow([title, question_user, question_system, answer_given, category, confidence, timestamp])
+        return jsonify({'ok': True}), 200
+    except Exception as e:
+        print(f"[LOG] Error writing interaction: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 # === GET VIDEOS ===

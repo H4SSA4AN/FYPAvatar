@@ -386,17 +386,23 @@ class FAQService:
         
         if os.path.exists(image_dir):
             try:
+                # Always prefer the canonical filename written by /upload-avatar
+                canonical = 'avatar.png'
+                if os.path.isfile(os.path.join(image_dir, canonical)):
+                    return f"static/images/{title}/{canonical}"
+
+                # Fallback: pick the most recently modified image in the folder
                 files = os.listdir(image_dir)
-                # Find any image file inside this folder
                 images = [f for f in files if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))]
-                
                 if images:
-                    # Return path to the first image found
-                    # images[0] is the actual filename (e.g. avatar_uuid.png)
+                    images.sort(
+                        key=lambda f: os.path.getmtime(os.path.join(image_dir, f)),
+                        reverse=True
+                    )
                     return f"static/images/{title}/{images[0]}"
             except OSError as e:
                 print(f"Error accessing image directory: {e}")
-                
+
         return None
 
 

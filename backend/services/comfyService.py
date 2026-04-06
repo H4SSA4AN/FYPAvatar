@@ -9,7 +9,6 @@ import os
 import yaml
 import time
 import math
-import subprocess
 
 
 class ComfyService:
@@ -25,6 +24,9 @@ class ComfyService:
             self.server_addr = '127.0.0.1:8000'
 
         self.client_id = str(uuid.uuid4())
+
+    def _safe_token(self, value):
+        return ''.join(ch if ch.isalnum() else '_' for ch in str(value))[:80]
 
     def queue_prompt(self, prompt_workflow):
         p = {"prompt": prompt_workflow, "client_id": self.client_id}
@@ -43,16 +45,16 @@ class ComfyService:
         with urllib.request.urlopen(f"http://{self.server_addr}/history/{prompt_id}") as response:
             return json.loads(response.read())
 
-    def execute_workflow(self, workflow, timeout=120, progress_callback=None):
+    def execute_workflow(self, workflow, progress_callback=None):
         """
         Queue a workflow on ComfyUI and block until completion.
         Verifies the prompt is queued, tracks execution start, handles
-        errors/interruptions, and enforces a recv timeout.
+        errors/interruptions, and waits for ComfyUI to finish.
 
         Returns (prompt_id, history) on success, or None on failure.
         """
         ws = websocket.WebSocket()
-        ws.connect(f"ws://{self.server_addr}/ws?clientId={self.client_id}", timeout=timeout)
+        ws.connect(f"ws://{self.server_addr}/ws?clientId={self.client_id}")
 
         prompt_response = self.queue_prompt(workflow)
         prompt_id = prompt_response['prompt_id']
@@ -107,8 +109,8 @@ class ComfyService:
                         print(f"[ComfyUI] Prompt {prompt_id} complete")
                         break
 
-        except websocket.WebSocketTimeoutException:
-            print(f"[ComfyUI] Timeout waiting for prompt {prompt_id} (queued={queued}, started={started})")
+        except websocket.WebSocketException as exc:
+            print(f"[ComfyUI] WebSocket failure while waiting for prompt {prompt_id}: {exc}")
             ws.close()
             return None
 
@@ -128,7 +130,7 @@ class ComfyService:
         # Node "44" is the KSampler - randomize seed to get new images
         workflow["44"]["inputs"]["seed"] = random.randint(1, 10**14)
 
-        result = self.execute_workflow(workflow, timeout=120)
+        result = self.execute_workflow(workflow)
         if result is None:
             return None
 
@@ -254,7 +256,7 @@ class ComfyService:
         workflow["47"]["inputs"]["seed"] = random.randint(1, 10**9)
         workflow["82"]["inputs"]["value"] += " I am a test audio, to see if the emotions work. [pause:0.5s]"
 
-        result = self.execute_workflow(workflow, timeout=120)
+        result = self.execute_workflow(workflow)
         if result is None:
             return None
 
@@ -320,7 +322,7 @@ class ComfyService:
             workflow["47"]["inputs"]["seed"] = random.randint(1, 10**9)
 
         print(f"Queueing audio for text: {text[:30]}...")
-        result = self.execute_workflow(workflow, timeout=120)
+        result = self.execute_workflow(workflow)
         if result is None:
             return None
 
@@ -360,7 +362,8 @@ class ComfyService:
     def generate_video_talking_head(self, audio_path, image_path, title, filename_id, prompt_text, category='answers', progress_callback=None):
         workflow_path = "../backend/ComfyAPIs/InfiniteTalkWorkflow.json"
         
-        output_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'videos', title, category)
+        base_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'static', 'videos', title)
+        output_dir = os.path.join(base_dir, category) if category else base_dir
         os.makedirs(output_dir, exist_ok=True)
 
         # Upload Audio to ComfyUI
@@ -369,18 +372,21 @@ class ComfyService:
              print(f"Audio file not found: {local_audio_path}")
              return None
              
-        audio_filename = f"audio_{filename_id}.mp3"
+        unique_token = uuid.uuid4().hex[:8]
+        safe_title = self._safe_token(title)
+        safe_id = self._safe_token(filename_id)
+        audio_filename = f"audio_{safe_title}_{safe_id}_{unique_token}.mp3"
         self.upload_file(local_audio_path, audio_filename)
 
         # Upload Image to ComfyUI
         if image_path.startswith("static") or image_path.startswith("/static"):
              local_image_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), image_path.lstrip('/'))
              if os.path.exists(local_image_path):
-                 image_filename = f"image_{filename_id}.png"
+                 image_filename = f"image_{safe_title}_{safe_id}_{unique_token}.png"
                  self.upload_file(local_image_path, image_filename)
              else:
                  print(f"Image file not found: {local_image_path}")
-                 image_filename = os.path.basename(image_path)
+                 return None
         else:
              image_filename = os.path.basename(image_path)
 
@@ -402,7 +408,7 @@ class ComfyService:
              workflow["16"]["inputs"]["seed"] = random.randint(1, 10**14)
 
         print(f"Queueing video for {filename_id}...")
-        result = self.execute_workflow(workflow, timeout=900, progress_callback=progress_callback)
+        result = self.execute_workflow(workflow, progress_callback=progress_callback)
         if result is None:
             return None
 
@@ -423,8 +429,9 @@ class ComfyService:
                  
                  with open(save_path, 'wb') as f:
                      f.write(video_data)
-                     
-                 return f"/static/videos/{title}/{category}/{save_filename}"
+                 
+                 url_path = f"/static/videos/{title}/{category}/{save_filename}" if category else f"/static/videos/{title}/{save_filename}"
+                 return url_path
         
         return None
 
@@ -435,17 +442,15 @@ class ComfyService:
     SECONDS_PER_CHUNK = 3.0
 
     def _get_audio_duration(self, audio_path):
-        """Return audio duration in seconds using ffprobe."""
+        """Return audio duration in seconds using mutagen (no external deps)."""
         try:
-            result = subprocess.run(
-                ['ffprobe', '-v', 'quiet', '-show_entries',
-                 'format=duration', '-of', 'csv=p=0', audio_path],
-                capture_output=True, text=True
-            )
-            return float(result.stdout.strip())
+            from mutagen import File
+            audio = File(audio_path)
+            if audio is not None and hasattr(audio.info, 'length'):
+                return float(audio.info.length)
         except Exception as e:
-            print(f"[Extended] ffprobe failed ({e}), defaulting to 3s")
-            return 3.0
+            print(f"[Extended] mutagen failed ({e}), defaulting to 3s")
+        return 3.0
 
     TEMPLATE_PATH = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -568,8 +573,14 @@ class ComfyService:
         If *num_chunks* is None it is calculated from the audio length.
         """
         base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        output_dir = os.path.join(base_dir, 'static', 'videos', title, category)
+        videos_base = os.path.join(base_dir, 'static', 'videos', title)
+        output_dir = os.path.join(videos_base, category) if category else videos_base
         os.makedirs(output_dir, exist_ok=True)
+
+        print(
+            f"[Extended][Service] title='{title}' category='{category}' filename_id='{filename_id}' "
+            f"audio_path='{audio_path}' image_path='{image_path}'"
+        )
 
         # --- Upload audio ---
         local_audio_path = os.path.join(base_dir, audio_path.lstrip('/'))
@@ -577,20 +588,26 @@ class ComfyService:
             print(f"[Extended] Audio file not found: {local_audio_path}")
             return None
 
-        audio_filename = f"audio_{filename_id}.mp3"
+        unique_token = uuid.uuid4().hex[:8]
+        safe_title = self._safe_token(title)
+        safe_id = self._safe_token(filename_id)
+        audio_filename = f"audio_{safe_title}_{safe_id}_{unique_token}.mp3"
         self.upload_file(local_audio_path, audio_filename)
 
         # --- Upload image ---
         if image_path.startswith("static") or image_path.startswith("/static"):
             local_image_path = os.path.join(base_dir, image_path.lstrip('/'))
+            print(f"[Extended][Service] Resolved local image path: {local_image_path}")
             if os.path.exists(local_image_path):
-                image_filename = f"image_{filename_id}.png"
+                image_filename = f"image_{safe_title}_{safe_id}_{unique_token}.png"
+                print(f"[Extended][Service] Uploading image file as: {image_filename}")
                 self.upload_file(local_image_path, image_filename)
             else:
                 print(f"[Extended] Image not found: {local_image_path}")
-                image_filename = os.path.basename(image_path)
+                return None
         else:
             image_filename = os.path.basename(image_path)
+            print(f"[Extended][Service] Using provided image filename: {image_filename}")
 
         # --- Determine chunk count ---
         if num_chunks is None:
@@ -606,10 +623,9 @@ class ComfyService:
             prompt_text=prompt_text,
         )
 
-        timeout = max(900, num_chunks * 300)
-        print(f"[Extended] Queueing video for {filename_id} (timeout {timeout}s)...")
-        result = self.execute_workflow(workflow, timeout=timeout,
-                                       progress_callback=progress_callback)
+        print(f"[Extended] Queueing video for {filename_id}...")
+        result = self.execute_workflow(workflow,
+                           progress_callback=progress_callback)
         if result is None:
             return None
 
@@ -628,7 +644,8 @@ class ComfyService:
                 save_path = os.path.join(output_dir, save_filename)
                 with open(save_path, 'wb') as f:
                     f.write(video_data)
-                return f"/static/videos/{title}/{category}/{save_filename}"
+                url_path = f"/static/videos/{title}/{category}/{save_filename}" if category else f"/static/videos/{title}/{save_filename}"
+                return url_path
 
         print(f"[Extended] No video output found for node {output_node_id}")
         return None
