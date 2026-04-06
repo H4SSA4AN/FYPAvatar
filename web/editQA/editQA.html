@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit FAQs - InteractiveAvatar</title>
+    <!-- Use the dedicated CSS file -->
+    <link rel="stylesheet" href="editQA.css">
+</head>
+<body>
+    <nav class="navbar">
+        <ul class="nav-links">
+            <li><a href="/">Home</a></li>
+            <li><a href="/createQA">Create FAQ</a></li>
+            <li><a href="/editQA" class="active">Edit FAQs</a></li>
+            <li><a href="/testQA">Test FAQs</a></li>
+        </ul>
+        <div class="logo">InteractiveAvatar</div>
+    </nav>
+
+    <div class="container">
+        <!-- Left panel: FAQ (answers) management -->
+        <div class="faq-panel left-panel">
+            <div class="faq-header">
+                <h2>Manage Topics</h2>
+                <!-- Search Box -->
+                <div class="search-container">
+                    <input type="text" id="topicSearch" placeholder="Search topics to edit/delete..." autocomplete="off">
+                    <ul id="customDropdown" class="dropdown-list" style="display: none;"></ul>
+                </div>
+            </div>
+
+            <!-- Management Controls -->
+            <div id="managementControls" style="display: none;"> <!-- Hidden by default, shown by JS -->
+                <h3 id="selectedTitle"></h3>
+                
+                <div class="controls-grid">
+                    <!-- Left: Avatar Image -->
+                    <div class="avatar-preview-section">
+                        <label>Current Avatar:</label>
+                        <div class="avatar-frame">
+                            <img id="topicAvatar" src="" alt="Topic Avatar">
+                        </div>
+                    </div>
+
+                    <!-- Right: Prompt Input -->
+                    <div class="prompt-section">
+                        <label for="videoPrompt">Video Generation Prompt:</label>
+                        <textarea id="videoPrompt" rows="5" placeholder="Describe how the avatar should look or act..."></textarea>
+                    </div>
+                </div>
+
+                <!-- Bottom: Actions -->
+                <div class="actions-section">
+                    <span class="btn-with-tooltip">
+                        <button id="resumeAllBtn" class="resume-btn">Resume All Missing</button>
+                        <span class="info-icon" data-tooltip="Generate any missing audio and video variants for this topic"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+                    </span>
+                    <span class="btn-with-tooltip">
+                        <button id="deleteBtn" class="delete-btn">Delete Entire Topic</button>
+                        <span class="info-icon" data-tooltip="Permanently delete this topic and all its data"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+                    </span>
+                </div>
+                <div id="resumeStatus" class="resume-status" style="display: none;"></div>
+                <div id="resumeProgressContainer" class="progress-container" style="display: none;">
+                    <div class="progress-header">
+                        <span id="resumeProgressText">0%</span>
+                        <span id="resumeProgressETA"></span>
+                    </div>
+                    <div class="progress-bar-track">
+                        <div class="progress-bar-fill" id="resumeProgressBarFill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Add new Q&A (answers only) -->
+            <div id="addFaqSection" class="add-faq-section" style="display: none;">
+                <h3 class="add-faq-title">Add question-answer</h3>
+                <div class="add-faq-form">
+                    <label for="addQuestion">Question</label>
+                    <textarea id="addQuestion" rows="2" placeholder="Question text"></textarea>
+                    <label for="addAnswer">Answer</label>
+                    <textarea id="addAnswer" rows="3" placeholder="Answer text"></textarea>
+                    <div class="add-faq-actions">
+                        <span class="btn-with-tooltip">
+                            <button type="button" id="addFaqSubmitBtn" class="add-faq-submit-btn">Add and generate</button>
+                            <span class="info-icon" data-tooltip="Save the new Q&A and generate 3 audio/video variants"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+                        </span>
+                        <span class="btn-with-tooltip">
+                            <button type="button" id="addFaqCancelBtn" class="add-faq-cancel-btn">Cancel</button>
+                            <span class="info-icon" data-tooltip="Close without adding"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div id="faqTableToolbar" class="faq-table-toolbar" style="display: none;">
+                <span class="btn-with-tooltip">
+                    <button type="button" id="addFaqBtn" class="add-faq-btn">Add question-answer</button>
+                    <span class="info-icon" data-tooltip="Add a new question-answer pair to this topic"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg></span>
+                </span>
+            </div>
+            <!-- FAQ (answers) Table only -->
+            <div class="table-container">
+                <table id="faqTable">
+                    <thead>
+                        <tr>
+                            <th>Question</th>
+                            <th>Answer</th>
+                            <th>Video</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr><td colspan="4">Select a topic to view or delete...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Right panel: Other categories (e.g. conversational) -->
+        <div id="otherCategoriesPanel" class="other-categories-panel">
+            <div class="other-categories-header">
+                <div class="other-categories-header-row">
+                    <h2>Other Categories</h2>
+                    <select id="otherCategoryFilter" class="other-category-select" style="display: none;">
+                        <option value="all">All</option>
+                    </select>
+                </div>
+                <p class="other-categories-hint">Conversational and other non-FAQ videos</p>
+            </div>
+            <div id="otherCategoriesContent" class="other-categories-content">
+                <p class="other-categories-placeholder">Select a topic to view other category videos.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Queue Status Bubble -->
+    <div id="queueBubble" class="queue-bubble" style="display: none;">
+        <span>Queue: 0</span>
+    </div>
+
+    <script src="../../backend/pagejs/editQAPage/editQA.js"></script>
+</body>
+</html>

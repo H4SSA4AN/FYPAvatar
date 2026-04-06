@@ -1,0 +1,12 @@
+flask
+flask-cors
+pandas
+sentence-transformers
+chromadb
+uuid
+requests
+websocket-client
+pyyaml
+faster-whisper
+gunicorn==21.2.0
+mutagen

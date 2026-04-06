@@ -1,0 +1,48 @@
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+}
+
+#container {
+    display: flex;
+    gap: 20px;
+    height: 90vh;
+}
+
+#left-panel {
+    flex: 1;
+    padding: 20px;
+    border-right: 1px solid #ccc;
+}
+
+#right-panel {
+    flex: 2; /* Gives more space to the table */
+    padding: 20px;
+    overflow-y: auto; /* Allows scrolling if table is long */
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 10px;
+}
+
+th, td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+th {
+    background-color: #f2f2f2;
+}
+
+#searchInput {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    box-sizing: border-box; /* Ensures padding doesn't affect width */
+    border: 1px solid #ddd;
+    border-radius: 4px;
+}
