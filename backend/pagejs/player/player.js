@@ -221,6 +221,18 @@ function updateMicVisual(active) {
     }
 }
 
+async function logInteraction(data) {
+    try {
+        await fetch(`${API_BASE_URL}/log-interaction`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+    } catch (e) {
+        console.warn('Failed to log interaction:', e);
+    }
+}
+
 async function handleUserMessage(transcriptionTime = null) {
     const chatInput = document.getElementById('chat-input');
     const message = chatInput.value.trim();
@@ -259,25 +271,28 @@ async function handleUserMessage(transcriptionTime = null) {
 
         if (response.ok) {
             const category = result.category || 'answers';
+            const confidencePercent = (result.score !== undefined && result.score !== null)
+                ? Math.max(0, Math.min(100, (1 - result.score) * 100)).toFixed(1)
+                : '';
 
-            // Show matched question info
-            if (result.question && result.score !== undefined && result.score !== null) {
-                const confidencePercent = Math.max(0, Math.min(100, (1 - result.score) * 100));
-                let infoText = `Matched: "${result.question}"\nConfidence: ${confidencePercent.toFixed(1)}% | Category: ${category}`;
-                addMessageToLog('system', infoText);
+            if (result.question && confidencePercent !== '') {
+                addMessageToLog('system', `Matched: "${result.question}"\nConfidence: ${confidencePercent}% | Category: ${category}`);
             }
 
-            // Route based on category
+            let answerGiven = '';
+
             if (category === 'rude') {
-                addMessageToLog('bot', "That language is not appropriate.");
+                answerGiven = "That language is not appropriate.";
+                addMessageToLog('bot', answerGiven);
                 playRandomCategoryVideo(currentTitle, 'rude');
 
-            } else if (category === 'no_answer') {
-                addMessageToLog('bot', "I'm not confident about this answer. Let me get back to you.");
+            } else if (category === 'no_answer' || category === 'no_answer_relevant' || category === 'no_answer_irrelevant') {
+                answerGiven = "I'm not confident about this answer. Let me get back to you.";
+                addMessageToLog('bot', answerGiven);
                 playRandomCategoryVideo(currentTitle, 'no_answer');
 
             } else {
-                // 'answers' or 'conversational'
+                answerGiven = result.answer || '';
                 if (result.answer) {
                     addMessageToLog('bot', result.answer);
                 }
@@ -285,6 +300,16 @@ async function handleUserMessage(transcriptionTime = null) {
                     playAnswerVideo(result.id, currentTitle, category);
                 }
             }
+
+            logInteraction({
+                title: currentTitle,
+                question_user_asked: message,
+                question_system_thought: result.question || '',
+                answer_given: answerGiven,
+                category,
+                confidence_score: confidencePercent,
+                timestamp: new Date().toISOString()
+            });
         } else {
             addMessageToLog('system', `Error: ${result.error || 'Unknown error'}`);
         }
@@ -406,16 +431,12 @@ async function selectTopic(title) {
 }
 
 function playIntroVideo(title) {
-    const introUrl = `${API_BASE_URL}/static/videos/Intro/Hello.mp4`;
+    const introUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(title)}/Intro.mp4`;
     
-    // Ensure idle video is ready in background
-    playIdleVideo(title); 
-    
-    // Play Intro on top
-    console.log("Attempting to play intro:", introUrl); // Add logging
+    console.log("Attempting to play intro:", introUrl);
     playActiveVideo(introUrl, () => {
-        console.log("Intro finished. Revealing Idle.");
-        resetIdleTimer();
+        console.log("Intro finished. Starting idle video.");
+        playIdleVideo(title);
     });
 }
 
@@ -621,7 +642,7 @@ function playIdleTooLongVideo() {
     if (!currentTitle) return;
     
     console.log("Idle timeout reached. Playing IdleTooLong.");
-    const tooLongUrl = `${API_BASE_URL}/static/videos/IdleTooLong/IdleTooLong.mp4`;
+    const tooLongUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(currentTitle)}/IdleTooLong.mp4`;
 
     playActiveVideo(tooLongUrl, () => {
         console.log("IdleTooLong finished. Revealing Idle.");

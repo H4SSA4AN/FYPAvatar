@@ -1,10 +1,10 @@
 import chromadb
 from chromadb.utils import embedding_functions
+from sentence_transformers import CrossEncoder
 
 class VectorDBService:
     def __init__(self, collection_name='faq'):
         self.persist_directory = 'db'
-
 
         # Use EphemeralClient for testing purposes
        # self.client = chromadb.EphemeralClient()
@@ -21,6 +21,8 @@ class VectorDBService:
             'rude',
             embedding_function=self.ef
             )
+
+        self.cross_encoder = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-2-v2')
 
     def add_documents(self, ids, documents, metadatas):
         self.collection.add(
@@ -71,4 +73,13 @@ class VectorDBService:
             'rude',
             embedding_function=self.ef
         )
-    
+
+    def rerank(self, query, documents):
+        """Re-score (query, document) pairs with the cross-encoder.
+        Returns list of (score, original_index) sorted by score descending."""
+        if not documents:
+            return []
+        pairs = [[query, doc] for doc in documents]
+        scores = self.cross_encoder.predict(pairs)
+        ranked = sorted(enumerate(scores), key=lambda x: x[1], reverse=True)
+        return [(float(score), idx) for idx, score in ranked]

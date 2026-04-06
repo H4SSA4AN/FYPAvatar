@@ -1,4 +1,5 @@
 
+import math
 import pandas as pd
 import uuid
 import json
@@ -10,8 +11,20 @@ import os
 class FAQService:
 
     database_service = DatabaseService()
-    
 
+    THRESHOLDS = {
+        'rude': 60.0,            # confidence % (bi-encoder distance-based)
+        'conversational': 60.0,  # confidence % (bi-encoder distance-based)
+        'answer': 0.0,           # cross-encoder logit score for confident answer
+        'topic': -4.0,           # cross-encoder logit score for on-topic but no answer
+        'top_k': 10,             # candidates retrieved before reranking
+    }
+
+    @staticmethod
+    def _ce_score_to_distance(logit):
+        """Convert a cross-encoder logit to a 0-1 distance value so the
+        frontend formula (1 - distance) * 100 gives a meaningful confidence %."""
+        return 1.0 - (1.0 / (1.0 + math.exp(-logit)))
 
     def __init__(self):
         self.vector_db_service = VectorDBService()
@@ -156,10 +169,9 @@ class FAQService:
         query_texts = [query_text] if isinstance(query_text, str) else query_text
         print(f"\n[QUERY] Input: '{query_text}' | Title: '{title}'")
 
-        # Gather confidence scores from all categories, then pick the best
-        candidates = []
+        th = self.THRESHOLDS
 
-        # 1. Query rude collection
+        # 1. Rude check
         try:
             rude_count = self.vector_db_service.rude_collection.count()
             if rude_count > 0:
@@ -169,28 +181,19 @@ class FAQService:
                     rude_confidence = max(0, min(100, (1 - rude_distance) * 100))
                     rude_matched = rude_results['documents'][0][0]
                     print(f"[RUDE] Matched: '{rude_matched}' | Distance: {rude_distance:.4f} | Confidence: {rude_confidence:.1f}%")
-                    candidates.append({
-                        "confidence": rude_confidence,
-                        "distance": rude_distance,
-                        "category": "rude",
-                        "matched": rude_matched,
-                        "result": {
-                            "answer": None,
-                            "question": rude_matched,
-                            "id": None,
-                            "score": rude_distance,
-                            "title": title,
-                            "category": "rude"
+                    if rude_confidence >= th['rude']:
+                        print(f"[DECISION] Rude at {rude_confidence:.1f}% — '{rude_matched}'")
+                        return {
+                            "answer": None, "question": rude_matched, "id": None,
+                            "score": rude_distance, "title": title, "category": "rude"
                         }
-                    })
         except Exception as e:
             print(f"[RUDE] Exception: {e}")
 
-        # 2. Query conversational (filtered by topic)
+        # 2. Conversational check
         try:
             conv_results = self.vector_db_service.collection.query(
-                query_texts=query_texts,
-                n_results=1,
+                query_texts=query_texts, n_results=1,
                 where={"$and": [{"category": "conversational"}, {"Title": title}]}
             )
             if conv_results['distances'] and conv_results['distances'][0]:
@@ -199,76 +202,62 @@ class FAQService:
                 conv_matched = conv_results['documents'][0][0]
                 conv_metadata = conv_results['metadatas'][0][0]
                 print(f"[CONV] Matched: '{conv_matched}' | Distance: {conv_distance:.4f} | Confidence: {conv_confidence:.1f}%")
-                candidates.append({
-                    "confidence": conv_confidence,
-                    "distance": conv_distance,
-                    "category": "conversational",
-                    "matched": conv_matched,
-                    "result": {
-                        "answer": conv_metadata['answer'],
-                        "question": conv_matched,
-                        "id": conv_results['ids'][0][0],
-                        "score": conv_distance,
-                        "title": title,
-                        "category": "conversational"
+                if conv_confidence >= th['conversational']:
+                    print(f"[DECISION] Conversational at {conv_confidence:.1f}% — '{conv_matched}'")
+                    return {
+                        "answer": conv_metadata['answer'], "question": conv_matched,
+                        "id": conv_results['ids'][0][0], "score": conv_distance,
+                        "title": title, "category": "conversational"
                     }
-                })
         except Exception as e:
             print(f"[CONV] Exception: {e}")
 
-        # 3. Query answers for this topic
+        # 3. Retrieve top-K answer candidates and rerank with cross-encoder
         try:
+            top_k = int(th['top_k'])
             answer_results = self.vector_db_service.collection.query(
-                query_texts=query_texts,
-                n_results=1,
+                query_texts=query_texts, n_results=top_k,
                 where={"$and": [{"category": "answers"}, {"Title": title}]}
             )
-            if answer_results['distances'] and answer_results['distances'][0]:
-                ans_distance = answer_results['distances'][0][0]
-                ans_confidence = max(0, min(100, (1 - ans_distance) * 100))
-                ans_matched = answer_results['documents'][0][0]
-                ans_metadata = answer_results['metadatas'][0][0]
-                print(f"[ANSWER] Matched: '{ans_matched}' | Distance: {ans_distance:.4f} | Confidence: {ans_confidence:.1f}%")
-                candidates.append({
-                    "confidence": ans_confidence,
-                    "distance": ans_distance,
-                    "category": "answers",
-                    "matched": ans_matched,
-                    "result": {
-                        "answer": ans_metadata['answer'],
-                        "question": ans_matched,
-                        "id": answer_results['ids'][0][0],
-                        "score": ans_distance,
-                        "title": title,
-                        "category": "answers"
+            if answer_results['documents'] and answer_results['documents'][0]:
+                docs = answer_results['documents'][0]
+                ranked = self.vector_db_service.rerank(query_text, docs)
+                best_score, best_idx = ranked[0]
+
+                best_matched = docs[best_idx]
+                best_metadata = answer_results['metadatas'][0][best_idx]
+                best_id = answer_results['ids'][0][best_idx]
+
+                normalized = self._ce_score_to_distance(best_score)
+                print(f"[RERANK] Best: '{best_matched}' | Cross-encoder score: {best_score:.4f} | Confidence: {(1 - normalized) * 100:.1f}%")
+
+                if best_score >= th['answer']:
+                    print(f"[DECISION] Answer at cross-encoder {best_score:.4f} — '{best_matched}'")
+                    return {
+                        "answer": best_metadata['answer'], "question": best_matched,
+                        "id": best_id, "score": normalized,
+                        "title": title, "category": "answers"
                     }
-                })
+
+                if best_score >= th['topic']:
+                    print(f"[DECISION] On-topic but low confidence ({best_score:.4f}) — no_answer_relevant")
+                    return {
+                        "answer": None, "question": best_matched,
+                        "id": None, "score": normalized,
+                        "title": title, "category": "no_answer_relevant"
+                    }
+
+                print(f"[DECISION] Off-topic ({best_score:.4f}) — no_answer_irrelevant")
+                return {
+                    "answer": None, "question": best_matched,
+                    "id": None, "score": normalized,
+                    "title": title, "category": "no_answer_irrelevant"
+                }
         except Exception as e:
             print(f"[ANSWER] Exception: {e}")
 
-        # Pick the candidate with the highest confidence (minimum 60%)
-        valid = [c for c in candidates if c['confidence'] >= 60]
-
-        if valid:
-            best = max(valid, key=lambda c: c['confidence'])
-            print(f"[DECISION] Winner: {best['category']} at {best['confidence']:.1f}% — '{best['matched']}'")
-            return best['result']
-
-        # No candidate reached 60% — return no_answer with the best partial match info
-        if candidates:
-            best_partial = max(candidates, key=lambda c: c['confidence'])
-            print(f"[DECISION] No category reached 60%. Best was {best_partial['category']} at {best_partial['confidence']:.1f}%. Returning no_answer.")
-            return {
-                "answer": None,
-                "question": best_partial['matched'],
-                "id": None,
-                "score": best_partial['distance'],
-                "title": title,
-                "category": "no_answer"
-            }
-
-        print(f"[DECISION] No matches at all, returning no_answer")
-        return {"answer": None, "question": None, "id": None, "score": None, "title": title, "category": "no_answer"}
+        print(f"[DECISION] No answer candidates found — no_answer_irrelevant")
+        return {"answer": None, "question": None, "id": None, "score": None, "title": title, "category": "no_answer_irrelevant"}
 
     def delete_topic(self, title):
         print(f"Deleting topic: {title}")

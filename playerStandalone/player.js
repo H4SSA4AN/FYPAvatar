@@ -402,15 +402,17 @@ async function handleUserMessage(transcriptionTime = null) {
 
             let answerGiven = '';
 
-            if (category === 'rude' || category === 'no_answer') {
-                const texts = (defaultResponses && defaultResponses[category]) || [];
+            const isNoAnswer = category === 'no_answer' || category === 'no_answer_relevant' || category === 'no_answer_irrelevant';
+            if (category === 'rude' || isNoAnswer) {
+                const responseKey = isNoAnswer ? 'no_answer' : category;
+                const texts = (defaultResponses && defaultResponses[responseKey]) || [];
                 if (texts.length > 0) {
                     const responseIndex = Math.floor(Math.random() * texts.length);
                     answerGiven = texts[responseIndex];
                     addMessageToLog('bot', answerGiven);
-                    const baseId = `${category}_${responseIndex + 1}`;
+                    const baseId = `${responseKey}_${responseIndex + 1}`;
                     const variant = pickVariant(baseId);
-                    const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(currentTitle)}/${category}/${baseId}_${variant}.mp4`;
+                    const videoUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(currentTitle)}/${responseKey}/${baseId}_${variant}.mp4`;
                     playActiveVideo(videoUrl, () => resetIdleTimer());
                 } else {
                     answerGiven = category === 'rude'
