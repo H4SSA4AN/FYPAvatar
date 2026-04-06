@@ -4,17 +4,23 @@ from services.FAQService import FAQService
 from services.comfyService import ComfyService
 from services.transcriptionService import TranscriptionService
 import os
+import csv
 import uuid
 import tempfile
 import threading
 import time
 import shutil
+from datetime import datetime
 
 app = Flask(__name__)
 CORS(app)
 
 VIDEO_FOLDER = os.path.join(app.root_path, 'static', 'videos')
 os.makedirs(VIDEO_FOLDER, exist_ok=True)
+
+LOGS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'logs')
+CSV_HEADERS = ['Title', 'Question user asked', 'Question system thought',
+               'Answer given', 'Category of answer', 'Confidence score', 'Timestamp']
 
 faq_service = FAQService()
 comfy_service = ComfyService()
@@ -745,6 +751,37 @@ def testQAPage():
 @app.route('/testQA.css')
 def testQA_css():
     return send_from_directory('../web/TestQA', 'testQA.css')
+
+# === LOG INTERACTION ===
+@app.route('/log-interaction', methods=['POST'])
+def log_interaction():
+    """Append an avatar-user interaction to a CSV log file."""
+    data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid request'}), 400
+
+    title = data.get('title', '')
+    question_user = data.get('question_user_asked', '')
+    question_system = data.get('question_system_thought', '')
+    answer_given = data.get('answer_given', '')
+    category = data.get('category', '')
+    confidence = data.get('confidence_score', '')
+    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M')
+
+    os.makedirs(LOGS_DIR, exist_ok=True)
+    csv_path = os.path.join(LOGS_DIR, 'interactions.csv')
+    file_exists = os.path.exists(csv_path)
+
+    try:
+        with open(csv_path, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            if not file_exists:
+                writer.writerow(CSV_HEADERS)
+            writer.writerow([title, question_user, question_system, answer_given, category, confidence, timestamp])
+        return jsonify({'ok': True}), 200
+    except Exception as e:
+        print(f"[LOG] Error writing interaction: {e}")
+        return jsonify({'error': str(e)}), 500
 
 # --- Player page ---
 @app.route('/player')
