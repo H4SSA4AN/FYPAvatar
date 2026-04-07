@@ -7,6 +7,8 @@ let isRecording = false;
 let audioStream = null; // Keep stream alive between recordings
 
 const API_BASE_URL = window.location.origin;
+// topic immediately shows when opening page
+const DEFAULT_TOPIC = "CS Open Day FAQ";
 let allTitles = [];
 let currentTitle = null; // Add this global variable
 let idleTimer = null;
@@ -38,7 +40,7 @@ function pickVariant(questionId) {
     return chosen;
 }
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     const chatInput = document.getElementById('chat-input');
     const micButton = document.getElementById('mic-button');
 
@@ -55,10 +57,17 @@ document.addEventListener('DOMContentLoaded', () => {
         micButton.addEventListener('click', toggleVoiceDetection);
     }
 
-    // New Initialization
-    fetchTitles();
+    await fetchTitles();
     setupSearch();
     setupToggle();
+
+    if (allTitles.includes(DEFAULT_TOPIC)) {
+        const searchInput = document.getElementById('topicSearch');
+        if (searchInput) {
+            searchInput.value = DEFAULT_TOPIC;
+        }
+        await selectTopic(DEFAULT_TOPIC);
+    }
 });
 
 async function toggleVoiceDetection() {
@@ -434,10 +443,12 @@ function playIntroVideo(title) {
     const introUrl = `${API_BASE_URL}/static/videos/${encodeURIComponent(title)}/Intro.mp4`;
     
     console.log("Attempting to play intro:", introUrl);
+    // startMuted: intro may run without a user gesture (e.g. auto-selected topic on load).
+    // Browsers block unmuted autoplay; muted autoplay is allowed.
     playActiveVideo(introUrl, () => {
         console.log("Intro finished. Starting idle video.");
         playIdleVideo(title);
-    });
+    }, { startMuted: true });
 }
 
 function playIdleVideo(title) {
@@ -465,8 +476,9 @@ function playIdleVideo(title) {
     });
 }
 
-function playActiveVideo(videoUrl, onEndedCallback) {
+function playActiveVideo(videoUrl, onEndedCallback, options = {}) {
     const activeVideo = document.getElementById('active-video');
+    const startMuted = !!options.startMuted;
 
     if (!activeVideo) return;
 
@@ -481,7 +493,7 @@ function playActiveVideo(videoUrl, onEndedCallback) {
 
     activeVideo.src = videoUrl;
     activeVideo.loop = false;
-    activeVideo.muted = false;
+    activeVideo.muted = startMuted;
     
     // Explicitly force opacity to 0 initially
     activeVideo.style.opacity = '0';
@@ -506,12 +518,15 @@ function playActiveVideo(videoUrl, onEndedCallback) {
 
     activeVideo.play().then(() => {
         console.log("Play promise resolved.");
-        // Double check visibility in case onplay missed
         showVideo();
+        if (startMuted) {
+            try {
+                activeVideo.muted = false;
+            } catch (_) { /* ignore */ }
+        }
     }).catch(e => {
         console.error("Error playing active video:", e);
-        // Fallback
-        if (onEndedCallback) onEndedCallback();
+        // Do not call onEndedCallback — a failed play is not "video finished".
     });
 }
 

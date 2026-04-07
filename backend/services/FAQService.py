@@ -13,7 +13,7 @@ class FAQService:
     database_service = DatabaseService()
 
     THRESHOLDS = {
-        'rude': 60.0,            # confidence % (bi-encoder distance-based)
+        'rude': 70.0,            # confidence % (bi-encoder distance-based)
         'conversational': 60.0,  # confidence % (bi-encoder distance-based)
         'answer': 0.0,           # cross-encoder logit score for confident answer
         'topic': -4.0,           # cross-encoder logit score for on-topic but no answer
