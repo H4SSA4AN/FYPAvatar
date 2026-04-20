@@ -288,7 +288,7 @@ function playAnswerVideo(videoId, videoTitle, category = 'answers') {
     console.log(`Playing ${category} variant ${variant} for ${videoId}`);
     playActiveVideo(videoUrl, () => {
         console.log("Answer finished. Revealing Idle.");
-        resetIdleTimer();
+        playIdleVideo();
     });
 }
 
@@ -305,7 +305,7 @@ async function playRandomCategoryVideo(title, category) {
             console.log(`Playing random ${category} video: ${videoFile}`);
             playActiveVideo(videoUrl, () => {
                 console.log(`${category} video finished. Revealing Idle.`);
-                resetIdleTimer();
+                playIdleVideo();
             });
         } else {
             console.warn(`No ${category} videos found for topic "${title}".`);
@@ -328,7 +328,7 @@ function interruptActiveVideo() {
         activeVideo.onended = null;
         activeVideo.onplay = null;
         if (currentTitle) {
-            playIdleVideo(currentTitle);
+            playIdleVideo();
         }
     }
 }
@@ -346,7 +346,7 @@ function playIdleTooLongVideo() {
     const tooLongUrl = `${API_BASE_URL}/static/videos/${encodedTitle}/IdleTooLong.mp4`;
     playActiveVideo(tooLongUrl, () => {
         console.log("IdleTooLong finished. Revealing Idle.");
-        resetIdleTimer();
+        playIdleVideo();
     });
 }
 
