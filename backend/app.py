@@ -728,31 +728,31 @@ def serve_pagejs(filename):
 def index():
     return send_from_directory('../web/player', 'player.html')
 
-# --- Other pages (uncomment to re-enable) ---
-# @app.route('/home')
-# @app.route('/createQA')
-# def createQAPage():
-#     return send_from_directory('../web/createQA', 'createQA.html')
-#
-# @app.route('/createQA.css')
-# def createQA_css():
-#     return send_from_directory('../web/createQA', 'createQA.css')
-#
-# @app.route('/editQA')
-# def editQAPage():
-#     return send_from_directory('../web/editQA', 'editQA.html')
-#
-# @app.route('/editQA.css')
-# def editQA_css():
-#     return send_from_directory('../web/editQA', 'editQA.css')
-#
-# @app.route('/testQA')
-# def testQAPage():
-#     return send_from_directory('../web/TestQA', 'testQA.html')
-#
-# @app.route('/testQA.css')
-# def testQA_css():
-#     return send_from_directory('../web/TestQA', 'testQA.css')
+#--- Other pages (uncomment to re-enable) ---
+@app.route('/home')
+@app.route('/createQA')
+def createQAPage():
+    return send_from_directory('../web/createQA', 'createQA.html')
+
+@app.route('/createQA.css')
+def createQA_css():
+    return send_from_directory('../web/createQA', 'createQA.css')
+
+@app.route('/editQA')
+def editQAPage():
+    return send_from_directory('../web/editQA', 'editQA.html')
+
+@app.route('/editQA.css')
+def editQA_css():
+    return send_from_directory('../web/editQA', 'editQA.css')
+
+@app.route('/testQA')
+def testQAPage():
+    return send_from_directory('../web/TestQA', 'testQA.html')
+
+@app.route('/testQA.css')
+def testQA_css():
+    return send_from_directory('../web/TestQA', 'testQA.css')
 
 # === LOG INTERACTION ===
 @app.route('/log-interaction', methods=['POST'])

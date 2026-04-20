@@ -138,9 +138,7 @@ document.addEventListener('DOMContentLoaded', function () {
             img.src = url;
             img.style.display = 'block';
             if(txt) txt.style.display = 'none'; // Hide the "Generated image will appear here" text
-            
-            // Enable the generate video button
-            document.getElementById('confirmAvatarBtn').disabled = false;
+        
 
             const confirmImageBtn = document.getElementById('confirmImageBtn');
             if (confirmImageBtn) confirmImageBtn.disabled = false;
